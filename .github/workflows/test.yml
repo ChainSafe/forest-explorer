@@ -38,7 +38,6 @@ jobs:
         # Optional: do not specify to match Chrome's version
         chromedriver-version: '126.0.6478.182'
     - run: |
-        export DISPLAY=:99
         chromedriver &
 
     - name: Run website
