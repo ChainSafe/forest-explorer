@@ -35,9 +35,6 @@ jobs:
     - name: Setup Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1
 
-    - name: Configure caching
-      uses: Swatinem/rust-cache@v2
-
     - name: Install wasm-pack
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
