@@ -1,5 +1,9 @@
 name: Deploy
 
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
+
 on:
   pull_request:
     branches:
@@ -8,11 +12,23 @@ on:
     branches:
       - main
 
+env:
+  CACHE_TIMEOUT_MINUTES: 5
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: sccache
+  CC: sccache clang
+  CXX: sccache clang++
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.5
+      timeout-minutes: "${{ fromJSON(env.CACHE_TIMEOUT_MINUTES) }}"
+      continue-on-error: true
+
     - name: Checkout code
       uses: actions/checkout@v4
 
