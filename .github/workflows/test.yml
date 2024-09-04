@@ -1,7 +1,9 @@
 name: Test
+
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
+
 on:
   pull_request:
     branches:
@@ -9,59 +11,57 @@ on:
   push:
     branches:
       - main
+
 env:
   CACHE_TIMEOUT_MINUTES: 5
   SCCACHE_GHA_ENABLED: "true"
   RUSTC_WRAPPER: sccache
   CC: sccache clang
   CXX: sccache clang++
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.5
-        timeout-minutes: "${{ fromJSON(env.CACHE_TIMEOUT_MINUTES) }}"
-        continue-on-error: true
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.5
+      timeout-minutes: "${{ fromJSON(env.CACHE_TIMEOUT_MINUTES) }}"
+      continue-on-error: true
 
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+    - name: Setup Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Configure caching
-        uses: Swatinem/rust-cache@v2
+    - name: Configure caching
+      uses: Swatinem/rust-cache@v2
 
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - uses: sigoden/install-binary@v1
-        with:
-          repo: WebAssembly/binaryen
-          name: wasm-opt
+    - uses: sigoden/install-binary@v1
+      with:
+        repo: WebAssembly/binaryen
+        name: wasm-opt
 
-      - name: Install worker-build
-        run: cargo install --locked worker-build
+    - name: Install worker-build
+      run: cargo install --locked worker-build
 
-      - uses: nanasess/setup-chromedriver@v2
-        with:
-          # Optional: do not specify to match Chrome's version
-          chromedriver-version: "126.0.6478.182"
-      - run: |
-          export DISPLAY=:99
-          chromedriver &
+    - uses: nanasess/setup-chromedriver@v2
+    - run: |
+        chromedriver --port=9515 &
 
-      - name: Run website
-        run: |
-          npx wrangler@latest build
-          npx wrangler@latest dev &
-          echo "waiting"
-          timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 8787
+    - name: Run website
+      run: |
+        npx wrangler@latest build
+        npx wrangler@latest dev &
+        echo "waiting"
+        timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 8787
 
-      - name: E2E
-        run: |
-          cd e2e
-          cargo build
-          cargo run
+    - name: E2E
+      run: |
+        cd e2e
+        cargo build
+        cargo run
