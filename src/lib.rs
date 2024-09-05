@@ -5,12 +5,12 @@ use leptos::*;
 
 use serde_json::{json, Value};
 
-const GLIF_CALIBNET: &'static str = "https://api.calibration.node.glif.io";
+const GLIF_CALIBNET: &str = "https://api.calibration.node.glif.io";
 
 #[component]
 pub fn Loader(loading: impl Fn() -> bool + 'static) -> impl IntoView {
     view! {
-        <span class:loader=move || loading()/>
+        <span class:loader=loading />
     }
 }
 

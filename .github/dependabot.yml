@@ -11,6 +11,10 @@ updates:
       interval: "weekly"
     # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#groups
     groups:
+      worker:
+        patterns:
+          - "worker"
+          - "worker-macros"
       patch-versions:
         update-types:
           - "patch"
