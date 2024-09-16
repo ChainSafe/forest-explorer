@@ -8,8 +8,8 @@ authors = ["Forest Team <forest@chainsafe.io>"]
 crate-type = ["cdylib"]
 
 [dependencies]
-worker = { version = "0.3", features = ['http', 'axum'], optional = true }
-worker-macros = { version = "0.3", features = ['http'], optional = true }
+worker = { version = "0.4", features = ['http', 'axum'], optional = true }
+worker-macros = { version = "0.4", features = ['http'], optional = true }
 tower-service = "0.3"
 console_error_panic_hook = { version = "0.1" }
 leptos = "0.6"
