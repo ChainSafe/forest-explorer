@@ -25,7 +25,7 @@ jobs:
 
     steps:
     - name: Setup sccache
-      uses: mozilla-actions/sccache-action@v0.0.5
+      uses: mozilla-actions/sccache-action@v0.0.6
       timeout-minutes: "${{ fromJSON(env.CACHE_TIMEOUT_MINUTES) }}"
       continue-on-error: true
 
