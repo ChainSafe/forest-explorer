@@ -77,8 +77,8 @@ pub fn App() -> impl IntoView {
     );
 
     view! {
-        <Stylesheet href="/pkg/style.css"/>
-        <Link rel="icon" type_="image/x-icon" href="/pkg/favicon.ico"/>
+        <Stylesheet href="/style.css"/>
+        <Link rel="icon" type_="image/x-icon" href="/favicon.ico"/>
         <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">Forest Explorer</h1>
         <select on:change=move |ev| {
             rpc_provider.set(event_target_value(&ev))
@@ -110,32 +110,10 @@ pub fn hydrate() {
 #[cfg(feature = "ssr")]
 mod ssr_imports {
     use crate::App;
-    use axum::http::{HeaderValue, StatusCode};
-    use axum::{
-        extract::Path,
-        response::IntoResponse,
-        routing::{get, post},
-        Router,
-    };
-    use include_dir::{include_dir, Dir};
+    use axum::{routing::post, Router};
     use leptos::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use worker::{event, Context, Env, HttpRequest, Result};
-
-    static PKG_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/pkg/");
-
-    async fn serve_static(Path(path): Path<String>) -> impl IntoResponse {
-        let mime_type = mime_guess::from_path(&path).first_or_text_plain();
-        let mut headers = axum::http::HeaderMap::new();
-        headers.insert(
-            axum::http::header::CONTENT_TYPE,
-            HeaderValue::from_str(mime_type.as_ref()).unwrap(),
-        );
-        match PKG_DIR.get_file(path) {
-            None => (StatusCode::NOT_FOUND, headers, "File not found.".as_bytes()),
-            Some(file) => (StatusCode::OK, headers, file.contents()),
-        }
-    }
 
     fn router() -> Router {
         let leptos_options = LeptosOptions::builder()
@@ -148,7 +126,6 @@ mod ssr_imports {
         let app: axum::Router<()> = Router::new()
             .leptos_routes(&leptos_options, routes, App)
             .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
-            .route("/pkg/*file_name", get(serve_static))
             .with_state(leptos_options);
         app
     }
