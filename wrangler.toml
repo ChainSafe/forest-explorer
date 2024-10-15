@@ -4,9 +4,25 @@ compatibility_date = "2024-07-13"
 # ChainSafe Static Hosting
 account_id = '2238a825c5aca59233eab1f221f7aefb'
 
-routes = [
-	{ pattern = "forest-explorer.chainsafe.dev", custom_domain = true }
-]
+routes = [{ pattern = "forest-explorer.chainsafe.dev", custom_domain = true }]
+
+[assets]
+directory = "assets"
 
 [build]
-command = "mkdir -p pkg && cp public/* pkg/ && npx tailwindcss --minify -i style/tailwind.css -o pkg/style.css && wasm-pack build --no-typescript --release --target web --out-name client --features hydrate --no-default-features && worker-build --release --features ssr --no-default-features"
+command = """
+mkdir -p assets/pkg &&
+cp public/* assets/ &&
+npx tailwindcss --minify -i style/tailwind.css -o assets/style.css &&
+wasm-pack build --out-dir assets/pkg --release --no-typescript --target web --out-name client --features hydrate --no-default-features &&
+worker-build --release --features ssr --no-default-features
+"""
+
+[env.quick.build]
+command = """
+mkdir -p assets/pkg &&
+cp public/* assets/ &&
+npx tailwindcss --minify -i style/tailwind.css -o assets/style.css &&
+wasm-pack build --out-dir assets/pkg --no-opt --no-typescript --target web --out-name client --features hydrate --no-default-features &&
+worker-build --no-opt --features ssr --no-default-features
+"""
