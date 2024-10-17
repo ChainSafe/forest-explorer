@@ -208,7 +208,7 @@ pub fn Signer() -> impl IntoView {
                         view! { <p class="text-4xl font-bold text-red-500">Invalid!</p> }
                     }
                 } else {
-                    view! {}
+                    view! { <p></p> }
                 }
             }}
         </div>
