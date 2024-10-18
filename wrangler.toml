@@ -23,6 +23,6 @@ command = """
 mkdir -p assets/pkg &&
 cp public/* assets/ &&
 npx tailwindcss --minify -i style/tailwind.css -o assets/style.css &&
-wasm-pack build --out-dir assets/pkg --no-opt --no-typescript --target web --out-name client --features hydrate --no-default-features &&
-worker-build --no-opt --features ssr --no-default-features
+wasm-pack build --out-dir assets/pkg --dev --no-opt --no-typescript --target web --out-name client --features hydrate --no-default-features &&
+worker-build --dev --no-opt --features ssr --no-default-features
 """
