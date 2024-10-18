@@ -2,8 +2,6 @@ use cid::{
     multihash::{Code, MultihashDigest},
     Cid,
 };
-use fvm_ipld_encoding::de::Deserializer;
-use fvm_ipld_encoding::ser::Serializer;
 use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
 pub use fvm_shared::message::Message;
@@ -11,10 +9,9 @@ use fvm_shared::{
     address::Address,
     crypto::signature::{Signature, SignatureType},
     econ::TokenAmount,
-    MethodNum, METHOD_SEND,
+    METHOD_SEND,
 };
 use serde::{Deserialize, Serialize};
-use serde_tuple::{self, Deserialize_tuple, Serialize_tuple};
 
 fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error> {
     let bytes = fvm_ipld_encoding::to_vec(obj)?;
@@ -56,29 +53,9 @@ impl SignedMessage {
         SignedMessage { message, signature }
     }
 
-    /// Returns reference to the unsigned message.
-    pub fn message(&self) -> &Message {
-        &self.message
-    }
-
-    /// Returns signature of the signed message.
-    pub fn signature(&self) -> &Signature {
-        &self.signature
-    }
-
-    /// Consumes self and returns it's unsigned message.
-    pub fn into_message(self) -> Message {
-        self.message
-    }
-
     /// Checks if the signed message is a BLS message.
     pub fn is_bls(&self) -> bool {
         self.signature.signature_type() == SignatureType::BLS
-    }
-
-    /// Checks if the signed message is a SECP message.
-    pub fn is_secp256k1(&self) -> bool {
-        self.signature.signature_type() == SignatureType::Secp256k1
     }
 
     // Important note: `msg.cid()` is different from

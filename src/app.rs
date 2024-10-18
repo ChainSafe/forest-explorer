@@ -8,9 +8,7 @@ use leptos_meta::*;
 use leptos::*;
 use leptos_router::*;
 
-use std::str::FromStr;
-
-use crate::message::{message_cid, message_transfer, Message};
+use crate::message::{message_cid, message_transfer};
 use crate::rpc_context::RpcContext;
 use crate::{
     key::{secret_key, sign},

@@ -23,13 +23,6 @@ pub struct SignedMessageLotusJson {
     cid: Option<Cid>,
 }
 
-impl SignedMessageLotusJson {
-    pub fn with_cid(mut self, cid: Cid) -> Self {
-        self.cid = Some(cid);
-        self
-    }
-}
-
 impl HasLotusJson for SignedMessage {
     type LotusJson = SignedMessageLotusJson;
 

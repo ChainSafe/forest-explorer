@@ -137,15 +137,6 @@ pub trait HasLotusJson: Sized {
     /// is out-of-module, you must call [`assert_all_snapshots`] manually.
     fn into_lotus_json(self) -> Self::LotusJson;
     fn from_lotus_json(lotus_json: Self::LotusJson) -> Self;
-    fn into_lotus_json_value(self) -> serde_json::Result<serde_json::Value> {
-        serde_json::to_value(self.into_lotus_json())
-    }
-    fn into_lotus_json_string(self) -> serde_json::Result<String> {
-        serde_json::to_string(&self.into_lotus_json())
-    }
-    fn into_lotus_json_string_pretty(self) -> serde_json::Result<String> {
-        serde_json::to_string_pretty(&self.into_lotus_json())
-    }
 }
 
 // macro_rules! decl_and_test {
@@ -212,94 +203,94 @@ pub mod stringify {
     }
 }
 
-/// Usage: `#[serde(with = "hexify_bytes")]`
-pub mod hexify_bytes {
-    use super::*;
+// /// Usage: `#[serde(with = "hexify_bytes")]`
+// pub mod hexify_bytes {
+//     use super::*;
 
-    pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        T: Display + std::fmt::LowerHex,
-        S: Serializer,
-    {
-        // `ethereum_types` crate serializes bytes as compressed addresses, i.e. `0xff00…03ec`
-        // so we can't just use `serializer.collect_str` here
-        serializer.serialize_str(&format!("{:#x}", value))
-    }
+//     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         T: Display + std::fmt::LowerHex,
+//         S: Serializer,
+//     {
+//         // `ethereum_types` crate serializes bytes as compressed addresses, i.e. `0xff00…03ec`
+//         // so we can't just use `serializer.collect_str` here
+//         serializer.serialize_str(&format!("{:#x}", value))
+//     }
 
-    pub fn deserialize<'de, T, D>(deserializer: D) -> Result<T, D::Error>
-    where
-        T: FromStr,
-        T::Err: Display,
-        D: Deserializer<'de>,
-    {
-        String::deserialize(deserializer)?
-            .parse()
-            .map_err(serde::de::Error::custom)
-    }
-}
+//     pub fn deserialize<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+//     where
+//         T: FromStr,
+//         T::Err: Display,
+//         D: Deserializer<'de>,
+//     {
+//         String::deserialize(deserializer)?
+//             .parse()
+//             .map_err(serde::de::Error::custom)
+//     }
+// }
 
-pub mod hexify_vec_bytes {
-    use super::*;
-    use std::fmt::Write;
+// pub mod hexify_vec_bytes {
+//     use super::*;
+//     use std::fmt::Write;
 
-    pub fn serialize<S>(value: &[u8], serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = String::with_capacity(2 + value.len() * 2);
-        s.push_str("0x");
-        for b in value {
-            write!(s, "{:02x}", b).expect("failed to write to string");
-        }
-        serializer.serialize_str(&s)
-    }
+//     pub fn serialize<S>(value: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         let mut s = String::with_capacity(2 + value.len() * 2);
+//         s.push_str("0x");
+//         for b in value {
+//             write!(s, "{:02x}", b).expect("failed to write to string");
+//         }
+//         serializer.serialize_str(&s)
+//     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        if (s.len() >= 2 && s.len() % 2 == 0) && s.get(..2).expect("failed to get prefix") == "0x" {
-            let result: Result<Vec<u8>, _> = (2..s.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(s.get(i..i + 2).expect("failed to get slice"), 16))
-                .collect();
-            result.map_err(serde::de::Error::custom)
-        } else {
-            Err(serde::de::Error::custom("Invalid hex"))
-        }
-    }
-}
+//     pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+//     where
+//         D: Deserializer<'de>,
+//     {
+//         let s = String::deserialize(deserializer)?;
+//         if (s.len() >= 2 && s.len() % 2 == 0) && s.get(..2).expect("failed to get prefix") == "0x" {
+//             let result: Result<Vec<u8>, _> = (2..s.len())
+//                 .step_by(2)
+//                 .map(|i| u8::from_str_radix(s.get(i..i + 2).expect("failed to get slice"), 16))
+//                 .collect();
+//             result.map_err(serde::de::Error::custom)
+//         } else {
+//             Err(serde::de::Error::custom("Invalid hex"))
+//         }
+//     }
+// }
 
-/// Usage: `#[serde(with = "hexify")]`
-pub mod hexify {
-    use super::*;
-    use num_traits::Num;
-    use serde::{Deserializer, Serializer};
+// /// Usage: `#[serde(with = "hexify")]`
+// pub mod hexify {
+//     use super::*;
+//     use num_traits::Num;
+//     use serde::{Deserializer, Serializer};
 
-    pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        T: Num + std::fmt::LowerHex,
-        S: Serializer,
-    {
-        serializer.serialize_str(format!("{value:#x}").as_str())
-    }
+//     pub fn serialize<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         T: Num + std::fmt::LowerHex,
+//         S: Serializer,
+//     {
+//         serializer.serialize_str(format!("{value:#x}").as_str())
+//     }
 
-    pub fn deserialize<'de, T, D>(deserializer: D) -> Result<T, D::Error>
-    where
-        T: Num,
-        <T as Num>::FromStrRadixErr: std::fmt::Display,
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        #[allow(clippy::indexing_slicing)]
-        if s.len() > 2 && &s[..2] == "0x" {
-            T::from_str_radix(&s[2..], 16).map_err(serde::de::Error::custom)
-        } else {
-            Err(serde::de::Error::custom("Invalid hex"))
-        }
-    }
-}
+//     pub fn deserialize<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+//     where
+//         T: Num,
+//         <T as Num>::FromStrRadixErr: std::fmt::Display,
+//         D: Deserializer<'de>,
+//     {
+//         let s = String::deserialize(deserializer)?;
+//         #[allow(clippy::indexing_slicing)]
+//         if s.len() > 2 && &s[..2] == "0x" {
+//             T::from_str_radix(&s[2..], 16).map_err(serde::de::Error::custom)
+//         } else {
+//             Err(serde::de::Error::custom("Invalid hex"))
+//         }
+//     }
+// }
 
 /// Usage: `#[serde(with = "base64_standard")]`
 pub mod base64_standard {
@@ -350,6 +341,7 @@ where
 pub struct LotusJson<T>(#[serde(with = "self")] pub T);
 
 impl<T> LotusJson<T> {
+    #[allow(unused)]
     pub fn into_inner(self) -> T {
         self.0
     }
