@@ -32,6 +32,11 @@ serde = "1.0.210"
 hex = "0.4.3"
 base64 = "0.22.1"
 blake2b_simd = "1.0.2"
+fvm_ipld_encoding = "0.4.0"
+cid = "0.10.1"
+serde_tuple = "1.0.0"
+derive_more = { version = "1.0.0", features = ["from", "into"] }
+num-traits = "0.2.19"
 
 
 [features]

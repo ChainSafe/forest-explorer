@@ -1,12 +1,21 @@
+use fvm_shared::{
+    address::{Address, Network},
+    econ::TokenAmount,
+};
 use leptos::{component, create_local_resource, event_target_value, view, IntoView, SignalGet};
 use leptos_meta::*;
 
 use leptos::*;
 use leptos_router::*;
 
-use serde_json::{json, Value};
+use std::str::FromStr;
 
-const GLIF_CALIBNET: &str = "https://api.calibration.node.glif.io";
+use crate::message::{message_cid, message_transfer, Message};
+use crate::rpc_context::RpcContext;
+use crate::{
+    key::{secret_key, sign},
+    message::SignedMessage,
+};
 
 #[component]
 pub fn Loader(loading: impl Fn() -> bool + 'static) -> impl IntoView {
@@ -15,70 +24,22 @@ pub fn Loader(loading: impl Fn() -> bool + 'static) -> impl IntoView {
 
 #[component]
 pub fn BlockchainExplorer() -> impl IntoView {
-    let rpc_provider = create_rw_signal(String::from(GLIF_CALIBNET));
+    let rpc_context = RpcContext::use_context();
     let network_name = create_local_resource(
-        move || rpc_provider.get(),
-        move |provider| async move {
-            let client = reqwest::Client::new();
-            let res = client
-                .post(provider)
-                .json(&json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.StateNetworkName",
-                        "params": [],
-                        "id": 0
-                    }
-                })
-                .send()
-                .await
-                .ok()?;
-            log::info!("Got response: {:?}", res);
-            Some(String::from(
-                res.json::<Value>()
-                    .await
-                    .ok()?
-                    .get("result")
-                    .cloned()?
-                    .as_str()?,
-            ))
-        },
+        move || rpc_context.get(),
+        move |provider| async move { provider.network_name().await.ok() },
     );
 
     let network_version = create_local_resource(
-        move || rpc_provider.get(),
-        move |provider| async move {
-            let client = reqwest::Client::new();
-            let res = client
-                .post(provider)
-                .json(&json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.StateNetworkVersion",
-                        "params": [[]],
-                        "id": 0
-                    }
-                })
-                .send()
-                .await
-                .ok()?;
-            log::info!("Got response: {:?}", res);
-            res.json::<Value>()
-                .await
-                .ok()
-                .unwrap_or_default()
-                .get("result")
-                .cloned()
-                .unwrap_or_default()
-                .as_u64()
-        },
+        move || rpc_context.get(),
+        move |provider| async move { provider.network_version().await.ok() },
     );
 
     view! {
         <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
             Forest Explorer
         </h1>
-        <select on:change=move |ev| { rpc_provider.set(event_target_value(&ev)) }>
+        <select on:change=move |ev| { rpc_context.set(event_target_value(&ev)) }>
             <option value="https://api.calibration.node.glif.io">Glif.io Calibnet</option>
             <option value="https://api.node.glif.io/">Glif.io Mainnet</option>
         </select>
@@ -148,7 +109,11 @@ pub fn Signer() -> impl IntoView {
         use crate::key::*;
         let value = event_target_value(&ev);
         let key = secret_key();
-        let msg = sign(key.key_info.r#type, &key.key_info.private_key, value.as_bytes());
+        let msg = sign(
+            key.key_info.r#type,
+            &key.key_info.private_key,
+            value.as_bytes(),
+        );
         match msg {
             Ok(sig) => signed_message.set(hex::encode(sig.bytes())),
             Err(e) => log::error!("Error signing message: {}", e),
@@ -215,9 +180,120 @@ pub fn Signer() -> impl IntoView {
     }
 }
 
+fn parse_address(s: &str) -> anyhow::Result<Address> {
+    Ok(Network::Testnet
+        .parse_address(s)
+        .or_else(|_| Network::Mainnet.parse_address(s))?)
+}
+
+#[component]
+pub fn Faucet() -> impl IntoView {
+    let rpc_context = RpcContext::use_context();
+    let faucet_balance = create_local_resource_with_initial_value(
+        move || rpc_context.get(),
+        move |provider| async move {
+            provider
+                .wallet_balance(
+                    parse_address("t15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla")
+                        .unwrap_or(Address::new_id(1)),
+                )
+                .await
+                .ok()
+                .unwrap_or(TokenAmount::from_atto(0))
+        },
+        Some(TokenAmount::from_atto(0)),
+    );
+    let target_address =
+        create_rw_signal(String::from("t12icwx77skr3hv4mekth7kol3fuhymcya6zczxgi"));
+    let target_balance = create_local_resource_with_initial_value(
+        move || (rpc_context.get(), target_address.get()),
+        move |(provider, address)| async move {
+            if let Ok(address) = parse_address(&address) {
+                provider
+                    .wallet_balance(address)
+                    .await
+                    .ok()
+                    .unwrap_or(TokenAmount::from_atto(0))
+            } else {
+                TokenAmount::from_atto(0)
+            }
+        },
+        None,
+    );
+
+    view! {
+        <h1 class="text-4xl font-bold mb-6 text-center">Faucet</h1>
+
+        <div class="max-w-2xl mx-auto">
+            <div class="my-4 flex">
+                <input
+                    type="text"
+                    placeholder="Enter target address"
+                    prop:value=target_address
+                    on:input=move |ev| { target_address.set(event_target_value(&ev)) }
+                    class="flex-grow border border-gray-300 p-2 rounded-l"
+                />
+                <button
+                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
+                    on:click=move |_| {
+                        match parse_address(&target_address.get()) {
+                            Ok(addr) => {
+                                let rpc = rpc_context.get();
+                                let from = secret_key();
+                                spawn_local(async move {
+                                    let nonce = rpc.mpool_get_nonce(from.address).await.unwrap();
+                                    let mut msg = message_transfer(from.address, addr, TokenAmount::from_whole(1));
+                                    msg.sequence = nonce;
+                                    log::info!("Pre Estimated gas: {:?}", msg);
+                                    match rpc.estimate_gas(msg).await {
+                                        Ok(msg) => {
+                                            log::info!("Post Estimated gas: {:?}", msg);
+                                            match sign(
+                                                from.key_info.r#type,
+                                                &from.key_info.private_key,
+                                                message_cid(&msg).to_bytes().as_slice(),
+                                            ) {
+                                                Ok(sig) => {
+                                                    let smsg = SignedMessage::new_unchecked(msg, sig);
+                                                    let cid = rpc.mpool_push(smsg).await;
+                                                    log::info!("Sent message: {:?}", cid);
+                                                    log::info!("Send button clicked {}", target_address.get());
+                                                }
+                                                Err(e) => log::error!("Error signing message: {}", e),
+                                            }
+                                        }
+                                        Err(e) => log::error!("Error estimating gas: {}", e),
+                                    }
+                                });
+                            }
+                            Err(e) => {
+                                log::error!("Error parsing address: {}", e);
+                            }
+                        }
+                        log::info!("Send button clicked {}", target_address.get());
+                    }
+                >
+                    Send
+                </button>
+            </div>
+            <div class="flex justify-between my-4">
+                <div>
+                    <h3 class="text-lg font-semibold">Faucet Balance:</h3>
+                    <p class="text-xl">{move || faucet_balance.get().unwrap_or_default().to_string()}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold">Target Balance:</h3>
+                    <p class="text-xl">{move || target_balance.get().unwrap_or_default().to_string()}</p>
+                </div>
+            </div>
+        </div>
+    }
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+    RpcContext::provide_context();
 
     view! {
         <Stylesheet href="/style.css" />
@@ -227,6 +303,7 @@ pub fn App() -> impl IntoView {
                 <Route path="/" view=BlockchainExplorer />
                 <Route path="/address" view=AddressParser />
                 <Route path="/signer" view=Signer />
+                <Route path="/faucet" view=Faucet />
             </Routes>
         </Router>
     }

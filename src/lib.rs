@@ -1,6 +1,9 @@
 mod app;
+mod rpc_context;
 use app::App;
 mod key;
+mod lotus_json;
+mod message;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
