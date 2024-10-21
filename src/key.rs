@@ -149,7 +149,7 @@ pub fn sign(sig_type: SignatureType, private_key: &[u8], msg: &[u8]) -> Result<S
 pub fn verify(signature: &str, address: &str, msg: &str) -> Result<bool> {
     let sig_bytes = hex::decode(signature).context("Signature has to be a hex string")?;
     log::info!("Signature length: {} bytes", sig_bytes.len());
-    let address = Address::from_str(&address)?;
+    let address = Address::from_str(address)?;
     log::info!("Address: {:?}", address);
     let signature = match address.protocol() {
         Protocol::Secp256k1 => Signature::new_secp256k1(sig_bytes),

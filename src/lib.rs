@@ -1,5 +1,6 @@
 mod app;
 mod rpc_context;
+#[cfg(feature = "hydrate")]
 use app::App;
 mod key;
 mod lotus_json;
@@ -15,7 +16,7 @@ pub fn hydrate() {
 
 #[cfg(feature = "ssr")]
 mod ssr_imports {
-    use crate::App;
+    use crate::app::App;
     use axum::{routing::post, Router};
     use leptos::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
