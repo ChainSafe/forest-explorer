@@ -69,8 +69,7 @@ impl Provider {
     }
 
     pub async fn network_name(&self) -> anyhow::Result<String> {
-        let client = &CLIENT;
-        let res = client
+        let res = CLIENT
             .post(&self.url)
             .json(&json! {
                 {
@@ -94,8 +93,7 @@ impl Provider {
     }
 
     pub async fn network_version(&self) -> anyhow::Result<u64> {
-        let client = reqwest::Client::new();
-        let res = client
+        let res = CLIENT
             .post(&self.url)
             .json(&json! {
                     {
@@ -119,8 +117,7 @@ impl Provider {
     }
 
     pub async fn wallet_balance(&self, address: Address) -> anyhow::Result<TokenAmount> {
-        let client = reqwest::Client::new();
-        let res = client
+        let res = CLIENT
             .post(&self.url)
             .json(&json! {
                     {
@@ -144,8 +141,7 @@ impl Provider {
     }
 
     pub async fn estimate_gas(&self, msg: Message) -> anyhow::Result<Message> {
-        let client = reqwest::Client::new();
-        let res = client
+        let res = CLIENT
             .post(&self.url)
             .json(&json! {
                     {
@@ -169,8 +165,7 @@ impl Provider {
     }
 
     pub async fn mpool_get_nonce(&self, addr: Address) -> anyhow::Result<u64> {
-        let client = reqwest::Client::new();
-        let res = client
+        let res = CLIENT
             .post(&self.url)
             .json(&json! {
                     {
@@ -205,8 +200,7 @@ impl Provider {
                 }
             }
         );
-        let client = reqwest::Client::new();
-        let res = client
+        let res = CLIENT
             .post(&self.url)
             .json(&json! {
                     {
