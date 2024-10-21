@@ -242,10 +242,8 @@ pub fn Faucet() -> impl IntoView {
                                     let nonce = rpc.mpool_get_nonce(from.address).await.unwrap();
                                     let mut msg = message_transfer(from.address, addr, TokenAmount::from_whole(1));
                                     msg.sequence = nonce;
-                                    log::info!("Pre Estimated gas: {:?}", msg);
                                     match rpc.estimate_gas(msg).await {
                                         Ok(msg) => {
-                                            log::info!("Post Estimated gas: {:?}", msg);
                                             match sign(
                                                 from.key_info.r#type,
                                                 &from.key_info.private_key,
@@ -255,7 +253,6 @@ pub fn Faucet() -> impl IntoView {
                                                     let smsg = SignedMessage::new_unchecked(msg, sig);
                                                     let cid = rpc.mpool_push(smsg).await;
                                                     log::info!("Sent message: {:?}", cid);
-                                                    log::info!("Send button clicked {}", target_address.get());
                                                 }
                                                 Err(e) => log::error!("Error signing message: {}", e),
                                             }
@@ -268,7 +265,6 @@ pub fn Faucet() -> impl IntoView {
                                 log::error!("Error parsing address: {}", e);
                             }
                         }
-                        log::info!("Send button clicked {}", target_address.get());
                     }
                 >
                     Send
