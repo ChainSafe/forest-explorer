@@ -7,7 +7,7 @@ use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
 
-use crate::lotus_json::LotusJson;
+use crate::lotus_json::{HasLotusJson, LotusJson};
 use crate::message::SignedMessage;
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
@@ -63,163 +63,83 @@ pub struct Provider {
     url: String,
 }
 
+async fn invoke_rpc_method<T: HasLotusJson + Clone>(
+    url: &str,
+    method: &str,
+    params: &[Value],
+) -> anyhow::Result<T> {
+    let res = CLIENT
+        .post(url)
+        .json(&json! {
+            {
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": params,
+                "id": 0
+            }
+        })
+        .send()
+        .await?;
+    let LotusJson(ret) = serde_json::from_value(
+        res.json::<Value>()
+            .await?
+            .get("result")
+            .ok_or(anyhow::anyhow!("No result"))?
+            .clone(),
+    )?;
+    Ok(ret)
+}
+
 impl Provider {
     pub fn new(url: String) -> Self {
         Self { url }
     }
 
     pub async fn network_name(&self) -> anyhow::Result<String> {
-        let res = CLIENT
-            .post(&self.url)
-            .json(&json! {
-                {
-                    "jsonrpc": "2.0",
-                    "method": "Filecoin.StateNetworkName",
-                    "params": [],
-                    "id": 0
-                }
-            })
-            .send()
-            .await?;
-        log::info!("Got response: {:?}", res);
-        let LotusJson(name) = serde_json::from_value(
-            res.json::<Value>()
-                .await?
-                .get("result")
-                .ok_or(anyhow::anyhow!("No result"))?
-                .clone(),
-        )?;
-        Ok(name)
+        invoke_rpc_method(&self.url, "Filecoin.StateNetworkName", &[]).await
     }
 
     pub async fn network_version(&self) -> anyhow::Result<u64> {
-        let res = CLIENT
-            .post(&self.url)
-            .json(&json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.StateNetworkVersion",
-                        "params": [[]],
-                        "id": 0
-                }
-            })
-            .send()
-            .await?;
-        log::info!("Got response: {:?}", res);
-        let LotusJson(version) = serde_json::from_value(
-            res.json::<Value>()
-                .await?
-                .get("result")
-                .ok_or(anyhow::anyhow!("No result"))?
-                .clone(),
-        )?;
-        Ok(version)
+        invoke_rpc_method(&self.url, "Filecoin.StateNetworkVersion", &[Value::Null]).await
     }
 
     pub async fn wallet_balance(&self, address: Address) -> anyhow::Result<TokenAmount> {
-        let res = CLIENT
-            .post(&self.url)
-            .json(&json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.WalletBalance",
-                        "params": [LotusJson(address)],
-                        "id": 0
-                }
-            })
-            .send()
-            .await?;
-        log::info!("Got response: {:?}", res);
-        let LotusJson(balance) = serde_json::from_value(
-            res.json::<Value>()
-                .await?
-                .get("result")
-                .ok_or(anyhow::anyhow!("No result"))?
-                .clone(),
-        )?;
-        Ok(balance)
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.WalletBalance",
+            &[serde_json::to_value(LotusJson(address))?],
+        )
+        .await
     }
 
     pub async fn estimate_gas(&self, msg: Message) -> anyhow::Result<Message> {
-        let res = CLIENT
-            .post(&self.url)
-            .json(&json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.GasEstimateMessageGas",
-                        "params": [LotusJson(msg), null, null],
-                        "id": 0
-                }
-            })
-            .send()
-            .await?;
-        log::info!("Got response: {:?}", res);
-        let LotusJson(msg) = serde_json::from_value(
-            res.json::<Value>()
-                .await?
-                .get("result")
-                .ok_or(anyhow::anyhow!("No result"))?
-                .clone(),
-        )?;
-        Ok(msg)
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.GasEstimateMessageGas",
+            &[
+                serde_json::to_value(LotusJson(msg))?,
+                Value::Null,
+                Value::Null,
+            ],
+        )
+        .await
     }
 
     pub async fn mpool_get_nonce(&self, addr: Address) -> anyhow::Result<u64> {
-        let res = CLIENT
-            .post(&self.url)
-            .json(&json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.MpoolGetNonce",
-                        "params": [LotusJson(addr)],
-                        "id": 0
-                }
-            })
-            .send()
-            .await?;
-        log::info!("Got response: {:?}", res);
-        let LotusJson(nonce) = serde_json::from_value(
-            res.json::<Value>()
-                .await?
-                .get("result")
-                .ok_or(anyhow::anyhow!("No result"))?
-                .clone(),
-        )?;
-        Ok(nonce)
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.MpoolGetNonce",
+            &[serde_json::to_value(LotusJson(addr))?],
+        )
+        .await
     }
 
     pub async fn mpool_push(&self, smsg: SignedMessage) -> anyhow::Result<Cid> {
-        log::info!(
-            "Pushing json: {}",
-            json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.MpoolPush",
-                        "params": [LotusJson(smsg.clone())],
-                        "id": 0
-                }
-            }
-        );
-        let res = CLIENT
-            .post(&self.url)
-            .json(&json! {
-                    {
-                        "jsonrpc": "2.0",
-                        "method": "Filecoin.MpoolPush",
-                        "params": [LotusJson(smsg)],
-                        "id": 0
-                }
-            })
-            .send()
-            .await?;
-        log::info!("Got response: {:?}", res);
-        let LotusJson(cid) = serde_json::from_value(
-            res.json::<Value>()
-                .await?
-                .get("result")
-                .ok_or(anyhow::anyhow!("No result"))?
-                .clone(),
-        )?;
-        Ok(cid)
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.MpoolPush",
+            &[serde_json::to_value(LotusJson(smsg))?],
+        )
+        .await
     }
 }
