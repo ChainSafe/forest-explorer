@@ -9,3 +9,9 @@ Forest Explorer is a server-less inspector of the Filecoin blockchain.
 Anything pushed to `main` will automatically be deployed at <https://forest-explorer.chainsafe.dev>.
 
 Running `npx wrangler@latest dev` will spawn a local copy of the explorer.
+
+# Dependencies
+
+- [wrangler](https://github.com/cloudflare/wrangler2)
+- [wasm-pack](https://github.com/rustwasm/wasm-pack)
+- [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build)
