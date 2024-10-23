@@ -147,23 +147,6 @@ impl Provider {
         .await
     }
 
-    pub async fn mpool_pending(&self) -> anyhow::Result<Vec<SignedMessage>> {
-        invoke_rpc_method(&self.url, "Filecoin.MpoolPending", &[Value::Null]).await
-    }
-
-    // This doesn't block with glif.io.
-    pub async fn state_wait_msg(&self, msg: Cid, confidence: i64) -> anyhow::Result<MessageLookup> {
-        invoke_rpc_method(
-            &self.url,
-            "Filecoin.StateWaitMsg",
-            &[
-                serde_json::to_value(LotusJson(msg))?,
-                serde_json::to_value(confidence)?,
-            ],
-        )
-        .await
-    }
-
     pub async fn state_search_msg(&self, msg: Cid) -> anyhow::Result<MessageLookup> {
         invoke_rpc_method(
             &self.url,

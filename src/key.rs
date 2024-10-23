@@ -1,18 +1,12 @@
 use anyhow::{Context as _, Result};
-use bls_signatures::{
-    verify_messages, PrivateKey as BlsPrivate, PublicKey as BlsPubKey, Serialize as _,
-    Signature as BlsSignature,
-};
-use libsecp256k1::{
-    recover, Message as SecpMessage, PublicKey as SecpPublic, RecoveryId, SecretKey as SecpPrivate,
-    Signature as EcsdaSignature,
-};
+use bls_signatures::{PrivateKey as BlsPrivate, Serialize as _};
+use libsecp256k1::{Message as SecpMessage, PublicKey as SecpPublic, SecretKey as SecpPrivate};
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, str::FromStr};
 
 use fvm_shared::{
-    address::{Address, Protocol},
-    crypto::signature::{Signature, SignatureType, SECP_SIG_LEN, SECP_SIG_MESSAGE_HASH_SIZE},
+    address::Address,
+    crypto::signature::{Signature, SignatureType},
 };
 
 /// Return the public key for a given private key and `SignatureType`
