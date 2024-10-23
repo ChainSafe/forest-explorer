@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use cid::Cid;
 use fvm_shared::{
     address::{Address, Network},
@@ -62,8 +64,20 @@ fn parse_address(s: &str) -> anyhow::Result<Address> {
         .or_else(|_| Network::Mainnet.parse_address(s))?)
 }
 
+async fn catch_all(
+    errors: RwSignal<Vec<String>>,
+    cb: impl Future<Output = Result<(), anyhow::Error>>,
+) {
+    match cb.await {
+        Ok(_) => (),
+        Err(e) => errors.update(|errors| errors.push(e.to_string())),
+    }
+}
+
 #[component]
 pub fn Faucet() -> impl IntoView {
+    let error_messages = create_rw_signal(vec![]);
+
     let rpc_context = RpcContext::use_context();
     let faucet_balance = create_local_resource_with_initial_value(
         move || rpc_context.get(),
@@ -110,25 +124,58 @@ pub fn Faucet() -> impl IntoView {
                 .into_iter()
                 .filter_map(|(cid, sent)| if !sent { Some(cid) } else { None })
                 .collect::<Vec<_>>();
-            spawn_local(async move {
+            spawn_local(catch_all(error_messages, async move {
                 for cid in pending {
-                    let lookup = rpc_context.get_untracked().state_search_msg(cid).await;
-                    if let Ok(lookup) = lookup {
-                        sent_messages.update(|messages| {
-                            for (cid, sent) in messages {
-                                if cid == &lookup.message {
-                                    *sent = true;
-                                }
+                    let lookup = rpc_context.get_untracked().state_search_msg(cid).await?;
+                    sent_messages.update(|messages| {
+                        for (cid, sent) in messages {
+                            if cid == &lookup.message {
+                                *sent = true;
                             }
-                        });
-                    }
+                        }
+                    });
                 }
-            });
+                Ok(())
+            }));
         },
         5000,
     );
 
     view! {
+        {move || {
+            let errors = error_messages.get();
+            if !errors.is_empty() {
+                view! {
+                    <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+                        {errors.into_iter().enumerate().map(|(index, error)| {
+                            view! {
+                                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96" role="alert">
+                                    <span class="block sm:inline">{error}</span>
+                                    <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                                        <svg
+                                            class="fill-current h-6 w-6 text-red-500"
+                                            role="button"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 20 20"
+                                            on:click=move |_| {
+                                                error_messages.update(|msgs| {
+                                                    msgs.remove(index);
+                                                });
+                                            }
+                                        >
+                                            <title>Close</title>
+                                            <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                                        </svg>
+                                    </span>
+                                </div>
+                            }
+                        }).collect::<Vec<_>>()}
+                    </div>
+                }.into_view()
+            } else {
+                view! {}.into_view()
+            }
+        }}
         <h1 class="text-4xl font-bold mb-6 text-center">Faucet</h1>
 
         <div class="max-w-2xl mx-auto">
@@ -146,35 +193,26 @@ pub fn Faucet() -> impl IntoView {
                         match parse_address(&target_address.get()) {
                             Ok(addr) => {
                                 let rpc = rpc_context.get_untracked();
-                                spawn_local(async move {
-                                    let LotusJson(from) = faucet_address().await.unwrap();
-                                    let nonce = rpc.mpool_get_nonce(from).await.unwrap();
+                                spawn_local(catch_all(error_messages, async move {
+                                    let LotusJson(from) = faucet_address().await.map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
+                                    let nonce = rpc.mpool_get_nonce(from).await?;
                                     let mut msg = message_transfer(from, addr, TokenAmount::from_whole(1));
                                     msg.sequence = nonce;
-                                    match rpc.estimate_gas(msg).await {
-                                        Ok(msg) => {
-                                            match sign_with_secret_key(
-                                                LotusJson(message_cid(&msg)),
-                                            ).await {
-                                                Ok(LotusJson(sig)) => {
-                                                    let smsg = SignedMessage::new_unchecked(msg, sig);
-                                                    if let Ok(cid) = rpc.mpool_push(smsg).await {
-                                                        sent_messages.update(|messages| {
-                                                            messages.push((cid.clone(), false));
-                                                        });
-                                                        log::info!("Sent message: {:?}", cid);
-                                                    } else {
-                                                        log::error!("Error sending message");
-                                                    }
-                                                }
-                                                Err(e) => log::error!("Error signing message: {}", e),
-                                            }
-                                        }
-                                        Err(e) => log::error!("Error estimating gas: {}", e),
-                                    }
-                                });
+                                    let msg = rpc.estimate_gas(msg).await?;
+                                    let LotusJson(sig) = sign_with_secret_key(
+                                        LotusJson(message_cid(&msg)),
+                                    ).await.map_err(|e| anyhow::anyhow!(e))?;
+                                    let smsg = SignedMessage::new_unchecked(msg, sig);
+                                    let cid = rpc.mpool_push(smsg).await?;
+                                    sent_messages.update(|messages| {
+                                        messages.push((cid.clone(), false));
+                                    });
+                                    log::info!("Sent message: {:?}", cid);
+                                    Ok(())
+                                }));
                             }
                             Err(e) => {
+                                error_messages.update(|errors| errors.push("Invalid address".to_string()));
                                 log::error!("Error parsing address: {}", e);
                             }
                         }

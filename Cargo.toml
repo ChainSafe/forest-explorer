@@ -38,6 +38,8 @@ serde_tuple = "1.0.0"
 derive_more = { version = "1.0.0", features = ["from", "into"] }
 num-traits = "0.2.19"
 leptos-use = "0.13.6"
+chrono = "0.4.38"
+send_wrapper = "0.6.0"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
