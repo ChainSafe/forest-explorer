@@ -1,3 +1,4 @@
+use cid::Cid;
 use fvm_shared::{
     address::{Address, Network},
     econ::TokenAmount,
@@ -7,13 +8,14 @@ use leptos_meta::*;
 
 use leptos::*;
 use leptos_router::*;
+use leptos_use::*;
 
-use crate::message::{message_cid, message_transfer};
-use crate::rpc_context::RpcContext;
 use crate::{
-    key::{secret_key, sign},
-    message::SignedMessage,
+    faucet::faucet_address,
+    message::{message_cid, message_transfer},
 };
+use crate::{faucet::sign_with_secret_key, message::SignedMessage};
+use crate::{lotus_json::LotusJson, rpc_context::RpcContext};
 
 #[component]
 pub fn Loader(loading: impl Fn() -> bool + 'static) -> impl IntoView {
@@ -89,94 +91,94 @@ pub fn AddressParser() -> impl IntoView {
     }
 }
 
-#[component]
-pub fn Signer() -> impl IntoView {
-    let to_be_signed = create_rw_signal(String::new());
-    let signed_message = create_rw_signal(String::new());
+// #[component]
+// pub fn Signer() -> impl IntoView {
+//     let to_be_signed = create_rw_signal(String::new());
+//     let signed_message = create_rw_signal(String::new());
 
-    let public_key = create_rw_signal(String::from("f15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla"));
-    let in_message = create_rw_signal(String::from("Hello world!"));
-    let signature = create_rw_signal(String::from("547cde13e913e7cb716dba12c30cdc2a9789f1defb7d8eec50a008224713e754486ffc2f1c81722e333a8b347a7621c06919221484d7b665cc0a92fd037ffbf301"));
+//     let public_key = create_rw_signal(String::from("f15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla"));
+//     let in_message = create_rw_signal(String::from("Hello world!"));
+//     let signature = create_rw_signal(String::from("547cde13e913e7cb716dba12c30cdc2a9789f1defb7d8eec50a008224713e754486ffc2f1c81722e333a8b347a7621c06919221484d7b665cc0a92fd037ffbf301"));
 
-    let is_valid = move || {
-        use crate::key::*;
-        verify(&signature.get(), &public_key.get(), &in_message.get()).unwrap_or(false)
-    };
+//     let is_valid = move || {
+//         use crate::key::*;
+//         verify(&signature.get(), &public_key.get(), &in_message.get()).unwrap_or(false)
+//     };
 
-    let on_sign = move |ev| {
-        use crate::key::*;
-        let value = event_target_value(&ev);
-        let key = secret_key();
-        let msg = sign(
-            key.key_info.r#type,
-            &key.key_info.private_key,
-            value.as_bytes(),
-        );
-        match msg {
-            Ok(sig) => signed_message.set(hex::encode(sig.bytes())),
-            Err(e) => log::error!("Error signing message: {}", e),
-        }
-    };
+//     let on_sign = move |ev| {
+//         use crate::key::*;
+//         let value = event_target_value(&ev);
+//         let key = secret_key();
+//         let msg = sign(
+//             key.key_info.r#type,
+//             &key.key_info.private_key,
+//             value.as_bytes(),
+//         );
+//         match msg {
+//             Ok(sig) => signed_message.set(hex::encode(sig.bytes())),
+//             Err(e) => log::error!("Error signing message: {}", e),
+//         }
+//     };
 
-    view! {
-        <h1 class="text-4xl font-bold mb-6">Sign and Validate</h1>
-        <div>
-            <h2 class="text-2xl font-bold mb-4">Sign Message</h2>
-            <input
-                type="text"
-                placeholder="Enter message to sign"
-                prop:value=to_be_signed
-                on:input=on_sign
-                class="w-full border border-gray-300 p-2 mb-2 mx-2"
-            />
-            <div>
-                <label>Signed Message:</label>
-                <div class="max-w-80 break-all">{signed_message}</div>
-            </div>
-        </div>
+//     view! {
+//         <h1 class="text-4xl font-bold mb-6">Sign and Validate</h1>
+//         <div>
+//             <h2 class="text-2xl font-bold mb-4">Sign Message</h2>
+//             <input
+//                 type="text"
+//                 placeholder="Enter message to sign"
+//                 prop:value=to_be_signed
+//                 on:input=on_sign
+//                 class="w-full border border-gray-300 p-2 mb-2 mx-2"
+//             />
+//             <div>
+//                 <label>Signed Message:</label>
+//                 <div class="max-w-80 break-all">{signed_message}</div>
+//             </div>
+//         </div>
 
-        <div class="my-8">
-            <hr />
-        </div>
+//         <div class="my-8">
+//             <hr />
+//         </div>
 
-        <div>
-            <h2 class="text-2xl font-bold mb-4">Validate Signature</h2>
-            <input
-                type="text"
-                placeholder="Enter public key"
-                prop:value=public_key
-                on:input=move |ev| { public_key.set(event_target_value(&ev)) }
-                class="w-full border border-gray-300 p-2 mb-2 mx-2"
-            />
-            <input
-                type="text"
-                placeholder="Enter message"
-                prop:value=in_message
-                on:input=move |ev| { in_message.set(event_target_value(&ev)) }
-                class="w-full border border-gray-300 p-2 mb-2 mx-2"
-            />
-            <input
-                type="text"
-                placeholder="Enter signature"
-                prop:value=signature
-                on:input=move |ev| { signature.set(event_target_value(&ev)) }
-                class="w-full border border-gray-300 p-2 mb-2 mx-2"
-            />
+//         <div>
+//             <h2 class="text-2xl font-bold mb-4">Validate Signature</h2>
+//             <input
+//                 type="text"
+//                 placeholder="Enter public key"
+//                 prop:value=public_key
+//                 on:input=move |ev| { public_key.set(event_target_value(&ev)) }
+//                 class="w-full border border-gray-300 p-2 mb-2 mx-2"
+//             />
+//             <input
+//                 type="text"
+//                 placeholder="Enter message"
+//                 prop:value=in_message
+//                 on:input=move |ev| { in_message.set(event_target_value(&ev)) }
+//                 class="w-full border border-gray-300 p-2 mb-2 mx-2"
+//             />
+//             <input
+//                 type="text"
+//                 placeholder="Enter signature"
+//                 prop:value=signature
+//                 on:input=move |ev| { signature.set(event_target_value(&ev)) }
+//                 class="w-full border border-gray-300 p-2 mb-2 mx-2"
+//             />
 
-            {move || {
-                if !in_message.get().is_empty() {
-                    if is_valid() {
-                        view! { <p class="text-4xl font-bold text-green-500">Valid!</p> }
-                    } else {
-                        view! { <p class="text-4xl font-bold text-red-500">Invalid!</p> }
-                    }
-                } else {
-                    view! { <p></p> }
-                }
-            }}
-        </div>
-    }
-}
+//             {move || {
+//                 if !in_message.get().is_empty() {
+//                     if is_valid() {
+//                         view! { <p class="text-4xl font-bold text-green-500">Valid!</p> }
+//                     } else {
+//                         view! { <p class="text-4xl font-bold text-red-500">Invalid!</p> }
+//                     }
+//                 } else {
+//                     view! { <p></p> }
+//                 }
+//             }}
+//         </div>
+//     }
+// }
 
 fn parse_address(s: &str) -> anyhow::Result<Address> {
     Ok(Network::Testnet
@@ -216,7 +218,38 @@ pub fn Faucet() -> impl IntoView {
                 TokenAmount::from_atto(0)
             }
         },
-        None,
+        Some(TokenAmount::from_atto(0)),
+    );
+
+    let sent_messages: RwSignal<Vec<(Cid, bool)>> = create_rw_signal(Vec::new());
+
+    #[cfg(feature = "hydrate")]
+    let _ = use_interval_fn(
+        move || {
+            log::info!("Checking for new transactions");
+            target_balance.refetch();
+            faucet_balance.refetch();
+            let pending = sent_messages
+                .get_untracked()
+                .into_iter()
+                .filter_map(|(cid, sent)| if !sent { Some(cid) } else { None })
+                .collect::<Vec<_>>();
+            spawn_local(async move {
+                for cid in pending {
+                    let lookup = rpc_context.get_untracked().state_search_msg(cid).await;
+                    if let Ok(lookup) = lookup {
+                        sent_messages.update(|messages| {
+                            for (cid, sent) in messages {
+                                if cid == &lookup.message {
+                                    *sent = true;
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        },
+        5000,
     );
 
     view! {
@@ -236,23 +269,27 @@ pub fn Faucet() -> impl IntoView {
                     on:click=move |_| {
                         match parse_address(&target_address.get()) {
                             Ok(addr) => {
-                                let rpc = rpc_context.get();
-                                let from = secret_key();
+                                let rpc = rpc_context.get_untracked();
                                 spawn_local(async move {
-                                    let nonce = rpc.mpool_get_nonce(from.address).await.unwrap();
-                                    let mut msg = message_transfer(from.address, addr, TokenAmount::from_whole(1));
+                                    let LotusJson(from) = faucet_address().await.unwrap();
+                                    let nonce = rpc.mpool_get_nonce(from).await.unwrap();
+                                    let mut msg = message_transfer(from, addr, TokenAmount::from_whole(1));
                                     msg.sequence = nonce;
                                     match rpc.estimate_gas(msg).await {
                                         Ok(msg) => {
-                                            match sign(
-                                                from.key_info.r#type,
-                                                &from.key_info.private_key,
-                                                message_cid(&msg).to_bytes().as_slice(),
-                                            ) {
-                                                Ok(sig) => {
+                                            match sign_with_secret_key(
+                                                LotusJson(message_cid(&msg)),
+                                            ).await {
+                                                Ok(LotusJson(sig)) => {
                                                     let smsg = SignedMessage::new_unchecked(msg, sig);
-                                                    let cid = rpc.mpool_push(smsg).await;
-                                                    log::info!("Sent message: {:?}", cid);
+                                                    if let Ok(cid) = rpc.mpool_push(smsg).await {
+                                                        sent_messages.update(|messages| {
+                                                            messages.push((cid.clone(), false));
+                                                        });
+                                                        log::info!("Sent message: {:?}", cid);
+                                                    } else {
+                                                        log::error!("Error sending message");
+                                                    }
                                                 }
                                                 Err(e) => log::error!("Error signing message: {}", e),
                                             }
@@ -280,6 +317,29 @@ pub fn Faucet() -> impl IntoView {
                     <p class="text-xl">{move || target_balance.get().unwrap_or_default().to_string()}</p>
                 </div>
             </div>
+            <hr class="my-4 border-t border-gray-300" />
+            {move || {
+                let messages = sent_messages.get();
+                if !messages.is_empty() {
+                    view! {
+                        <div class="mt-4">
+                            <h3 class="text-lg font-semibold">Transactions:</h3>
+                            <ul class="list-disc pl-5">
+                                {messages.into_iter().map(|(msg, sent)| {
+                                    view! {
+                                        <li>
+                                            "CID: " {msg.to_string()}
+                                            {move || if sent { " (confirmed)" } else { " (pending)" }}
+                                        </li>
+                                    }
+                                }).collect::<Vec<_>>()}
+                            </ul>
+                        </div>
+                    }.into_view()
+                } else {
+                    view! {}.into_view()
+                }
+            }}
         </div>
     }
 }
@@ -296,7 +356,7 @@ pub fn App() -> impl IntoView {
             <Routes>
                 <Route path="/" view=BlockchainExplorer />
                 <Route path="/address" view=AddressParser />
-                <Route path="/signer" view=Signer />
+                // <Route path="/signer" view=Signer />
                 <Route path="/faucet" view=Faucet />
             </Routes>
         </Router>

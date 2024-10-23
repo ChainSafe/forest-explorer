@@ -121,6 +121,7 @@
 //! - use [`proptest`](https://docs.rs/proptest/) to test the parser pipeline
 //! - use a derive macro for simple compound structs
 
+use ::cid::Cid;
 use derive_more::From;
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 use std::{fmt::Display, str::FromStr};
@@ -170,6 +171,7 @@ mod signature;
 mod signature_type;
 mod signed_message;
 mod token_amount;
+mod vec;
 mod vec_u8;
 
 // mod nonempty; // can't make snapshots of generic type
@@ -178,6 +180,15 @@ mod raw_bytes; // fvm_ipld_encoding::RawBytes: !quickcheck::Arbitrary
                // mod vec; // can't make snapshots of generic type
 
 // pub use vec::*;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct MessageLookup {
+    pub height: i64,
+    #[serde(with = "crate::lotus_json")]
+    pub message: Cid,
+}
+lotus_json_with_self!(MessageLookup);
 
 /// Usage: `#[serde(with = "stringify")]`
 pub mod stringify {

@@ -7,7 +7,7 @@ use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
 
-use crate::lotus_json::{HasLotusJson, LotusJson};
+use crate::lotus_json::{HasLotusJson, LotusJson, MessageLookup};
 use crate::message::SignedMessage;
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
@@ -51,6 +51,10 @@ impl RpcContext {
 
     pub fn get(&self) -> Provider {
         self.provider.get()
+    }
+
+    pub fn get_untracked(&self) -> Provider {
+        self.provider.get_untracked()
     }
 
     pub fn set(&self, provider: String) {
@@ -139,6 +143,37 @@ impl Provider {
             &self.url,
             "Filecoin.MpoolPush",
             &[serde_json::to_value(LotusJson(smsg))?],
+        )
+        .await
+    }
+
+    pub async fn mpool_pending(&self) -> anyhow::Result<Vec<SignedMessage>> {
+        invoke_rpc_method(&self.url, "Filecoin.MpoolPending", &[Value::Null]).await
+    }
+
+    // This doesn't block with glif.io.
+    pub async fn state_wait_msg(&self, msg: Cid, confidence: i64) -> anyhow::Result<MessageLookup> {
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.StateWaitMsg",
+            &[
+                serde_json::to_value(LotusJson(msg))?,
+                serde_json::to_value(confidence)?,
+            ],
+        )
+        .await
+    }
+
+    pub async fn state_search_msg(&self, msg: Cid) -> anyhow::Result<MessageLookup> {
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.StateSearchMsg",
+            &[
+                Value::Null,
+                serde_json::to_value(LotusJson(msg))?,
+                Value::Number(10.into()),
+                Value::Bool(false),
+            ],
         )
         .await
     }

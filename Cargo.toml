@@ -37,6 +37,7 @@ cid = "0.10.1"
 serde_tuple = "1.0.0"
 derive_more = { version = "1.0.0", features = ["from", "into"] }
 num-traits = "0.2.19"
+leptos-use = "0.13.6"
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
