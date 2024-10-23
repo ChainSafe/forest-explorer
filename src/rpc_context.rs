@@ -150,7 +150,7 @@ impl Provider {
     }
 
     #[cfg(feature = "hydrate")]
-    pub async fn state_search_msg(&self, msg: Cid) -> anyhow::Result<MessageLookup> {
+    pub async fn state_search_msg(&self, msg: Cid) -> anyhow::Result<Option<MessageLookup>> {
         invoke_rpc_method(
             &self.url,
             "Filecoin.StateSearchMsg",

@@ -127,14 +127,15 @@ pub fn Faucet() -> impl IntoView {
                 .collect::<Vec<_>>();
             spawn_local(catch_all(error_messages, async move {
                 for cid in pending {
-                    let lookup = rpc_context.get_untracked().state_search_msg(cid).await?;
-                    sent_messages.update(|messages| {
-                        for (cid, sent) in messages {
-                            if cid == &lookup.message {
-                                *sent = true;
+                    if let Some(lookup) = rpc_context.get_untracked().state_search_msg(cid).await? {
+                        sent_messages.update(|messages| {
+                            for (cid, sent) in messages {
+                                if cid == &lookup.message {
+                                    *sent = true;
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
                 Ok(())
             }));
