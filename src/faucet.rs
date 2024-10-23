@@ -15,9 +15,9 @@ pub async fn sign_with_secret_key(
     SendWrapper::new(async move {
         let now = Utc::now();
         let last_sign = query_last_sign().await?;
-        if now - last_sign < chrono::Duration::seconds(10) {
+        if now - last_sign < chrono::Duration::seconds(30) {
             return Err(ServerFnError::ServerError(
-                "Rate limit exceeded - wait 10 seconds".to_string(),
+                "Rate limit exceeded - wait 30 seconds".to_string(),
             ));
         }
         set_last_sign(now).await?;
