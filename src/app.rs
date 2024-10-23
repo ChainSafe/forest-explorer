@@ -80,17 +80,23 @@ pub fn Faucet() -> impl IntoView {
     let error_messages = create_rw_signal(vec![]);
 
     let rpc_context = RpcContext::use_context();
+
+    let sender_address = create_local_resource(
+        move || (),
+        move |()| async move { faucet_address().await.map(|LotusJson(addr)| addr).ok() },
+    );
     let faucet_balance = create_local_resource_with_initial_value(
-        move || rpc_context.get(),
-        move |provider| async move {
-            provider
-                .wallet_balance(
-                    parse_address("t15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla")
-                        .unwrap_or(Address::new_id(1)),
-                )
-                .await
-                .ok()
-                .unwrap_or(TokenAmount::from_atto(0))
+        move || (rpc_context.get(), sender_address.get()),
+        move |(provider, addr)| async move {
+            if let Some(Some(addr)) = addr {
+                provider
+                    .wallet_balance(addr)
+                    .await
+                    .ok()
+                    .unwrap_or(TokenAmount::from_atto(0))
+            } else {
+                TokenAmount::from_atto(0)
+            }
         },
         Some(TokenAmount::from_atto(0)),
     );
