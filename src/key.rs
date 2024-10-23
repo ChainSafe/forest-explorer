@@ -1,13 +1,10 @@
 use anyhow::{Context as _, Result};
 use bls_signatures::{PrivateKey as BlsPrivate, Serialize as _};
-use libsecp256k1::{Message as SecpMessage, PublicKey as SecpPublic, SecretKey as SecpPrivate};
+use libsecp256k1::{PublicKey as SecpPublic, SecretKey as SecpPrivate};
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, str::FromStr};
 
-use fvm_shared::{
-    address::Address,
-    crypto::signature::{Signature, SignatureType},
-};
+use fvm_shared::{address::Address, crypto::signature::SignatureType};
 
 /// Return the public key for a given private key and `SignatureType`
 pub fn to_public(sig_type: SignatureType, private_key: &[u8]) -> Result<Vec<u8>> {
@@ -90,16 +87,8 @@ impl FromStr for KeyInfo {
     }
 }
 
+#[cfg(feature = "ssr")]
 /// Generates BLAKE2b hash of fixed 32 bytes size.
-///
-/// # Example
-/// ```
-/// # use forest_filecoin::doctest_private::blake2b_256;
-///
-/// let ingest: Vec<u8> = vec![];
-/// let hash = blake2b_256(&ingest);
-/// assert_eq!(hash.len(), 32);
-/// ```
 pub fn blake2b_256(ingest: &[u8]) -> [u8; 32] {
     use blake2b_simd::Params;
 
@@ -114,9 +103,16 @@ pub fn blake2b_256(ingest: &[u8]) -> [u8; 32] {
     ret
 }
 
+#[cfg(feature = "ssr")]
 /// Sign takes in `SignatureType`, private key and message. Returns a Signature
 /// for that message
-pub fn sign(sig_type: SignatureType, private_key: &[u8], msg: &[u8]) -> Result<Signature> {
+pub fn sign(
+    sig_type: SignatureType,
+    private_key: &[u8],
+    msg: &[u8],
+) -> Result<fvm_shared::crypto::signature::Signature> {
+    use fvm_shared::crypto::signature::Signature;
+    use libsecp256k1::Message as SecpMessage;
     match sig_type {
         SignatureType::BLS => {
             let priv_key = BlsPrivate::from_bytes(private_key)?;
@@ -139,118 +135,6 @@ pub fn sign(sig_type: SignatureType, private_key: &[u8], msg: &[u8]) -> Result<S
         }
     }
 }
-
-// pub fn verify(signature: &str, address: &str, msg: &str) -> Result<bool> {
-//     let sig_bytes = hex::decode(signature).context("Signature has to be a hex string")?;
-//     log::info!("Signature length: {} bytes", sig_bytes.len());
-//     let address = Address::from_str(address)?;
-//     log::info!("Address: {:?}", address);
-//     let signature = match address.protocol() {
-//         Protocol::Secp256k1 => Signature::new_secp256k1(sig_bytes),
-//         Protocol::BLS => Signature::new_bls(sig_bytes),
-//         _ => anyhow::bail!("Invalid signature (must be bls or secp256k1)"),
-//     };
-//     log::info!("Signature: {:?}", signature);
-//     let msg = hex::decode(msg).unwrap_or(msg.as_bytes().to_vec());
-//     log::info!("Message: {:?}", msg);
-
-//     Ok(match signature.sig_type {
-//         SignatureType::BLS => verify_bls_sig(&signature.bytes, &msg, &address),
-//         SignatureType::Secp256k1 => verify_secp256k1_sig(&signature.bytes, &msg, &address),
-//     }
-//     .is_ok())
-// }
-
-// fn verify_bls_sig(signature: &[u8], data: &[u8], addr: &Address) -> Result<(), String> {
-//     if addr.protocol() != Protocol::BLS {
-//         return Err(format!(
-//             "cannot validate a BLS signature against a {} address",
-//             addr.protocol()
-//         ));
-//     }
-
-//     let pub_k = addr.payload_bytes();
-
-//     // generate public key object from bytes
-//     let pk = BlsPubKey::from_bytes(&pub_k).map_err(|e| e.to_string())?;
-
-//     // generate signature struct from bytes
-//     let sig = BlsSignature::from_bytes(signature).map_err(|e| e.to_string())?;
-
-//     // BLS verify hash against key
-//     if verify_messages(&sig, &[data], &[pk]) {
-//         Ok(())
-//     } else {
-//         Err(format!(
-//             "bls signature verification failed for addr: {}",
-//             addr
-//         ))
-//     }
-// }
-
-// /// Returns `String` error if a secp256k1 signature is invalid.
-// fn verify_secp256k1_sig(signature: &[u8], data: &[u8], addr: &Address) -> Result<(), String> {
-//     if addr.protocol() != Protocol::Secp256k1 {
-//         return Err(format!(
-//             "cannot validate a secp256k1 signature against a {} address",
-//             addr.protocol()
-//         ));
-//     }
-
-//     if signature.len() != SECP_SIG_LEN {
-//         return Err(format!(
-//             "Invalid Secp256k1 signature length. Was {}, must be 65",
-//             signature.len()
-//         ));
-//     }
-
-//     // blake2b 256 hash
-//     let hash = blake2b_simd::Params::new()
-//         .hash_length(32)
-//         .to_state()
-//         .update(data)
-//         .finalize();
-
-//     // Ecrecover with hash and signature
-//     let mut sig = [0u8; SECP_SIG_LEN];
-//     sig[..].copy_from_slice(signature);
-//     let rec_addr = ecrecover(hash.as_bytes().try_into().expect("fixed array size"), &sig)
-//         .map_err(|e| e.to_string())?;
-
-//     // check address against recovered address
-//     if &rec_addr == addr {
-//         Ok(())
-//     } else {
-//         Err("Secp signature verification failed".to_owned())
-//     }
-// }
-
-// /// Return the public key used for signing a message given it's signing bytes hash and signature.
-// fn recover_secp_public_key(
-//     hash: &[u8; SECP_SIG_MESSAGE_HASH_SIZE],
-//     signature: &[u8; SECP_SIG_LEN],
-// ) -> Result<SecpPublic> {
-//     // generate types to recover key from
-//     let rec_id = RecoveryId::parse(signature[64])?;
-//     let message = SecpMessage::parse(hash);
-
-//     // Signature value without recovery byte
-//     let mut s = [0u8; 64];
-//     s.clone_from_slice(signature[..64].as_ref());
-
-//     // generate Signature
-//     let sig = EcsdaSignature::parse_standard(&s)?;
-//     Ok(recover(&message, &sig, &rec_id)?)
-// }
-
-// /// Return Address for a message given it's signing bytes hash and signature.
-// fn ecrecover(hash: &[u8; 32], signature: &[u8; SECP_SIG_LEN]) -> Result<Address> {
-//     // recover public key from a message hash and secp signature.
-//     let key = recover_secp_public_key(hash, signature)?;
-//     let ret = key.serialize();
-//     let addr = Address::new_secp256k1(&ret)?;
-//     Ok(addr)
-// }
 
 #[cfg(test)]
 mod tests {

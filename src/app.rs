@@ -10,6 +10,7 @@ use leptos_meta::*;
 
 use leptos::*;
 use leptos_router::*;
+#[cfg(feature = "hydrate")]
 use leptos_use::*;
 
 use crate::{
@@ -205,7 +206,7 @@ pub fn Faucet() -> impl IntoView {
                                     let smsg = SignedMessage::new_unchecked(msg, sig);
                                     let cid = rpc.mpool_push(smsg).await?;
                                     sent_messages.update(|messages| {
-                                        messages.push((cid.clone(), false));
+                                        messages.push((cid, false));
                                     });
                                     log::info!("Sent message: {:?}", cid);
                                     Ok(())

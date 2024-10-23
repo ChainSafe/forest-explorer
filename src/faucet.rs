@@ -1,7 +1,7 @@
-use crate::{
-    key::{sign, Key},
-    lotus_json::LotusJson,
-};
+#[cfg(feature = "ssr")]
+use crate::key::{sign, Key};
+use crate::lotus_json::LotusJson;
+#[cfg(feature = "ssr")]
 use chrono::{DateTime, Utc};
 use cid::Cid;
 use fvm_shared::{address::Address, crypto::signature::Signature};
@@ -29,7 +29,7 @@ pub async fn sign_with_secret_key(
             &key.key_info.private_key,
             cid.to_bytes().as_slice(),
         )
-        .map(|sig| LotusJson(sig))
+        .map(LotusJson)
         .map_err(|e| ServerFnError::from(e.to_string()))
     })
     .await
@@ -44,7 +44,6 @@ pub async fn faucet_address() -> Result<LotusJson<Address>, ServerFnError> {
 #[cfg(feature = "ssr")]
 pub async fn query_last_sign() -> DateTime<Utc> {
     use axum::Extension;
-    use chrono::{DateTime, Utc};
     use leptos_axum::extract;
     use std::sync::Arc;
     use worker::Env;
@@ -65,7 +64,6 @@ pub async fn query_last_sign() -> DateTime<Utc> {
 #[cfg(feature = "ssr")]
 pub async fn set_last_sign(at: DateTime<Utc>) {
     use axum::Extension;
-    use chrono::{DateTime, Utc};
     use leptos_axum::extract;
     use std::sync::Arc;
     use worker::Env;

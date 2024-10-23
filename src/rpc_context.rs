@@ -7,7 +7,9 @@ use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
 
-use crate::lotus_json::{HasLotusJson, LotusJson, MessageLookup};
+#[cfg(feature = "hydrate")]
+use crate::lotus_json::MessageLookup;
+use crate::lotus_json::{HasLotusJson, LotusJson};
 use crate::message::SignedMessage;
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
@@ -147,6 +149,7 @@ impl Provider {
         .await
     }
 
+    #[cfg(feature = "hydrate")]
     pub async fn state_search_msg(&self, msg: Cid) -> anyhow::Result<MessageLookup> {
         invoke_rpc_method(
             &self.url,
