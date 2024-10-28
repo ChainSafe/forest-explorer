@@ -81,7 +81,9 @@ pub fn Faucet() -> impl IntoView {
 
     let rpc_context = RpcContext::use_context();
 
+    // Disable the send button while we're asking the RPC provider for the nonce
     let send_button_disabled = create_rw_signal(false);
+    // Disable the send button if rate-limited
     let send_button_limited = create_rw_signal(0);
 
     #[cfg(feature = "hydrate")]
