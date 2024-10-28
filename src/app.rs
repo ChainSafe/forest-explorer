@@ -81,6 +81,20 @@ pub fn Faucet() -> impl IntoView {
 
     let rpc_context = RpcContext::use_context();
 
+    let send_button_disabled = create_rw_signal(false);
+    let send_button_limited = create_rw_signal(0);
+
+    #[cfg(feature = "hydrate")]
+    let _ = use_interval_fn(
+        move || {
+            let duration = send_button_limited.get();
+            if duration > 0 {
+                send_button_limited.set(duration - 1);
+            }
+        },
+        1000,
+    );
+
     let sender_address = create_local_resource(
         move || (),
         move |()| async move { faucet_address().await.map(|LotusJson(addr)| addr).ok() },
@@ -155,31 +169,40 @@ pub fn Faucet() -> impl IntoView {
             if !errors.is_empty() {
                 view! {
                     <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
-                        {errors.into_iter().enumerate().map(|(index, error)| {
-                            view! {
-                                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96" role="alert">
-                                    <span class="block sm:inline">{error}</span>
-                                    <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                                        <svg
-                                            class="fill-current h-6 w-6 text-red-500"
-                                            role="button"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 20 20"
-                                            on:click=move |_| {
-                                                error_messages.update(|msgs| {
-                                                    msgs.remove(index);
-                                                });
-                                            }
-                                        >
-                                            <title>Close</title>
-                                            <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
-                                        </svg>
-                                    </span>
-                                </div>
-                            }
-                        }).collect::<Vec<_>>()}
+                        {errors
+                            .into_iter()
+                            .enumerate()
+                            .map(|(index, error)| {
+                                view! {
+                                    <div
+                                        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
+                                        role="alert"
+                                    >
+                                        <span class="block sm:inline">{error}</span>
+                                        <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                                            <svg
+                                                class="fill-current h-6 w-6 text-red-500"
+                                                role="button"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 20 20"
+                                                on:click=move |_| {
+                                                    error_messages
+                                                        .update(|msgs| {
+                                                            msgs.remove(index);
+                                                        });
+                                                }
+                                            >
+                                                <title>Close</title>
+                                                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                }
+                            })
+                            .collect::<Vec<_>>()}
                     </div>
-                }.into_view()
+                }
+                    .into_view()
             } else {
                 view! {}.into_view()
             }
@@ -195,39 +218,81 @@ pub fn Faucet() -> impl IntoView {
                     on:input=move |ev| { target_address.set(event_target_value(&ev)) }
                     class="flex-grow border border-gray-300 p-2 rounded-l"
                 />
-                <button
-                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
-                    on:click=move |_| {
-                        match parse_address(&target_address.get()) {
-                            Ok(addr) => {
-                                let rpc = rpc_context.get_untracked();
-                                spawn_local(catch_all(error_messages, async move {
-                                    let LotusJson(from) = faucet_address().await.map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
-                                    let nonce = rpc.mpool_get_nonce(from).await?;
-                                    let mut msg = message_transfer(from, addr, TokenAmount::from_whole(1));
-                                    msg.sequence = nonce;
-                                    let msg = rpc.estimate_gas(msg).await?;
-                                    let LotusJson(sig) = sign_with_secret_key(
-                                        LotusJson(message_cid(&msg)),
-                                    ).await.map_err(|e| anyhow::anyhow!(e))?;
-                                    let smsg = SignedMessage::new_unchecked(msg, sig);
-                                    let cid = rpc.mpool_push(smsg).await?;
-                                    sent_messages.update(|messages| {
-                                        messages.push((cid, false));
-                                    });
-                                    log::info!("Sent message: {:?}", cid);
-                                    Ok(())
-                                }));
-                            }
-                            Err(e) => {
-                                error_messages.update(|errors| errors.push("Invalid address".to_string()));
-                                log::error!("Error parsing address: {}", e);
-                            }
+                {move || {
+                    if send_button_disabled.get() {
+                        view! {
+                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                                "Sending..."
+                            </button>
+                        }
+                    } else if send_button_limited.get() > 0 {
+                        let duration = send_button_limited.get();
+                        view! {
+                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                                {format!("Rate-limited! {duration}s")}
+                            </button>
+                        }
+                    } else {
+                        view! {
+                            <button
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
+                                on:click=move |_| {
+                                    match parse_address(&target_address.get()) {
+                                        Ok(addr) => {
+                                            let rpc = rpc_context.get_untracked();
+                                            spawn_local(async move {
+                                                catch_all(
+                                                        error_messages,
+                                                        async move {
+                                                            let LotusJson(from) = faucet_address()
+                                                                .await
+                                                                .map_err(|e| {
+                                                                    anyhow::anyhow!("Error getting faucet address: {}", e)
+                                                                })?;
+                                                            send_button_disabled.set(true);
+                                                            let nonce = rpc.mpool_get_nonce(from).await?;
+                                                            let mut msg = message_transfer(
+                                                                from,
+                                                                addr,
+                                                                TokenAmount::from_whole(1),
+                                                            );
+                                                            msg.sequence = nonce;
+                                                            let msg = rpc.estimate_gas(msg).await?;
+                                                            if let Ok(LotusJson(sig)) = sign_with_secret_key(
+                                                                    LotusJson(message_cid(&msg)),
+                                                                )
+                                                                .await
+                                                            {
+                                                                let smsg = SignedMessage::new_unchecked(msg, sig);
+                                                                let cid = rpc.mpool_push(smsg).await?;
+                                                                sent_messages
+                                                                    .update(|messages| {
+                                                                        messages.push((cid, false));
+                                                                    });
+                                                                log::info!("Sent message: {:?}", cid);
+                                                            } else {
+                                                                send_button_limited.set(30);
+                                                            }
+                                                            Ok(())
+                                                        },
+                                                    )
+                                                    .await;
+                                                send_button_disabled.set(false);
+                                            });
+                                        }
+                                        Err(e) => {
+                                            error_messages.update(|errors| errors.push("Invalid address".to_string()));
+                                            log::error!("Error parsing address: {}", e);
+                                        }
+                                    }
+                                }
+                            >
+                                Send
+                            </button>
                         }
                     }
-                >
-                    Send
-                </button>
+                }}
+
             </div>
             <div class="flex justify-between my-4">
                 <div>
@@ -247,17 +312,21 @@ pub fn Faucet() -> impl IntoView {
                         <div class="mt-4">
                             <h3 class="text-lg font-semibold">Transactions:</h3>
                             <ul class="list-disc pl-5">
-                                {messages.into_iter().map(|(msg, sent)| {
-                                    view! {
-                                        <li>
-                                            "CID: " {msg.to_string()}
-                                            {move || if sent { " (confirmed)" } else { " (pending)" }}
-                                        </li>
-                                    }
-                                }).collect::<Vec<_>>()}
+                                {messages
+                                    .into_iter()
+                                    .map(|(msg, sent)| {
+                                        view! {
+                                            <li>
+                                                "CID: " {msg.to_string()}
+                                                {move || if sent { " (confirmed)" } else { " (pending)" }}
+                                            </li>
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()}
                             </ul>
                         </div>
-                    }.into_view()
+                    }
+                        .into_view()
                 } else {
                     view! {}.into_view()
                 }

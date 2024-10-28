@@ -6,6 +6,8 @@ mod faucet;
 mod key;
 mod lotus_json;
 mod message;
+#[cfg(feature = "ssr")]
+mod rate_limiter;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

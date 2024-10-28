@@ -1,8 +1,6 @@
 #[cfg(feature = "ssr")]
 use crate::key::{sign, Key};
 use crate::lotus_json::LotusJson;
-#[cfg(feature = "ssr")]
-use chrono::{DateTime, Utc};
 use cid::Cid;
 use fvm_shared::{address::Address, crypto::signature::Signature};
 use leptos::{server, ServerFnError};
@@ -13,14 +11,12 @@ pub async fn sign_with_secret_key(
 ) -> Result<LotusJson<Signature>, ServerFnError> {
     use send_wrapper::SendWrapper;
     SendWrapper::new(async move {
-        let now = Utc::now();
-        let last_sign = query_last_sign().await?;
-        if now - last_sign < chrono::Duration::seconds(30) {
+        let may_sign = query_rate_limiter().await?;
+        if !may_sign {
             return Err(ServerFnError::ServerError(
                 "Rate limit exceeded - wait 30 seconds".to_string(),
             ));
         }
-        set_last_sign(now).await?;
 
         let cid = cid.0;
         let key = secret_key().await?;
@@ -42,36 +38,22 @@ pub async fn faucet_address() -> Result<LotusJson<Address>, ServerFnError> {
 }
 
 #[cfg(feature = "ssr")]
-pub async fn query_last_sign() -> Result<DateTime<Utc>, ServerFnError> {
+pub async fn query_rate_limiter() -> Result<bool, ServerFnError> {
     use axum::Extension;
     use leptos_axum::extract;
     use std::sync::Arc;
-    use worker::Env;
+    use worker::{Env, Method, Request};
 
     let Extension(env): Extension<Arc<Env>> = extract().await?;
-    let kv = env.kv("RATE_LIMIT")?;
-    let timestamp_last_request = kv
-        .get("GLOBAL_RATE_LIMIT")
-        .json::<i64>()
+    let rate_limiter = env
+        .durable_object("RATE_LIMITER")?
+        .id_from_name("RATE_LIMITER")?
+        .get_stub()?;
+    Ok(rate_limiter
+        .fetch_with_request(Request::new("http://do/rate_limiter", Method::Get)?)
         .await?
-        .unwrap_or_default();
-    DateTime::<Utc>::from_timestamp(timestamp_last_request, 0)
-        .ok_or_else(|| ServerFnError::ServerError("Invalid timestamp".to_string()))
-}
-
-#[cfg(feature = "ssr")]
-pub async fn set_last_sign(at: DateTime<Utc>) -> Result<(), ServerFnError> {
-    use axum::Extension;
-    use leptos_axum::extract;
-    use std::sync::Arc;
-    use worker::Env;
-
-    let Extension(env): Extension<Arc<Env>> = extract().await?;
-    let kv = env.kv("RATE_LIMIT")?;
-    kv.put("GLOBAL_RATE_LIMIT", at.timestamp())?
-        .execute()
-        .await?;
-    Ok(())
+        .json::<bool>()
+        .await?)
 }
 
 #[cfg(feature = "ssr")]
