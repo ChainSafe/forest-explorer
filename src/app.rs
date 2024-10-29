@@ -116,8 +116,7 @@ pub fn Faucet() -> impl IntoView {
         },
         Some(TokenAmount::from_atto(0)),
     );
-    let target_address =
-        create_rw_signal(String::from("t12icwx77skr3hv4mekth7kol3fuhymcya6zczxgi"));
+    let target_address = create_rw_signal(String::new());
     let target_balance = create_local_resource_with_initial_value(
         move || (rpc_context.get(), target_address.get()),
         move |(provider, address)| async move {
