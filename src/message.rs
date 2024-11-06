@@ -47,12 +47,6 @@ pub struct SignedMessage {
 }
 
 impl SignedMessage {
-    /// Generate a new signed message from fields.
-    /// The signature will not be verified.
-    pub fn new_unchecked(message: Message, signature: Signature) -> SignedMessage {
-        SignedMessage { message, signature }
-    }
-
     /// Checks if the signed message is a BLS message.
     pub fn is_bls(&self) -> bool {
         self.signature.signature_type() == SignatureType::BLS

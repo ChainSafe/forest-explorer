@@ -1,21 +1,19 @@
 #[cfg(feature = "ssr")]
 use crate::key::{sign, Key};
-use crate::{
-    lotus_json::LotusJson,
-    message::{message_cid, SignedMessage},
-};
-use fvm_shared::{
-    address::{Address, Network},
-    econ::TokenAmount,
-    message::Message,
-};
-use leptos::{server, server_fn::error::NoCustomError, ServerFnError};
+use crate::{lotus_json::LotusJson, message::SignedMessage};
+#[cfg(feature = "ssr")]
+use fvm_shared::address::Network;
+use fvm_shared::{address::Address, message::Message};
+use leptos::{server, ServerFnError};
 
 #[server]
 pub async fn sign_with_secret_key(
     msg: LotusJson<Message>,
     is_mainnet: bool,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
+    use crate::message::message_cid;
+    use fvm_shared::econ::TokenAmount;
+    use leptos::server_fn::error::NoCustomError;
     use send_wrapper::SendWrapper;
     let LotusJson(msg) = msg;
     let cid = message_cid(&msg);
@@ -48,7 +46,10 @@ pub async fn sign_with_secret_key(
             cid.to_bytes().as_slice(),
         )
         .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
-        Ok(LotusJson(SignedMessage::new_unchecked(msg, sig)))
+        Ok(LotusJson(SignedMessage {
+            message: msg,
+            signature: sig,
+        }))
     })
     .await
 }
