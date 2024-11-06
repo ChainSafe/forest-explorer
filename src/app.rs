@@ -13,11 +13,8 @@ use leptos_router::*;
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
 
-use crate::{
-    faucet::faucet_address,
-    message::{message_cid, message_transfer},
-};
-use crate::{faucet::sign_with_secret_key, message::SignedMessage};
+use crate::faucet::sign_with_secret_key;
+use crate::{faucet::faucet_address, message::message_transfer, rpc_context::Provider};
 use crate::{lotus_json::LotusJson, rpc_context::RpcContext};
 
 #[component]
@@ -59,10 +56,15 @@ pub fn BlockchainExplorer() -> impl IntoView {
     }
 }
 
-fn parse_address(s: &str) -> anyhow::Result<Address> {
+fn parse_address(s: &str) -> anyhow::Result<(Address, Network)> {
     Ok(Network::Testnet
         .parse_address(s)
-        .or_else(|_| Network::Mainnet.parse_address(s))?)
+        .map(|addr| (addr, Network::Testnet))
+        .or_else(|_| {
+            Network::Mainnet
+                .parse_address(s)
+                .map(|addr| (addr, Network::Mainnet))
+        })?)
 }
 
 async fn catch_all(
@@ -76,10 +78,9 @@ async fn catch_all(
 }
 
 #[component]
-pub fn Faucet() -> impl IntoView {
+pub fn Faucet(target_network: Network) -> impl IntoView {
+    let is_mainnet = target_network == Network::Mainnet;
     let error_messages = create_rw_signal(vec![]);
-
-    let rpc_context = RpcContext::use_context();
 
     // Disable the send button while we're asking the RPC provider for the nonce
     let send_button_disabled = create_rw_signal(false);
@@ -99,13 +100,18 @@ pub fn Faucet() -> impl IntoView {
 
     let sender_address = create_local_resource(
         move || (),
-        move |()| async move { faucet_address().await.map(|LotusJson(addr)| addr).ok() },
+        move |()| async move {
+            faucet_address(is_mainnet)
+                .await
+                .map(|LotusJson(addr)| addr)
+                .ok()
+        },
     );
     let faucet_balance = create_local_resource_with_initial_value(
-        move || (rpc_context.get(), sender_address.get()),
-        move |(provider, addr)| async move {
+        move || sender_address.get(),
+        move |addr| async move {
             if let Some(Some(addr)) = addr {
-                provider
+                Provider::from_network(target_network)
                     .wallet_balance(addr)
                     .await
                     .ok()
@@ -118,10 +124,10 @@ pub fn Faucet() -> impl IntoView {
     );
     let target_address = create_rw_signal(String::new());
     let target_balance = create_local_resource_with_initial_value(
-        move || (rpc_context.get(), target_address.get()),
-        move |(provider, address)| async move {
-            if let Ok(address) = parse_address(&address) {
-                provider
+        move || target_address.get(),
+        move |address| async move {
+            if let Ok((address, _network)) = parse_address(&address) {
+                Provider::from_network(target_network)
                     .wallet_balance(address)
                     .await
                     .ok()
@@ -148,7 +154,10 @@ pub fn Faucet() -> impl IntoView {
                 .collect::<Vec<_>>();
             spawn_local(catch_all(error_messages, async move {
                 for cid in pending {
-                    if let Some(lookup) = rpc_context.get_untracked().state_search_msg(cid).await? {
+                    if let Some(lookup) = Provider::from_network(target_network)
+                        .state_search_msg(cid)
+                        .await?
+                    {
                         sent_messages.update(|messages| {
                             for (cid, sent) in messages {
                                 if cid == &lookup.message {
@@ -239,15 +248,19 @@ pub fn Faucet() -> impl IntoView {
                                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
                                 on:click=move |_| {
                                     match parse_address(&target_address.get()) {
-                                        Ok(addr) => {
-                                            let rpc = rpc_context.get_untracked();
+                                        Ok((_addr, network)) if network != target_network => {
+                                            error_messages.update(|errors| errors.push("Mainnet/testnet address mismatch".to_string()));
+                                        }
+                                        Ok((addr, _network)) => {
                                             spawn_local(async move {
                                                 catch_all(
                                                         error_messages,
                                                         async move {
-                                                            let LotusJson(from) = faucet_address()
-                                                                .await
-                                                                .map_err(|e| {
+                                                            let rpc = Provider::from_network(target_network);
+                                                            let LotusJson(from) =
+                                                                faucet_address(is_mainnet)
+                                                                    .await
+                                                                    .map_err(|e| {
                                                                     anyhow::anyhow!("Error getting faucet address: {}", e)
                                                                 })?;
                                                             send_button_disabled.set(true);
@@ -255,24 +268,32 @@ pub fn Faucet() -> impl IntoView {
                                                             let mut msg = message_transfer(
                                                                 from,
                                                                 addr,
-                                                                TokenAmount::from_whole(1),
+                                                                if is_mainnet {
+                                                                    TokenAmount::from_nano(1_000_000)
+                                                                } else {
+                                                                    TokenAmount::from_whole(1)
+                                                                },
                                                             );
                                                             msg.sequence = nonce;
                                                             let msg = rpc.estimate_gas(msg).await?;
-                                                            if let Ok(LotusJson(sig)) = sign_with_secret_key(
-                                                                    LotusJson(message_cid(&msg)),
+                                                            match sign_with_secret_key(
+                                                                    LotusJson(msg.clone()),
+                                                                    is_mainnet,
                                                                 )
                                                                 .await
                                                             {
-                                                                let smsg = SignedMessage::new_unchecked(msg, sig);
-                                                                let cid = rpc.mpool_push(smsg).await?;
-                                                                sent_messages
-                                                                    .update(|messages| {
-                                                                        messages.push((cid, false));
-                                                                    });
-                                                                log::info!("Sent message: {:?}", cid);
-                                                            } else {
-                                                                send_button_limited.set(30);
+                                                                Ok(LotusJson(smsg)) => {
+                                                                    let cid = rpc.mpool_push(smsg).await?;
+                                                                    sent_messages
+                                                                        .update(|messages| {
+                                                                            messages.push((cid, false));
+                                                                        });
+                                                                    log::info!("Sent message: {:?}", cid);
+                                                                }
+                                                                Err(e) => {
+                                                                    log::error!("Failed to sign message: {}", e);
+                                                                    send_button_limited.set(30);
+                                                                }
                                                             }
                                                             Ok(())
                                                         },
@@ -337,6 +358,19 @@ pub fn Faucet() -> impl IntoView {
 }
 
 #[component]
+pub fn Faucets() -> impl IntoView {
+    view! {
+        <div>
+            <h2 class="text-2xl font-bold mb-4">Calibration Network Faucet</h2>
+            <Faucet target_network=Network::Testnet />
+
+            <h2 class="text-2xl font-bold mb-4 mt-8">Mainnet Network Faucet</h2>
+            <Faucet target_network=Network::Mainnet />
+        </div>
+    }
+}
+
+#[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
     RpcContext::provide_context();
@@ -347,7 +381,7 @@ pub fn App() -> impl IntoView {
         <Router>
             <Routes>
                 <Route path="/" view=BlockchainExplorer />
-                <Route path="/faucet" view=Faucet />
+                <Route path="/faucet" view=Faucets />
             </Routes>
         </Router>
     }

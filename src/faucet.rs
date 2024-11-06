@@ -1,15 +1,33 @@
 #[cfg(feature = "ssr")]
 use crate::key::{sign, Key};
-use crate::lotus_json::LotusJson;
-use cid::Cid;
-use fvm_shared::{address::Address, crypto::signature::Signature};
-use leptos::{server, ServerFnError};
+use crate::{
+    lotus_json::LotusJson,
+    message::{message_cid, SignedMessage},
+};
+use fvm_shared::{
+    address::{Address, Network},
+    econ::TokenAmount,
+    message::Message,
+};
+use leptos::{server, server_fn::error::NoCustomError, ServerFnError};
 
 #[server]
 pub async fn sign_with_secret_key(
-    cid: LotusJson<Cid>,
-) -> Result<LotusJson<Signature>, ServerFnError> {
+    msg: LotusJson<Message>,
+    is_mainnet: bool,
+) -> Result<LotusJson<SignedMessage>, ServerFnError> {
     use send_wrapper::SendWrapper;
+    let LotusJson(msg) = msg;
+    let cid = message_cid(&msg);
+    let amount_limit = match is_mainnet {
+        true => TokenAmount::from_nano(1_000_000),
+        false => TokenAmount::from_nano(1_000_000_000),
+    };
+    if msg.value > amount_limit {
+        return Err(ServerFnError::ServerError(
+            "Amount limit exceeded".to_string(),
+        ));
+    }
     SendWrapper::new(async move {
         let may_sign = query_rate_limiter().await?;
         if !may_sign {
@@ -18,22 +36,31 @@ pub async fn sign_with_secret_key(
             ));
         }
 
-        let cid = cid.0;
-        let key = secret_key().await?;
-        sign(
+        let network = if is_mainnet {
+            Network::Mainnet
+        } else {
+            Network::Testnet
+        };
+        let key = secret_key(network).await?;
+        let sig = sign(
             key.key_info.r#type,
             &key.key_info.private_key,
             cid.to_bytes().as_slice(),
         )
-        .map(LotusJson)
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
+        Ok(LotusJson(SignedMessage::new_unchecked(msg, sig)))
     })
     .await
 }
 
 #[server]
-pub async fn faucet_address() -> Result<LotusJson<Address>, ServerFnError> {
-    let key = secret_key().await?;
+pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
+    let network = if is_mainnet {
+        Network::Mainnet
+    } else {
+        Network::Testnet
+    };
+    let key = secret_key(network).await?;
     Ok(LotusJson(key.address))
 }
 
@@ -57,7 +84,7 @@ pub async fn query_rate_limiter() -> Result<bool, ServerFnError> {
 }
 
 #[cfg(feature = "ssr")]
-pub async fn secret_key() -> Result<Key, ServerFnError> {
+pub async fn secret_key(network: Network) -> Result<Key, ServerFnError> {
     use crate::key::KeyInfo;
     use axum::Extension;
     use leptos::server_fn::error::NoCustomError;
@@ -65,8 +92,13 @@ pub async fn secret_key() -> Result<Key, ServerFnError> {
     use std::{str::FromStr as _, sync::Arc};
     use worker::Env;
 
+    let secret_key_name = match network {
+        Network::Testnet => "SECRET_WALLET",
+        Network::Mainnet => "SECRET_MAINNET_WALLET",
+    };
+
     let Extension(env): Extension<Arc<Env>> = extract().await?;
-    let key_info = KeyInfo::from_str(&env.secret("SECRET_WALLET")?.to_string())
+    let key_info = KeyInfo::from_str(&env.secret(secret_key_name)?.to_string())
         .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
     Key::try_from(key_info).map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
