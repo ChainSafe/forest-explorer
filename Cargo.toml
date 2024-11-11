@@ -8,7 +8,7 @@ authors = ["Forest Team <forest@chainsafe.io>"]
 crate-type = ["cdylib"]
 
 [dependencies]
-fvm_shared = { version = "4.4" }
+fvm_shared = { version = "4.5" }
 worker = { version = "0.4", features = ['http', 'axum'], optional = true }
 worker-macros = { version = "0.4", features = ['http'], optional = true }
 tower-service = "0.3"
