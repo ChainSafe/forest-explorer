@@ -14,7 +14,6 @@ use fvm_shared::{
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-
 fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error> {
     let bytes = fvm_ipld_encoding::to_vec(obj)?;
     Ok(Cid::new_v1(
@@ -24,8 +23,7 @@ fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error>
 }
 
 pub fn parse_address(s: &str) -> anyhow::Result<Address> {
-    Ok(Address::from_str(s)
-        .or_else(|_| Address::new_delegated(4, s.as_ref()))?)
+    Ok(Address::from_str(s).or_else(|_| Address::new_delegated(4, s.as_ref()))?)
 }
 
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
@@ -95,4 +93,3 @@ mod tests {
         let _msg = message_transfer(addr, addr, TokenAmount::default());
     }
 }
-

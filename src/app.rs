@@ -1,9 +1,7 @@
 use std::future::Future;
 
 use cid::Cid;
-use fvm_shared::{
-    econ::TokenAmount,
-};
+use fvm_shared::econ::TokenAmount;
 use leptos::{component, create_local_resource, event_target_value, view, IntoView, SignalGet};
 use leptos_meta::*;
 
@@ -57,7 +55,6 @@ pub fn BlockchainExplorer() -> impl IntoView {
         </p>
     }
 }
-
 
 async fn catch_all(
     errors: RwSignal<Vec<String>>,
