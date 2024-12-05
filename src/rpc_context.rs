@@ -15,6 +15,7 @@ use crate::message::SignedMessage;
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 
 const GLIF_CALIBNET: &str = "https://api.calibration.node.glif.io";
+const GLIF_MAINNET: &str = "https://api.node.glif.io";
 
 #[derive(Clone, Copy)]
 pub struct RpcContext {
@@ -53,10 +54,6 @@ impl RpcContext {
 
     pub fn get(&self) -> Provider {
         self.provider.get()
-    }
-
-    pub fn get_untracked(&self) -> Provider {
-        self.provider.get_untracked()
     }
 
     pub fn set(&self, provider: String) {
@@ -99,6 +96,25 @@ async fn invoke_rpc_method<T: HasLotusJson + Clone>(
 impl Provider {
     pub fn new(url: String) -> Self {
         Self { url }
+    }
+
+    pub fn calibnet() -> Self {
+        Self {
+            url: GLIF_CALIBNET.to_string(),
+        }
+    }
+
+    pub fn mainnet() -> Self {
+        Self {
+            url: GLIF_MAINNET.to_string(),
+        }
+    }
+
+    pub fn from_network(network: Network) -> Self {
+        match network {
+            Network::Testnet => Self::calibnet(),
+            Network::Mainnet => Self::mainnet(),
+        }
     }
 
     pub async fn network_name(&self) -> anyhow::Result<String> {
