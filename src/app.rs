@@ -1,10 +1,7 @@
 use std::future::Future;
 
 use cid::Cid;
-use fvm_shared::{
-    address::{Address, Network},
-    econ::TokenAmount,
-};
+use fvm_shared::econ::TokenAmount;
 use leptos::{component, create_local_resource, event_target_value, view, IntoView, SignalGet};
 use leptos_meta::*;
 
@@ -15,7 +12,7 @@ use leptos_use::*;
 
 use crate::{
     faucet::faucet_address,
-    message::{message_cid, message_transfer},
+    message::{message_cid, message_transfer, parse_address},
 };
 use crate::{faucet::sign_with_secret_key, message::SignedMessage};
 use crate::{lotus_json::LotusJson, rpc_context::RpcContext};
@@ -57,12 +54,6 @@ pub fn BlockchainExplorer() -> impl IntoView {
             <Loader loading=move || network_name.loading().get() />
         </p>
     }
-}
-
-fn parse_address(s: &str) -> anyhow::Result<Address> {
-    Ok(Network::Testnet
-        .parse_address(s)
-        .or_else(|_| Network::Mainnet.parse_address(s))?)
 }
 
 async fn catch_all(

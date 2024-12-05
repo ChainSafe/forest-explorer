@@ -10,6 +10,7 @@ use fvm_shared::{
 };
 use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error> {
     let bytes = fvm_ipld_encoding::to_vec(obj)?;
@@ -17,6 +18,10 @@ fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error>
         fvm_ipld_encoding::DAG_CBOR,
         Code::Blake2b256.digest(&bytes),
     ))
+}
+
+pub fn parse_address(s: &str) -> anyhow::Result<Address> {
+    Ok(Address::from_str(s).or_else(|_| Address::new_delegated(4, s.as_ref()))?)
 }
 
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
@@ -65,5 +70,24 @@ impl SignedMessage {
         } else {
             from_cbor_blake2b256(self).expect("message serialization is infallible")
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_eth_address() {
+        let addr_str = "0x912DC03C136306eF6367Eb57aFd0812F39Cf35eb";
+        let addr = parse_address(addr_str).unwrap();
+        let _msg = message_transfer(addr, addr, TokenAmount::default());
+    }
+
+    #[test]
+    fn test_parse_t_address() {
+        let addr_str = "t110f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
+        let addr = parse_address(addr_str).unwrap();
+        let _msg = message_transfer(addr, addr, TokenAmount::default());
     }
 }
