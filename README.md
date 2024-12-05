@@ -1,5 +1,7 @@
 # Forest Explorer
 
+[![codecov](https://codecov.io/github/ChainSafe/forest-explorer/graph/badge.svg?token=J2ZVD5FOEC)](https://codecov.io/github/ChainSafe/forest-explorer)
+
 Forest Explorer is a server-less inspector of the Filecoin blockchain.
 
 # Implementation
