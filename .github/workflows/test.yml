@@ -39,7 +39,7 @@ jobs:
 
     - run: cargo fmt --check
 
-    - run: cargo clippy --all-targets -- --deny warnings
+    - run: cargo clippy --all-features --all-targets -- --deny warnings
 
     - name: Install wasm-pack
       run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh

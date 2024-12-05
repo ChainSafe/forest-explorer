@@ -1,7 +1,4 @@
-use cid::{
-    multihash::{Code, MultihashDigest},
-    Cid,
-};
+use cid::Cid;
 use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
 pub use fvm_shared::message::Message;
@@ -11,6 +8,7 @@ use fvm_shared::{
     econ::TokenAmount,
     METHOD_SEND,
 };
+use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};
 
 fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error> {
