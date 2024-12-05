@@ -465,7 +465,6 @@ dependencies = [
  "multibase",
  "multihash 0.18.1",
  "serde",
- "serde_bytes",
  "unsigned-varint 0.7.2",
 ]
 
@@ -952,7 +951,7 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "derive_more",
- "fvm_ipld_encoding 0.4.0",
+ "fvm_ipld_encoding",
  "fvm_shared",
  "hex",
  "http",
@@ -1082,17 +1081,6 @@ dependencies = [
 
 [[package]]
 name = "fvm_ipld_blockstore"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d064b957420f5ecc137a153baaa6c32e2eb19b674135317200b6f2537eabdbfd"
-dependencies = [
- "anyhow",
- "cid 0.10.1",
- "multihash 0.18.1",
-]
-
-[[package]]
-name = "fvm_ipld_blockstore"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97b8b31e022f71b73440054f7e5171231a1ebc745adf075014d5aa8ea78ea283"
@@ -1104,33 +1092,16 @@ dependencies = [
 
 [[package]]
 name = "fvm_ipld_encoding"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90608092e31d9a06236268c58f7c36668ab4b2a48afafe3a97e08f094ad7ae50"
-dependencies = [
- "anyhow",
- "cid 0.10.1",
- "fvm_ipld_blockstore 0.2.1",
- "multihash 0.18.1",
- "serde",
- "serde_ipld_dagcbor 0.4.2",
- "serde_repr",
- "serde_tuple 0.5.0",
- "thiserror",
-]
-
-[[package]]
-name = "fvm_ipld_encoding"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "723294d1574e0126a9e16069ef6581a2ee3c06eb7d6edc33eb2a976057747bfb"
 dependencies = [
  "anyhow",
  "cid 0.11.1",
- "fvm_ipld_blockstore 0.3.1",
+ "fvm_ipld_blockstore",
  "multihash-codetable",
  "serde",
- "serde_ipld_dagcbor 0.6.1",
+ "serde_ipld_dagcbor",
  "serde_repr",
  "serde_tuple 0.5.0",
  "thiserror",
@@ -1148,7 +1119,7 @@ dependencies = [
  "cid 0.11.1",
  "data-encoding",
  "data-encoding-macro",
- "fvm_ipld_encoding 0.5.1",
+ "fvm_ipld_encoding",
  "lazy_static",
  "num-bigint",
  "num-derive",
@@ -2167,8 +2138,6 @@ dependencies = [
  "core2",
  "digest 0.10.7",
  "multihash-derive 0.8.1",
- "serde",
- "serde-big-array",
  "sha2 0.10.8",
  "sha3",
  "unsigned-varint 0.7.2",
@@ -2913,15 +2882,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde-big-array"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd31f59f6fe2b0c055371bb2f16d7f0aa7d8881676c04a55b1596d1a17cd10a4"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "serde-wasm-bindgen"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2961,18 +2921,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.90",
-]
-
-[[package]]
-name = "serde_ipld_dagcbor"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e880e0b1f9c7a8db874642c1217f7e19b29e325f24ab9f0fcb11818adec7f01"
-dependencies = [
- "cbor4ii",
- "cid 0.10.1",
- "scopeguard",
- "serde",
 ]
 
 [[package]]
