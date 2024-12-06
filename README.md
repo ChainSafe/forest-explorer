@@ -53,6 +53,6 @@ the faucet.
 # Custom deployments
 
 To deploy to a new CloudFlare account, change `account_id` in `wrangler.toml`,
-set `SECRET_WALLET` and `SECRET_MAINNET_WALLET` using `npx wrangler@latest secret put`
-(values are exported private keys, see `forest-wallet export`), and run
-`npx wrangler@latest deploy`.
+set `SECRET_WALLET` and `SECRET_MAINNET_WALLET` using
+`npx wrangler@latest secret put` (values are exported private keys, see
+`forest-wallet export`), and run `npx wrangler@latest deploy`.
