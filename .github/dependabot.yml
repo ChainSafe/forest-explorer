@@ -15,6 +15,9 @@ updates:
         patterns:
           - "worker"
           - "worker-macros"
+      leptos:
+        patterns:
+          - "leptos*"
       patch-versions:
         update-types:
           - "patch"
