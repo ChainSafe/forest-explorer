@@ -1,17 +1,11 @@
 use cid::Cid;
 use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
-use fvm_shared::address::{current_network, Network};
+use fvm_shared::address::Network;
 pub use fvm_shared::message::Message;
-use fvm_shared::{
-    address::Address,
-    crypto::signature::{Signature, SignatureType},
-    econ::TokenAmount,
-    METHOD_SEND,
-};
+use fvm_shared::{address, address::Address, crypto::signature::{Signature, SignatureType}, econ::TokenAmount, METHOD_SEND};
 use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error> {
     let bytes = fvm_ipld_encoding::to_vec(obj)?;
@@ -32,6 +26,9 @@ pub fn parse_address(s: &str) -> anyhow::Result<Address> {
     }
 
     // Try parsing as 0x ethereum address
+    if s.len() != 42 {
+        return Err(anyhow::Error::from(address::Error::InvalidLength))
+    }
     let addr = hex::decode(&s[2..])?;
     Ok(Address::new_delegated(10, &addr)?)
 }
@@ -81,7 +78,6 @@ impl SignedMessage {
 
 #[cfg(test)]
 mod tests {
-    use fvm_shared::address::Error::UnknownNetwork;
     use super::*;
 
     #[test]
@@ -93,6 +89,32 @@ mod tests {
         let exp_addr = parse_address(exp_addr_str).unwrap();
 
         assert_eq!(exp_addr, addr);
+    }
+
+    #[test]
+    fn test_parse_eth_address_too_short() {
+        let addr_str = "0xd3";
+        let e = parse_address(addr_str).err().unwrap();
+        let addr_err = e.downcast_ref::<address::Error>().unwrap();
+
+        assert_eq!(*addr_err, address::Error::InvalidLength);
+    }
+
+    #[test]
+    fn test_parse_eth_address_too_long() {
+        let addr_str = "0xd388ab098ed3e84c0d808776440b48f68519849812";
+        let e = parse_address(addr_str).err().unwrap();
+        let addr_err = e.downcast_ref::<address::Error>().unwrap();
+
+        assert_eq!(*addr_err, address::Error::InvalidLength);
+    }
+
+    #[test]
+    fn test_parse_mainnet_address() {
+        let addr_str = "f1alg2sxw32ns3ech2w7r3dmp2gl2fputkl7x7jta";
+        let addr = parse_address(addr_str).unwrap();
+
+        assert_eq!(addr.to_string(), addr_str);
     }
 
 }
