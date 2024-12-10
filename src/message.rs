@@ -4,6 +4,7 @@ use cid::{
 };
 use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
+use fvm_shared::address::{current_network, Network};
 pub use fvm_shared::message::Message;
 use fvm_shared::{
     address::Address,
@@ -23,7 +24,18 @@ fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error>
 }
 
 pub fn parse_address(s: &str) -> anyhow::Result<Address> {
-    Ok(Address::from_str(s).or_else(|_| Address::new_delegated(4, s.as_ref()))?)
+    if let Ok(addr) = Network::Testnet
+        .parse_address(s)
+        .or_else(|e| {
+            Network::Mainnet.parse_address(s)
+        })
+    {
+        return Ok(addr);
+    }
+
+    // Try parsing as 0x ethereum address
+    let addr = hex::decode(&s[2..])?;
+    Ok(Address::new_delegated(10, &addr)?)
 }
 
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
@@ -77,19 +89,18 @@ impl SignedMessage {
 
 #[cfg(test)]
 mod tests {
+    use fvm_shared::address::Error::UnknownNetwork;
     use super::*;
 
     #[test]
     fn test_parse_eth_address() {
-        let addr_str = "0x912DC03C136306eF6367Eb57aFd0812F39Cf35eb";
+        let addr_str = "0xd388ab098ed3e84c0d808776440b48f685198498";
         let addr = parse_address(addr_str).unwrap();
-        let _msg = message_transfer(addr, addr, TokenAmount::default());
+
+        let exp_addr_str = "t410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
+        let exp_addr = parse_address(exp_addr_str).unwrap();
+
+        assert_eq!(exp_addr, addr);
     }
 
-    #[test]
-    fn test_parse_t_address() {
-        let addr_str = "t110f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
-        let addr = parse_address(addr_str).unwrap();
-        let _msg = message_transfer(addr, addr, TokenAmount::default());
-    }
 }
