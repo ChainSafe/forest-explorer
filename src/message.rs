@@ -15,20 +15,24 @@ fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error>
     ))
 }
 
-pub fn parse_address(s: &str) -> anyhow::Result<Address> {
-    if let Ok(addr) = Network::Testnet
-        .parse_address(s)
-        .or_else(|e| {
-            Network::Mainnet.parse_address(s)
-        })
-    {
-        return Ok(addr);
+pub fn parse_address(s: &str, network: Network) -> anyhow::Result<Address> {
+    match network {
+        Network::Mainnet => {
+            if let Ok(addr) = Network::Mainnet.parse_address(s) {
+                return Ok(addr)
+            }
+        }
+        Network::Testnet => {
+            if let Ok(addr) = Network::Testnet.parse_address(s) {
+                return Ok(addr)
+            }
+        }
     }
-
     // Try parsing as 0x ethereum address
     if s.len() != 42 {
         return Err(anyhow::Error::from(address::Error::InvalidLength))
     }
+
     let addr = hex::decode(&s[2..])?;
     Ok(Address::new_delegated(10, &addr)?)
 }
@@ -81,12 +85,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_eth_address() {
+    fn test_parse_eth_address_testnet() {
         let addr_str = "0xd388ab098ed3e84c0d808776440b48f685198498";
-        let addr = parse_address(addr_str).unwrap();
+        let addr = parse_address(addr_str, Network::Testnet).unwrap();
 
         let exp_addr_str = "t410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
-        let exp_addr = parse_address(exp_addr_str).unwrap();
+        let exp_addr = parse_address(exp_addr_str, Network::Testnet).unwrap();
+
+        assert_eq!(exp_addr, addr);
+    }
+
+    #[test]
+    fn test_parse_eth_address_mainnet() {
+        let addr_str = "0xd388ab098ed3e84c0d808776440b48f685198498";
+        let addr = parse_address(addr_str, Network::Mainnet).unwrap();
+
+        let exp_addr_str = "f410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
+        let exp_addr = parse_address(exp_addr_str, Network::Mainnet).unwrap();
 
         assert_eq!(exp_addr, addr);
     }
@@ -94,7 +109,7 @@ mod tests {
     #[test]
     fn test_parse_eth_address_too_short() {
         let addr_str = "0xd3";
-        let e = parse_address(addr_str).err().unwrap();
+        let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
         let addr_err = e.downcast_ref::<address::Error>().unwrap();
 
         assert_eq!(*addr_err, address::Error::InvalidLength);
@@ -103,7 +118,7 @@ mod tests {
     #[test]
     fn test_parse_eth_address_too_long() {
         let addr_str = "0xd388ab098ed3e84c0d808776440b48f68519849812";
-        let e = parse_address(addr_str).err().unwrap();
+        let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
         let addr_err = e.downcast_ref::<address::Error>().unwrap();
 
         assert_eq!(*addr_err, address::Error::InvalidLength);
@@ -112,9 +127,8 @@ mod tests {
     #[test]
     fn test_parse_mainnet_address() {
         let addr_str = "f1alg2sxw32ns3ech2w7r3dmp2gl2fputkl7x7jta";
-        let addr = parse_address(addr_str).unwrap();
+        let addr = parse_address(addr_str, Network::Mainnet).unwrap();
 
         assert_eq!(addr.to_string(), addr_str);
     }
-
 }

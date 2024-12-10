@@ -113,7 +113,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     let target_balance = create_local_resource_with_initial_value(
         move || target_address.get(),
         move |address| async move {
-            if let Ok(address) = parse_address(&address) {
+            if let Ok(address) = parse_address(&address, target_network) {
                 Provider::from_network(target_network)
                     .wallet_balance(address)
                     .await
@@ -234,7 +234,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             <button
                                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
                                 on:click=move |_| {
-                                    match parse_address(&target_address.get()) {
+                                    match parse_address(&target_address.get(), target_network) {
                                         Ok(addr) => {
                                             spawn_local(async move {
                                                 catch_all(
