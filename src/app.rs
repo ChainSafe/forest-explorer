@@ -1,6 +1,7 @@
 use std::future::Future;
 
 use cid::Cid;
+use fvm_shared::address::Network;
 use fvm_shared::econ::TokenAmount;
 use leptos::{component, create_local_resource, event_target_value, view, IntoView, SignalGet};
 use leptos_meta::*;
@@ -11,7 +12,7 @@ use leptos_router::*;
 use leptos_use::*;
 
 use crate::faucet::sign_with_secret_key;
-use crate::{faucet::faucet_address, message::message_transfer, rpc_context::Provider};
+use crate::{faucet::faucet_address, message::message_transfer, rpc_context::Provider, message::parse_address};
 use crate::{lotus_json::LotusJson, rpc_context::RpcContext};
 
 #[component]
@@ -51,17 +52,6 @@ pub fn BlockchainExplorer() -> impl IntoView {
             <Loader loading=move || network_name.loading().get() />
         </p>
     }
-}
-
-fn parse_address(s: &str) -> anyhow::Result<(Address, Network)> {
-    Ok(Network::Testnet
-        .parse_address(s)
-        .map(|addr| (addr, Network::Testnet))
-        .or_else(|_| {
-            Network::Mainnet
-                .parse_address(s)
-                .map(|addr| (addr, Network::Mainnet))
-        })?)
 }
 
 async fn catch_all(
@@ -123,7 +113,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     let target_balance = create_local_resource_with_initial_value(
         move || target_address.get(),
         move |address| async move {
-            if let Ok((address, _network)) = parse_address(&address) {
+            if let Ok(address) = parse_address(&address) {
                 Provider::from_network(target_network)
                     .wallet_balance(address)
                     .await
@@ -245,10 +235,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
                                 on:click=move |_| {
                                     match parse_address(&target_address.get()) {
-                                        Ok((_addr, network)) if network != target_network => {
-                                            error_messages.update(|errors| errors.push("Mainnet/testnet address mismatch".to_string()));
-                                        }
-                                        Ok((addr, _network)) => {
+                                        Ok(addr) => {
                                             spawn_local(async move {
                                                 catch_all(
                                                         error_messages,
