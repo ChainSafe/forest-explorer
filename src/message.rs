@@ -1,7 +1,4 @@
-use cid::{
-    multihash::{Code, MultihashDigest},
-    Cid,
-};
+use cid::Cid;
 use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
 use fvm_shared::address::{current_network, Network};
@@ -12,6 +9,7 @@ use fvm_shared::{
     econ::TokenAmount,
     METHOD_SEND,
 };
+use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -64,12 +62,6 @@ pub struct SignedMessage {
 }
 
 impl SignedMessage {
-    /// Generate a new signed message from fields.
-    /// The signature will not be verified.
-    pub fn new_unchecked(message: Message, signature: Signature) -> SignedMessage {
-        SignedMessage { message, signature }
-    }
-
     /// Checks if the signed message is a BLS message.
     pub fn is_bls(&self) -> bool {
         self.signature.signature_type() == SignatureType::BLS

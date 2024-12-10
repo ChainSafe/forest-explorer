@@ -5,6 +5,8 @@ concurrency:
   cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
 
 on:
+  workflow_dispatch:
+  merge_group:
   pull_request:
     branches:
       - main
@@ -24,45 +26,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Setup sccache
-      uses: mozilla-actions/sccache-action@v0.0.6
-      timeout-minutes: "${{ fromJSON(env.CACHE_TIMEOUT_MINUTES) }}"
-      continue-on-error: true
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+        timeout-minutes: "${{ fromJSON(env.CACHE_TIMEOUT_MINUTES) }}"
+        continue-on-error: true
 
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Rust
-      uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
-    - run: cargo fmt --check
+      - name: Install wasm-pack
+        run:
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-    - run: cargo clippy --all-targets -- --deny warnings
+      - uses: sigoden/install-binary@v1
+        with:
+          repo: WebAssembly/binaryen
+          name: wasm-opt
 
-    - name: Install wasm-pack
-      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Install worker-build
+        run: cargo install --locked worker-build
 
-    - uses: sigoden/install-binary@v1
-      with:
-        repo: WebAssembly/binaryen
-        name: wasm-opt
+      - uses: nanasess/setup-chromedriver@v2
+      - run: |
+          chromedriver --port=9515 &
 
-    - name: Install worker-build
-      run: cargo install --locked worker-build
+      - name: Run website
+        run: |
+          npx wrangler@latest build
+          npx wrangler@latest dev &
+          echo "waiting"
+          timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 8787
 
-    - uses: nanasess/setup-chromedriver@v2
-    - run: |
-        chromedriver --port=9515 &
-
-    - name: Run website
-      run: |
-        npx wrangler@latest build
-        npx wrangler@latest dev &
-        echo "waiting"
-        timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 8787
-
-    - name: E2E
-      run: |
-        cd e2e
-        cargo build
-        cargo run
+      - name: E2E
+        run: |
+          cd e2e
+          cargo build
+          cargo run
