@@ -1,13 +1,20 @@
+use anyhow::anyhow;
 use cid::Cid;
-use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
 use fvm_shared::address::Network;
 pub use fvm_shared::message::Message;
-use fvm_shared::{address, address::Address, crypto::signature::{Signature, SignatureType}, econ::TokenAmount, METHOD_SEND};
+use fvm_shared::{
+    address::Address,
+    crypto::signature::{Signature, SignatureType},
+    econ::TokenAmount,
+    METHOD_SEND,
+};
 use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};
 
-fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error> {
+fn from_cbor_blake2b256<S: serde::ser::Serialize>(
+    obj: &S,
+) -> Result<Cid, fvm_ipld_encoding::Error> {
     let bytes = fvm_ipld_encoding::to_vec(obj)?;
     Ok(Cid::new_v1(
         fvm_ipld_encoding::DAG_CBOR,
@@ -15,26 +22,34 @@ fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error>
     ))
 }
 
-pub fn parse_address(s: &str, network: Network) -> anyhow::Result<Address> {
-    match network {
-        Network::Mainnet => {
-            if let Ok(addr) = Network::Mainnet.parse_address(s) {
-                return Ok(addr)
-            }
-        }
-        Network::Testnet => {
-            if let Ok(addr) = Network::Testnet.parse_address(s) {
-                return Ok(addr)
-            }
-        }
-    }
-    // Try parsing as 0x ethereum address
-    if s.len() != 42 {
-        return Err(anyhow::Error::from(address::Error::InvalidLength))
+fn check_address_prefix(s: &str, n: Network) -> bool {
+    if s.len() == 0 || s.len() < 2 {
+        return false;
     }
 
-    let addr = hex::decode(&s[2..])?;
-    Ok(Address::new_delegated(10, &addr)?)
+    match n {
+        Network::Mainnet => s[0..1].eq("f") || s[0..2].eq("0x"),
+        Network::Testnet => s[0..1].eq("t") || s[0..2].eq("0x"),
+    }
+}
+
+pub fn parse_address(s: &str, n: Network) -> anyhow::Result<Address> {
+    if !check_address_prefix(s, n) {
+        return Err(anyhow!("Wrong Network"));
+    }
+
+    return match n.parse_address(s) {
+        Ok(addr) => Ok(addr),
+        Err(_e) => {
+            // Try parsing as 0x ethereum address
+            if s.len() != 42 {
+                return Err(anyhow!("Invalid Address"));
+            }
+
+            let addr = hex::decode(&s[2..])?;
+            Ok(Address::new_delegated(10, &addr)?)
+        }
+    };
 }
 
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
@@ -83,6 +98,35 @@ impl SignedMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fvm_shared::address::set_current_network;
+
+    #[test]
+    fn test_parse_mainnet_address() {
+        let addr_str = "f1alg2sxw32ns3ech2w7r3dmp2gl2fputkl7x7jta";
+        let addr = parse_address(addr_str, Network::Mainnet).unwrap();
+
+        assert_eq!(addr.to_string(), addr_str);
+    }
+
+    #[test]
+    fn test_parse_testnet_address() {
+        let addr_str = "t410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
+        let addr = parse_address(addr_str, Network::Testnet).unwrap();
+
+        set_current_network(Network::Testnet); // Required to correctly stringify address
+        assert_eq!(addr.to_string(), addr_str);
+    }
+
+    #[test]
+    fn test_parse_wrong_network() {
+        let m_addr_str = "f1alg2sxw32ns3ech2w7r3dmp2gl2fputkl7x7jta";
+        let err = parse_address(m_addr_str, Network::Testnet).unwrap_err();
+        assert_eq!(err.to_string(), "Wrong Network");
+
+        let t_addr_str = "t410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
+        let err = parse_address(t_addr_str, Network::Mainnet).unwrap_err();
+        assert_eq!(err.to_string(), "Wrong Network");
+    }
 
     #[test]
     fn test_parse_eth_address_testnet() {
@@ -110,25 +154,15 @@ mod tests {
     fn test_parse_eth_address_too_short() {
         let addr_str = "0xd3";
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
-        let addr_err = e.downcast_ref::<address::Error>().unwrap();
 
-        assert_eq!(*addr_err, address::Error::InvalidLength);
+        assert_eq!(e.to_string(), "Invalid Address");
     }
 
     #[test]
     fn test_parse_eth_address_too_long() {
         let addr_str = "0xd388ab098ed3e84c0d808776440b48f68519849812";
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
-        let addr_err = e.downcast_ref::<address::Error>().unwrap();
 
-        assert_eq!(*addr_err, address::Error::InvalidLength);
-    }
-
-    #[test]
-    fn test_parse_mainnet_address() {
-        let addr_str = "f1alg2sxw32ns3ech2w7r3dmp2gl2fputkl7x7jta";
-        let addr = parse_address(addr_str, Network::Mainnet).unwrap();
-
-        assert_eq!(addr.to_string(), addr_str);
+        assert_eq!(e.to_string(), "Invalid Address");
     }
 }

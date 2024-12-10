@@ -12,7 +12,10 @@ use leptos_router::*;
 use leptos_use::*;
 
 use crate::faucet::sign_with_secret_key;
-use crate::{faucet::faucet_address, message::message_transfer, rpc_context::Provider, message::parse_address};
+use crate::{
+    faucet::faucet_address, message::message_transfer, message::parse_address,
+    rpc_context::Provider,
+};
 use crate::{lotus_json::LotusJson, rpc_context::RpcContext};
 
 #[component]
