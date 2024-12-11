@@ -7,6 +7,17 @@ use fvm_shared::{address::Address, message::Message};
 use leptos::{server, ServerFnError};
 
 #[server]
+pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
+    let network = if is_mainnet {
+        Network::Mainnet
+    } else {
+        Network::Testnet
+    };
+    let key = secret_key(network).await?;
+    Ok(LotusJson(key.address))
+}
+
+#[server]
 pub async fn sign_with_secret_key(
     msg: LotusJson<Message>,
     is_mainnet: bool,
@@ -54,15 +65,24 @@ pub async fn sign_with_secret_key(
     .await
 }
 
-#[server]
-pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
-    let network = if is_mainnet {
-        Network::Mainnet
-    } else {
-        Network::Testnet
+#[cfg(feature = "ssr")]
+pub async fn secret_key(network: Network) -> Result<Key, ServerFnError> {
+    use crate::key::KeyInfo;
+    use axum::Extension;
+    use leptos::server_fn::error::NoCustomError;
+    use leptos_axum::extract;
+    use std::{str::FromStr as _, sync::Arc};
+    use worker::Env;
+
+    let secret_key_name = match network {
+        Network::Testnet => "SECRET_WALLET",
+        Network::Mainnet => "SECRET_MAINNET_WALLET",
     };
-    let key = secret_key(network).await?;
-    Ok(LotusJson(key.address))
+
+    let Extension(env): Extension<Arc<Env>> = extract().await?;
+    let key_info = KeyInfo::from_str(&env.secret(secret_key_name)?.to_string())
+        .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
+    Key::try_from(key_info).map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 
 #[cfg(feature = "ssr")]
@@ -82,24 +102,4 @@ pub async fn query_rate_limiter() -> Result<bool, ServerFnError> {
         .await?
         .json::<bool>()
         .await?)
-}
-
-#[cfg(feature = "ssr")]
-pub async fn secret_key(network: Network) -> Result<Key, ServerFnError> {
-    use crate::key::KeyInfo;
-    use axum::Extension;
-    use leptos::server_fn::error::NoCustomError;
-    use leptos_axum::extract;
-    use std::{str::FromStr as _, sync::Arc};
-    use worker::Env;
-
-    let secret_key_name = match network {
-        Network::Testnet => "SECRET_WALLET",
-        Network::Mainnet => "SECRET_MAINNET_WALLET",
-    };
-
-    let Extension(env): Extension<Arc<Env>> = extract().await?;
-    let key_info = KeyInfo::from_str(&env.secret(secret_key_name)?.to_string())
-        .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
-    Key::try_from(key_info).map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
