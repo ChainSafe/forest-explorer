@@ -23,7 +23,7 @@ fn from_cbor_blake2b256<S: serde::ser::Serialize>(
 }
 
 fn check_address_prefix(s: &str, n: Network) -> bool {
-    if s.len() == 0 || s.len() < 2 {
+    if s.len() < 2 {
         return false;
     }
 
@@ -35,7 +35,7 @@ fn check_address_prefix(s: &str, n: Network) -> bool {
 
 pub fn parse_address(s: &str, n: Network) -> anyhow::Result<Address> {
     if !check_address_prefix(s, n) {
-        return Err(anyhow!("Wrong Network"));
+        bail!("Wrong Network");
     }
 
     return match n.parse_address(s) {
@@ -43,7 +43,7 @@ pub fn parse_address(s: &str, n: Network) -> anyhow::Result<Address> {
         Err(_e) => {
             // Try parsing as 0x ethereum address
             if s.len() != 42 {
-                return Err(anyhow!("Invalid Address"));
+                return bail!("Invalid Address");
             }
 
             let addr = hex::decode(&s[2..])?;
