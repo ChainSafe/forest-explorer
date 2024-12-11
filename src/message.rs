@@ -1,4 +1,5 @@
 use cid::Cid;
+use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
 pub use fvm_shared::message::Message;
 use fvm_shared::{
@@ -10,9 +11,7 @@ use fvm_shared::{
 use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};
 
-fn from_cbor_blake2b256<S: serde::ser::Serialize>(
-    obj: &S,
-) -> Result<Cid, fvm_ipld_encoding::Error> {
+fn from_cbor_blake2b256<S: serde::ser::Serialize>(obj: &S) -> Result<Cid, Error> {
     let bytes = fvm_ipld_encoding::to_vec(obj)?;
     Ok(Cid::new_v1(
         fvm_ipld_encoding::DAG_CBOR,
