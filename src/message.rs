@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::bail;
 use cid::Cid;
 use fvm_ipld_encoding::RawBytes;
 use fvm_shared::address::Network;
@@ -38,18 +38,18 @@ pub fn parse_address(s: &str, n: Network) -> anyhow::Result<Address> {
         bail!("Wrong Network");
     }
 
-    return match n.parse_address(s) {
+    match n.parse_address(s) {
         Ok(addr) => Ok(addr),
         Err(_e) => {
             // Try parsing as 0x ethereum address
             if s.len() != 42 {
-                return bail!("Invalid Address");
+                bail!("Invalid Address")
             }
 
             let addr = hex::decode(&s[2..])?;
             Ok(Address::new_delegated(10, &addr)?)
         }
-    };
+    }
 }
 
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
