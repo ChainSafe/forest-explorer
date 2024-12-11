@@ -8,6 +8,7 @@ mod lotus_json;
 mod message;
 #[cfg(feature = "ssr")]
 mod rate_limiter;
+mod utils;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -45,8 +46,8 @@ mod ssr_imports {
 
     #[event(start)]
     fn register() {
-        server_fn::axum::register_explicit::<faucet::SignWithSecretKey>();
-        server_fn::axum::register_explicit::<faucet::FaucetAddress>();
+        server_fn::axum::register_explicit::<faucet::utils::SignWithSecretKey>();
+        server_fn::axum::register_explicit::<faucet::utils::FaucetAddress>();
     }
 
     #[event(fetch)]
