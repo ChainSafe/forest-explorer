@@ -228,3 +228,5 @@ rust-project.json
 # .pnp.*
 
 # End of https://www.toptal.com/developers/gitignore/api/osx,rust,rust-analyzer,visualstudiocode,node,yarn
+
+assets/

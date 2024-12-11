@@ -5,6 +5,7 @@ use app::App;
 mod faucet;
 mod key;
 mod lotus_json;
+mod utils;
 mod message;
 #[cfg(feature = "ssr")]
 mod rate_limiter;
@@ -45,8 +46,8 @@ mod ssr_imports {
 
     #[event(start)]
     fn register() {
-        server_fn::axum::register_explicit::<faucet::SignWithSecretKey>();
-        server_fn::axum::register_explicit::<faucet::FaucetAddress>();
+        server_fn::axum::register_explicit::<faucet::utils::SignWithSecretKey>();
+        server_fn::axum::register_explicit::<faucet::utils::FaucetAddress>();
     }
 
     #[event(fetch)]
