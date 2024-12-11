@@ -217,8 +217,6 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 view! {}.into_view()
             }
         }}
-        <h1 class="text-4xl font-bold mb-6 text-center">Faucet</h1>
-
         <div class="max-w-2xl mx-auto">
             <div class="my-4 flex">
                 <input
@@ -361,10 +359,30 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
 pub fn Faucets() -> impl IntoView {
     view! {
         <div>
-            <h2 class="text-2xl font-bold mb-4">Calibration Network Faucet</h2>
-            <Faucet target_network=Network::Testnet />
+            <h2 class="text-2xl font-bold mb-4">Faucet List</h2>
+            <ul class="list-disc pl-5">
+                <li><a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a></li>
+                <li><a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a></li>
+            </ul>
+        </div>
+    }
+}
 
-            <h2 class="text-2xl font-bold mb-4 mt-8">Mainnet Network Faucet</h2>
+#[component]
+pub fn Faucet_Calibnet() -> impl IntoView {
+    view! {
+        <div>
+            <h1 class="text-4xl font-bold mb-6 text-center">Calibnet Faucet</h1>
+            <Faucet target_network=Network::Testnet />
+        </div>
+    }
+}
+
+#[component]
+pub fn Faucet_Mainnet() -> impl IntoView {
+    view! {
+        <div>
+            <h1 class="text-4xl font-bold mb-6 text-center">Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
         </div>
     }
@@ -382,6 +400,8 @@ pub fn App() -> impl IntoView {
             <Routes>
                 <Route path="/" view=BlockchainExplorer />
                 <Route path="/faucet" view=Faucets />
+                <Route path="/faucet/calibnet" view=Faucet_Calibnet />
+                <Route path="/faucet/mainnet" view=Faucet_Mainnet />
             </Routes>
         </Router>
     }
