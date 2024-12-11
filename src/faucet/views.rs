@@ -9,10 +9,8 @@ use leptos_use::*;
 use super::utils::faucet_address;
 use crate::faucet::utils::sign_with_secret_key;
 use crate::{
-    lotus_json::LotusJson,
-    message::message_transfer,
-    rpc_context::Provider,
-    utils::{catch_all, parse_address},
+    address::parse_address, lotus_json::LotusJson, message::message_transfer,
+    rpc_context::Provider, utils::catch_all,
 };
 
 #[component]
@@ -64,7 +62,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     let target_balance = create_local_resource_with_initial_value(
         move || target_address.get(),
         move |address| async move {
-            if let Ok((address, _network)) = parse_address(&address) {
+            if let Ok(address) = parse_address(&address, target_network) {
                 Provider::from_network(target_network)
                     .wallet_balance(address)
                     .await
@@ -183,11 +181,8 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             <button
                                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
                                 on:click=move |_| {
-                                    match parse_address(&target_address.get()) {
-                                        Ok((_addr, network)) if network != target_network => {
-                                            error_messages.update(|errors| errors.push("Mainnet/testnet address mismatch".to_string()));
-                                        }
-                                        Ok((addr, _network)) => {
+                                    match parse_address(&target_address.get(), target_network) {
+                                        Ok(addr) => {
                                             spawn_local(async move {
                                                 catch_all(
                                                         error_messages,
