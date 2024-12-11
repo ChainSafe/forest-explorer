@@ -7,10 +7,14 @@ use fvm_shared::{
     address::Address,
     crypto::signature::{Signature, SignatureType},
     econ::TokenAmount,
-    METHOD_SEND,
+    ActorID, METHOD_SEND,
 };
 use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};
+
+// '0x' + 20bytes
+const ETH_ADDRESS_LENGTH: usize = 42;
+const EAM_NAMESPACE: ActorID = 10;
 
 fn from_cbor_blake2b256<S: serde::ser::Serialize>(
     obj: &S,
@@ -33,21 +37,23 @@ fn check_address_prefix(s: &str, n: Network) -> bool {
     }
 }
 
-pub fn parse_address(s: &str, n: Network) -> anyhow::Result<Address> {
-    if !check_address_prefix(s, n) {
+pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
+    let s = raw.trim().to_lowercase();
+
+    if !check_address_prefix(&s, n) {
         bail!("Wrong Network");
     }
 
-    match n.parse_address(s) {
+    match n.parse_address(&s) {
         Ok(addr) => Ok(addr),
         Err(_e) => {
             // Try parsing as 0x ethereum address
-            if s.len() != 42 {
+            if s.len() != ETH_ADDRESS_LENGTH {
                 bail!("Invalid Address")
             }
 
             let addr = hex::decode(&s[2..])?;
-            Ok(Address::new_delegated(10, &addr)?)
+            Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
         }
     }
 }
@@ -99,6 +105,31 @@ impl SignedMessage {
 mod tests {
     use super::*;
     use fvm_shared::address::set_current_network;
+
+    #[test]
+    fn test_check_address_prefix() {
+        // Valid cases
+        assert!(check_address_prefix("f123...", Network::Mainnet));
+        assert!(check_address_prefix("0x123...", Network::Mainnet));
+        assert!(check_address_prefix("t456...", Network::Testnet));
+        assert!(check_address_prefix("0x789...", Network::Testnet));
+
+        // Wrong network
+        assert!(!check_address_prefix("f123...", Network::Testnet));
+        assert!(!check_address_prefix("t456...", Network::Mainnet));
+
+        // Bad length
+        assert!(!check_address_prefix("f", Network::Mainnet));
+        assert!(!check_address_prefix("t", Network::Testnet));
+        assert!(!check_address_prefix("", Network::Mainnet)); // Empty string
+        assert!(!check_address_prefix("abc", Network::Mainnet)); // Short address
+
+        // Invalid prefixes
+        assert!(!check_address_prefix("g123...", Network::Mainnet));
+        assert!(!check_address_prefix("h456...", Network::Testnet));
+        assert!(!check_address_prefix("123...", Network::Mainnet));
+        assert!(!check_address_prefix("456...", Network::Testnet));
+    }
 
     #[test]
     fn test_parse_mainnet_address() {
