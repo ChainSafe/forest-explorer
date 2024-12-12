@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use fvm_shared::address::{Address, Network};
 use fvm_shared::ActorID;
 
@@ -17,23 +17,28 @@ fn check_address_prefix(s: &str, n: Network) -> bool {
     }
 }
 
+fn is_eth_address(s: &str) -> bool {
+    return s.len() > 2 && s[0..2].eq("0x")
+}
+
 pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
     let s = raw.trim().to_lowercase();
 
     if !check_address_prefix(&s, n) {
-        bail!("Wrong Network");
+        bail!("Not a valid {:?} address", n);
     }
 
-    match n.parse_address(&s) {
-        Ok(addr) => Ok(addr),
-        Err(_e) => {
-            // Try parsing as 0x ethereum address
-            if s.len() != ETH_ADDRESS_LENGTH {
-                bail!("Invalid Address")
-            }
+    if is_eth_address(&s) {
+        if s.len() != ETH_ADDRESS_LENGTH {
+            bail!("Invalid address length")
+        }
 
-            let addr = hex::decode(&s[2..])?;
-            Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
+        let addr = hex::decode(&s[2..])?;
+        Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
+    } else {
+        match n.parse_address(&s) {
+            Ok(addr) => Ok(addr),
+            Err(e) => bail!(e)
         }
     }
 }
@@ -90,11 +95,11 @@ mod tests {
     fn test_parse_wrong_network() {
         let m_addr_str = "f1alg2sxw32ns3ech2w7r3dmp2gl2fputkl7x7jta";
         let err = parse_address(m_addr_str, Network::Testnet).unwrap_err();
-        assert_eq!(err.to_string(), "Wrong Network");
+        assert_eq!(err.to_string(), "Not a valid Testnet address");
 
         let t_addr_str = "t410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
         let err = parse_address(t_addr_str, Network::Mainnet).unwrap_err();
-        assert_eq!(err.to_string(), "Wrong Network");
+        assert_eq!(err.to_string(), "Not a valid Mainnet address");
     }
 
     #[test]
@@ -124,7 +129,7 @@ mod tests {
         let addr_str = "0xd3";
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
-        assert_eq!(e.to_string(), "Invalid Address");
+        assert_eq!(e.to_string(), "Invalid address length");
     }
 
     #[test]
@@ -132,6 +137,6 @@ mod tests {
         let addr_str = "0xd388ab098ed3e84c0d808776440b48f68519849812";
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
-        assert_eq!(e.to_string(), "Invalid Address");
+        assert_eq!(e.to_string(), "Invalid address length");
     }
 }
