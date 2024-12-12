@@ -18,7 +18,9 @@ fn check_address_prefix(s: &str, n: Network) -> bool {
 }
 
 fn is_eth_address(s: &str) -> bool {
-    s.len() > 2 && s[0..2].eq("0x")
+    s.starts_with("0x")
+        && s.len() == ETH_ADDRESS_LENGTH
+        && s.chars().skip(2).all(|c| c.is_ascii_hexdigit())
 }
 
 pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
@@ -29,10 +31,6 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
     }
 
     if is_eth_address(&s) {
-        if s.len() != ETH_ADDRESS_LENGTH {
-            bail!("Invalid address length")
-        }
-
         let addr = hex::decode(&s[2..])?;
         Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
     } else {
