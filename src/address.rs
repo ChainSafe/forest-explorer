@@ -1,4 +1,4 @@
-use anyhow::bail;
+use anyhow::ensure;
 use fvm_shared::address::{Address, Network};
 use fvm_shared::ActorID;
 
@@ -6,33 +6,26 @@ use fvm_shared::ActorID;
 const ETH_ADDRESS_LENGTH: usize = 42;
 const EAM_NAMESPACE: ActorID = 10;
 
-fn check_address_prefix(s: &str, n: Network) -> bool {
+fn is_valid_prefix(s: &str, n: Network) -> bool {
     if s.len() < 2 {
         return false;
     }
 
     match n {
-        Network::Mainnet => s[0..1].eq("f") || s[0..2].eq("0x"),
-        Network::Testnet => s[0..1].eq("t") || s[0..2].eq("0x"),
+        Network::Mainnet => s.starts_with("f") || s.starts_with("0x"),
+        Network::Testnet => s.starts_with("t") || s.starts_with("0x"),
     }
 }
 
 pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
     let s = raw.trim().to_lowercase();
 
-    if !check_address_prefix(&s, n) {
-        bail!("Not a valid {:?} address", n);
-    }
+    ensure!(is_valid_prefix(&s, n), "Not a valid {:?} address", n);
 
     if s.len() > 2 && s.starts_with("0x") {
         // Expecting an eth address, perform further validation
-        if s.len() != ETH_ADDRESS_LENGTH {
-            bail!("Invalid address length")
-        }
-
-        if !s.chars().skip(2).all(|c| c.is_ascii_hexdigit()) {
-            bail!("Invalid characters in address")
-        }
+        ensure!(s.len() == ETH_ADDRESS_LENGTH, "Invalid address length");
+        ensure!(s.chars().skip(2).all(|c| c.is_ascii_hexdigit()), "Invalid characters in address");
 
         let addr = hex::decode(&s[2..])?;
         Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
@@ -49,26 +42,26 @@ mod tests {
     #[test]
     fn test_check_address_prefix() {
         // Valid cases
-        assert!(check_address_prefix("f123...", Network::Mainnet));
-        assert!(check_address_prefix("0x123...", Network::Mainnet));
-        assert!(check_address_prefix("t456...", Network::Testnet));
-        assert!(check_address_prefix("0x789...", Network::Testnet));
+        assert!(is_valid_prefix("f123...", Network::Mainnet));
+        assert!(is_valid_prefix("0x123...", Network::Mainnet));
+        assert!(is_valid_prefix("t456...", Network::Testnet));
+        assert!(is_valid_prefix("0x789...", Network::Testnet));
 
         // Wrong network
-        assert!(!check_address_prefix("f123...", Network::Testnet));
-        assert!(!check_address_prefix("t456...", Network::Mainnet));
+        assert!(!is_valid_prefix("f123...", Network::Testnet));
+        assert!(!is_valid_prefix("t456...", Network::Mainnet));
 
         // Bad length
-        assert!(!check_address_prefix("f", Network::Mainnet));
-        assert!(!check_address_prefix("t", Network::Testnet));
-        assert!(!check_address_prefix("", Network::Mainnet)); // Empty string
-        assert!(!check_address_prefix("abc", Network::Mainnet)); // Short address
+        assert!(!is_valid_prefix("f", Network::Mainnet));
+        assert!(!is_valid_prefix("t", Network::Testnet));
+        assert!(!is_valid_prefix("", Network::Mainnet)); // Empty string
+        assert!(!is_valid_prefix("abc", Network::Mainnet)); // Short address
 
         // Invalid prefixes
-        assert!(!check_address_prefix("g123...", Network::Mainnet));
-        assert!(!check_address_prefix("h456...", Network::Testnet));
-        assert!(!check_address_prefix("123...", Network::Mainnet));
-        assert!(!check_address_prefix("456...", Network::Testnet));
+        assert!(!is_valid_prefix("g123...", Network::Mainnet));
+        assert!(!is_valid_prefix("h456...", Network::Testnet));
+        assert!(!is_valid_prefix("123...", Network::Mainnet));
+        assert!(!is_valid_prefix("456...", Network::Testnet));
     }
 
     #[test]
