@@ -17,10 +17,6 @@ fn check_address_prefix(s: &str, n: Network) -> bool {
     }
 }
 
-fn is_eth_address(s: &str) -> bool {
-    s.len() > 2 && s[0..2].eq("0x")
-}
-
 pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
     let s = raw.trim().to_lowercase();
 
@@ -28,9 +24,14 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
         bail!("Not a valid {:?} address", n);
     }
 
-    if is_eth_address(&s) {
+    if s.len() > 2 && s.starts_with("0x") {
+        // Expecting an eth address, perform further validation
         if s.len() != ETH_ADDRESS_LENGTH {
             bail!("Invalid address length")
+        }
+
+        if !s.chars().skip(2).all(|c| c.is_ascii_hexdigit()) {
+            bail!("Invalid characters in address")
         }
 
         let addr = hex::decode(&s[2..])?;
@@ -135,5 +136,13 @@ mod tests {
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
         assert_eq!(e.to_string(), "Invalid address length");
+    }
+
+    #[test]
+    fn test_parse_eth_address_invalid_chars() {
+        let addr_str = "0xd3!8ab098ed3e84c0d808776440b48f685198498";
+        let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
+
+        assert_eq!(e.to_string(), "Invalid characters in address");
     }
 }
