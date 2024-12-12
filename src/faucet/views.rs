@@ -1,119 +1,38 @@
-use cid::Cid;
-use fvm_shared::{address::Network, econ::TokenAmount};
-use leptos::{component, create_local_resource, event_target_value, view, IntoView, SignalGet};
+use fvm_shared::address::Network;
+use leptos::{component, event_target_value, view, IntoView, SignalGet};
 
 use leptos::*;
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
 
-use super::utils::faucet_address;
-use crate::faucet::utils::sign_with_secret_key;
-use crate::{
-    lotus_json::LotusJson,
-    message::message_transfer,
-    rpc_context::Provider,
-    utils::{catch_all, parse_address},
-};
+use crate::faucet::controller::FaucetController;
 
 #[component]
 pub fn Faucet(target_network: Network) -> impl IntoView {
-    let is_mainnet = target_network == Network::Mainnet;
-    let error_messages = create_rw_signal(vec![]);
-
-    // Disable the send button while we're asking the RPC provider for the nonce
-    let send_button_disabled = create_rw_signal(false);
-    // Disable the send button if rate-limited
-    let send_button_limited = create_rw_signal(0);
+    let faucet = create_rw_signal(FaucetController::new(target_network));
 
     #[cfg(feature = "hydrate")]
     let _ = use_interval_fn(
         move || {
-            let duration = send_button_limited.get();
+            let duration = faucet.get().get_send_rate_limit_remaining();
             if duration > 0 {
-                send_button_limited.set(duration - 1);
+                faucet.get().set_send_rate_limit_remaining(duration - 1);
             }
         },
         1000,
     );
 
-    let sender_address = create_local_resource(
-        move || (),
-        move |()| async move {
-            faucet_address(is_mainnet)
-                .await
-                .map(|LotusJson(addr)| addr)
-                .ok()
-        },
-    );
-    let faucet_balance = create_local_resource_with_initial_value(
-        move || sender_address.get(),
-        move |addr| async move {
-            if let Some(Some(addr)) = addr {
-                Provider::from_network(target_network)
-                    .wallet_balance(addr)
-                    .await
-                    .ok()
-                    .unwrap_or(TokenAmount::from_atto(0))
-            } else {
-                TokenAmount::from_atto(0)
-            }
-        },
-        Some(TokenAmount::from_atto(0)),
-    );
-    let target_address = create_rw_signal(String::new());
-    let target_balance = create_local_resource_with_initial_value(
-        move || target_address.get(),
-        move |address| async move {
-            if let Ok((address, _network)) = parse_address(&address) {
-                Provider::from_network(target_network)
-                    .wallet_balance(address)
-                    .await
-                    .ok()
-                    .unwrap_or(TokenAmount::from_atto(0))
-            } else {
-                TokenAmount::from_atto(0)
-            }
-        },
-        Some(TokenAmount::from_atto(0)),
-    );
-
-    let sent_messages: RwSignal<Vec<(Cid, bool)>> = create_rw_signal(Vec::new());
-
     #[cfg(feature = "hydrate")]
     let _ = use_interval_fn(
         move || {
-            log::info!("Checking for new transactions");
-            target_balance.refetch();
-            faucet_balance.refetch();
-            let pending = sent_messages
-                .get_untracked()
-                .into_iter()
-                .filter_map(|(cid, sent)| if !sent { Some(cid) } else { None })
-                .collect::<Vec<_>>();
-            spawn_local(catch_all(error_messages, async move {
-                for cid in pending {
-                    if let Some(lookup) = Provider::from_network(target_network)
-                        .state_search_msg(cid)
-                        .await?
-                    {
-                        sent_messages.update(|messages| {
-                            for (cid, sent) in messages {
-                                if cid == &lookup.message {
-                                    *sent = true;
-                                }
-                            }
-                        });
-                    }
-                }
-                Ok(())
-            }));
+            faucet.get().refetch_balances();
         },
         5000,
     );
 
     view! {
         {move || {
-            let errors = error_messages.get();
+            let errors = faucet.get().get_error_messages();
             if !errors.is_empty() {
                 view! {
                     <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
@@ -134,10 +53,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 viewBox="0 0 20 20"
                                                 on:click=move |_| {
-                                                    error_messages
-                                                        .update(|msgs| {
-                                                            msgs.remove(index);
-                                                        });
+                                                    faucet.get().remove_error_message(index);
                                                 }
                                             >
                                                 <title>Close</title>
@@ -160,19 +76,19 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 <input
                     type="text"
                     placeholder="Enter target address"
-                    prop:value=target_address
-                    on:input=move |ev| { target_address.set(event_target_value(&ev)) }
+                    prop:value=faucet.get().get_target_address()
+                    on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
                     class="flex-grow border border-gray-300 p-2 rounded-l"
                 />
                 {move || {
-                    if send_button_disabled.get() {
+                    if faucet.get().is_send_disabled() {
                         view! {
                             <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
                                 "Sending..."
                             </button>
                         }
-                    } else if send_button_limited.get() > 0 {
-                        let duration = send_button_limited.get();
+                    } else if faucet.get().get_send_rate_limit_remaining() > 0 {
+                        let duration = faucet.get().get_send_rate_limit_remaining();
                         view! {
                             <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
                                 {format!("Rate-limited! {duration}s")}
@@ -183,66 +99,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             <button
                                 class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
                                 on:click=move |_| {
-                                    match parse_address(&target_address.get()) {
-                                        Ok((_addr, network)) if network != target_network => {
-                                            error_messages.update(|errors| errors.push("Mainnet/testnet address mismatch".to_string()));
-                                        }
-                                        Ok((addr, _network)) => {
-                                            spawn_local(async move {
-                                                catch_all(
-                                                        error_messages,
-                                                        async move {
-                                                            let rpc = Provider::from_network(target_network);
-                                                            let LotusJson(from) =
-                                                                faucet_address(is_mainnet)
-                                                                    .await
-                                                                    .map_err(|e| {
-                                                                    anyhow::anyhow!("Error getting faucet address: {}", e)
-                                                                })?;
-                                                            send_button_disabled.set(true);
-                                                            let nonce = rpc.mpool_get_nonce(from).await?;
-                                                            let mut msg = message_transfer(
-                                                                from,
-                                                                addr,
-                                                                if is_mainnet {
-                                                                    TokenAmount::from_nano(1_000_000)
-                                                                } else {
-                                                                    TokenAmount::from_whole(1)
-                                                                },
-                                                            );
-                                                            msg.sequence = nonce;
-                                                            let msg = rpc.estimate_gas(msg).await?;
-                                                            match sign_with_secret_key(
-                                                                    LotusJson(msg.clone()),
-                                                                    is_mainnet,
-                                                                )
-                                                                .await
-                                                            {
-                                                                Ok(LotusJson(smsg)) => {
-                                                                    let cid = rpc.mpool_push(smsg).await?;
-                                                                    sent_messages
-                                                                        .update(|messages| {
-                                                                            messages.push((cid, false));
-                                                                        });
-                                                                    log::info!("Sent message: {:?}", cid);
-                                                                }
-                                                                Err(e) => {
-                                                                    log::error!("Failed to sign message: {}", e);
-                                                                    send_button_limited.set(30);
-                                                                }
-                                                            }
-                                                            Ok(())
-                                                        },
-                                                    )
-                                                    .await;
-                                                send_button_disabled.set(false);
-                                            });
-                                        }
-                                        Err(e) => {
-                                            error_messages.update(|errors| errors.push("Invalid address".to_string()));
-                                            log::error!("Error parsing address: {}", e);
-                                        }
-                                    }
+                                    faucet.get().drip();
                                 }
                             >
                                 Send
@@ -255,16 +112,16 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <div class="flex justify-between my-4">
                 <div>
                     <h3 class="text-lg font-semibold">Faucet Balance:</h3>
-                    <p class="text-xl">{move || faucet_balance.get().unwrap_or_default().to_string()}</p>
+                    <p class="text-xl">{move || faucet.get().get_faucet_balance().to_string()}</p>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold">Target Balance:</h3>
-                    <p class="text-xl">{move || target_balance.get().unwrap_or_default().to_string()}</p>
+                    <p class="text-xl">{move || faucet.get().get_target_balance().to_string()}</p>
                 </div>
             </div>
             <hr class="my-4 border-t border-gray-300" />
             {move || {
-                let messages = sent_messages.get();
+                let messages = faucet.get().get_sent_messages();
                 if !messages.is_empty() {
                     view! {
                         <div class="mt-4">

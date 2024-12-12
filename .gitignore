@@ -230,3 +230,5 @@ rust-project.json
 # End of https://www.toptal.com/developers/gitignore/api/osx,rust,rust-analyzer,visualstudiocode,node,yarn
 
 assets/
+.dev.vars
+.wrangler

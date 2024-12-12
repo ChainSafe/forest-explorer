@@ -38,7 +38,17 @@ pub async fn sign_with_secret_key(
         ));
     }
     SendWrapper::new(async move {
-        let may_sign = query_rate_limiter().await?;
+        use axum::Extension;
+        use leptos_axum::extract;
+        use std::sync::Arc;
+        use worker::Env;
+        let Extension(env): Extension<Arc<Env>> = extract().await?;
+        let rate_limiter_disabled = env
+            .secret("RATE_LIMITER_DISABLED")
+            .map(|v| v.to_string().to_lowercase() == "true")
+            .unwrap_or(false);
+        let may_sign = rate_limiter_disabled || query_rate_limiter().await?;
+
         if !may_sign {
             return Err(ServerFnError::ServerError(
                 "Rate limit exceeded - wait 30 seconds".to_string(),
