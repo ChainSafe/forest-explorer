@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail};
+use anyhow::bail;
 use fvm_shared::address::{Address, Network};
 use fvm_shared::ActorID;
 
@@ -18,7 +18,7 @@ fn check_address_prefix(s: &str, n: Network) -> bool {
 }
 
 fn is_eth_address(s: &str) -> bool {
-    return s.len() > 2 && s[0..2].eq("0x")
+    s.len() > 2 && s[0..2].eq("0x")
 }
 
 pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
@@ -38,7 +38,7 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
     } else {
         match n.parse_address(&s) {
             Ok(addr) => Ok(addr),
-            Err(e) => bail!(e)
+            Err(e) => bail!(e),
         }
     }
 }
