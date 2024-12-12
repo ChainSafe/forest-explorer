@@ -36,10 +36,7 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
         let addr = hex::decode(&s[2..])?;
         Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
     } else {
-        match n.parse_address(&s) {
-            Ok(addr) => Ok(addr),
-            Err(e) => bail!(e),
-        }
+        Ok(n.parse_address(&s)?)
     }
 }
 
