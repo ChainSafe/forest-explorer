@@ -7,10 +7,8 @@ use leptos::{
 };
 
 use crate::{
-    lotus_json::LotusJson,
-    message::message_transfer,
-    rpc_context::Provider,
-    utils::{catch_all, parse_address},
+    address::parse_address, lotus_json::LotusJson, message::message_transfer,
+    rpc_context::Provider, utils::catch_all,
 };
 
 use super::utils::faucet_address;
@@ -27,7 +25,7 @@ impl FaucetController {
         let target_balance = create_local_resource_with_initial_value(
             move || target_address.get(),
             move |address| async move {
-                if let Ok((address, _network)) = parse_address(&address) {
+                if let Ok(address) = parse_address(&address, network) {
                     Provider::from_network(network)
                         .wallet_balance(address)
                         .await
@@ -163,11 +161,8 @@ impl FaucetController {
     pub fn drip(&self) {
         let is_mainnet = self.faucet.network == Network::Mainnet;
         let faucet = self.faucet.clone();
-        match parse_address(&self.faucet.target_address.get()) {
-            Ok((_addr, network)) if network != self.faucet.network => {
-                self.add_error_message("Mainnet/testnet address mismatch".to_string());
-            }
-            Ok((addr, _network)) => {
+        match parse_address(&self.faucet.target_address.get(), self.faucet.network) {
+            Ok(addr) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         let rpc = Provider::from_network(faucet.network);
