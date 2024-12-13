@@ -16,7 +16,25 @@ via the client WASM module.
 Anything pushed to `main` will automatically be deployed at
 <https://forest-explorer.chainsafe.dev>.
 
+# Development
+
 Running `npx wrangler@latest dev` will spawn a local copy of the explorer.
+
+To speed up the build during development, you can run
+`npx wrangler@latest dev --env quick` which will skip the optimization step.
+
+You can define secrets for your local faucet in the `.dev.vars` file. This file
+is ignored by git.
+
+```
+SECRET_WALLET=
+SECRET_MAINNET_WALLET=
+RATE_LIMITER_DISABLED=true
+```
+
+Note - the `RATE_LIMITER_DISABLED` variable is required to be set to `true` in
+order to bypass the rate limiter in the local environment if you want to test
+the faucet.
 
 # Dependencies
 
