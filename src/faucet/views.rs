@@ -78,6 +78,11 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     placeholder="Enter target address"
                     prop:value=faucet.get().get_target_address()
                     on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
+                    on:keydown=move |ev| {
+                        if ev.key() == "Enter" && !faucet.get().is_send_disabled() && faucet.get().get_send_rate_limit_remaining() <= 0 {
+                            faucet.get().drip();
+                        }
+                    }
                     class="flex-grow border border-gray-300 p-2 rounded-l"
                 />
                 {move || {
