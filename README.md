@@ -18,10 +18,18 @@ Anything pushed to `main` will automatically be deployed at
 
 # Development
 
-Running `npx wrangler@latest dev` will spawn a local copy of the explorer.
+Installing node(LTS versions recommended).
 
-To speed up the build during development, you can run
-`npx wrangler@latest dev --env quick` which will skip the optimization step.
+Running `corepack enable` to opt-in corepack, see
+[docs](https://yarnpkg.com/corepack#installation) for details.
+
+Running `yarn` or `yarn --immutable` once to install all required npm
+dependencies.
+
+Running `yarn start` will spawn a local copy of the explorer.
+
+To speed up the build during development, you can run `yarn dev` which will skip
+the optimization step.
 
 You can define secrets for your local faucet in the `.dev.vars` file. This file
 is ignored by git.
