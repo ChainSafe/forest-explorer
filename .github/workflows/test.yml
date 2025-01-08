@@ -55,8 +55,10 @@ jobs:
 
       - name: Run website
         run: |
-          npx wrangler@latest build
-          npx wrangler@latest dev &
+          corepack enable
+          yarn --immutable
+          yarn build
+          yarn start &
           echo "waiting"
           timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 8787
 
