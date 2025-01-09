@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # needed by codecov sometimes
       - uses: taiki-e/install-action@cargo-llvm-cov
       - run: cargo llvm-cov --all-features --lcov --output-path lcov.info
         env:

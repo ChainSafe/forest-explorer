@@ -32,6 +32,7 @@ clonable
 codebase
 codecov
 codec
+corepack
 cron
 crypto
 CurrentEpoch
@@ -77,6 +78,7 @@ Leptos
 libp2p
 liveness
 localhost
+LTS
 mainnet
 MDNS
 mempool
@@ -88,6 +90,7 @@ multiaddr/SM
 multihash
 multisig
 mutex
+npm
 Open
 OpenRPC
 overallocation
