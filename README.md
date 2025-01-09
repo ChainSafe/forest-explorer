@@ -52,7 +52,40 @@ the faucet.
 
 # Custom deployments
 
-To deploy to a new CloudFlare account, change `account_id` in `wrangler.toml`,
-set `SECRET_WALLET` and `SECRET_MAINNET_WALLET` using
+### Account & domain
+
+1. In [`wrangler.toml`](./wrangler.toml), set `account_id` to your CloudFlare
+   account ID.
+2. In [`wrangler.toml`](./wrangler.toml), set `pattern` in routes to match your
+   domain.
+
+In order to deploy to a different CloudFlare account, you need to do the
+following:
+
+### Rate limiter
+
+If you have a paid CloudFlare account:
+
+1. Create a KV store in CloudFlare. It can be found under the _Storage &
+   Databases_ tab. The name can be anything.
+2. In [`wrangler.toml`](./wrangler.toml), set `id` in `kv_namespaces` to your KV
+   store id (from step 1).
+
+If you have a free CloudFlare account, you will need to disable the rate
+limiter. :warning: This is not recommended for production use as it will expose
+your service to abuse.
+
+1. In [`wrangler.toml`](./wrangler.toml), remove or comment out
+   `[durable_objects]` and `[migrations]` sections. Additionally, remove
+   `kv_namespaces` from the `[env.quick]` section.
+2. Run `npx wrangler@latest secret put RATE_LIMITER_DISABLED true`.
+
+### Wallets
+
+Set `SECRET_WALLET` (calibnet) and/or `SECRET_MAINNET_WALLET` (mainnet) using
 `npx wrangler@latest secret put` (values are exported private keys, see
-`forest-wallet export`), and run `npx wrangler@latest deploy`.
+`forest-wallet export`).
+
+### Deployment
+
+Run `npx wrangler@latest deploy`.
