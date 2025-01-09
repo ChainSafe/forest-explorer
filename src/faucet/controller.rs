@@ -1,10 +1,8 @@
 use super::{model::FaucetModel, utils::sign_with_secret_key};
 use cid::Cid;
 use fvm_shared::{address::Network, econ::TokenAmount};
-use leptos::{
-    create_local_resource, create_local_resource_with_initial_value, create_rw_signal, spawn_local,
-    SignalGet as _, SignalSet as _, SignalUpdate as _,
-};
+use leptos::prelude::*;
+use leptos::task::spawn_local;
 
 use crate::{
     address::parse_address, lotus_json::LotusJson, message::message_transfer,
@@ -21,8 +19,8 @@ pub(super) struct FaucetController {
 impl FaucetController {
     pub fn new(network: Network) -> Self {
         let is_mainnet = network == Network::Mainnet;
-        let target_address = create_rw_signal(String::new());
-        let target_balance = create_local_resource_with_initial_value(
+        let target_address = RwSignal::new(String::new());
+        let target_balance = Resource::new(
             move || target_address.get(),
             move |address| async move {
                 if let Ok(address) = parse_address(&address, network) {
@@ -35,9 +33,8 @@ impl FaucetController {
                     TokenAmount::from_atto(0)
                 }
             },
-            Some(TokenAmount::from_atto(0)),
         );
-        let sender_address = create_local_resource(
+        let sender_address = Resource::new(
             move || (),
             move |()| async move {
                 faucet_address(is_mainnet)
@@ -46,7 +43,7 @@ impl FaucetController {
                     .ok()
             },
         );
-        let faucet_balance = create_local_resource_with_initial_value(
+        let faucet_balance = Resource::new(
             move || sender_address.get().flatten(),
             move |addr| async move {
                 if let Some(addr) = addr {
@@ -59,14 +56,13 @@ impl FaucetController {
                     TokenAmount::from_atto(0)
                 }
             },
-            Some(TokenAmount::from_atto(0)),
         );
         let faucet = FaucetModel {
             network,
-            send_disabled: create_rw_signal(false),
-            send_limited: create_rw_signal(0),
-            sent_messages: create_rw_signal(Vec::new()),
-            error_messages: create_rw_signal(Vec::new()),
+            send_disabled: RwSignal::new(false),
+            send_limited: RwSignal::new(0),
+            sent_messages: RwSignal::new(Vec::new()),
+            error_messages: RwSignal::new(Vec::new()),
             target_balance,
             faucet_balance,
             target_address,
@@ -76,7 +72,7 @@ impl FaucetController {
 
     #[allow(dead_code)]
     pub fn refetch_balances(&self) {
-        use leptos::SignalGetUntracked;
+        use leptos::prelude::GetUntracked;
 
         log::info!("Checking for new transactions");
         self.faucet.target_balance.refetch();

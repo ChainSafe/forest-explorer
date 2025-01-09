@@ -1,6 +1,7 @@
-use leptos::{component, create_local_resource, event_target_value, view, IntoView, SignalGet};
+use leptos::prelude::*;
+use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 use leptos_meta::*;
-use leptos_router::*;
+use leptos_router::components::*;
 
 use crate::rpc_context::RpcContext;
 
@@ -12,12 +13,12 @@ pub fn Loader(loading: impl Fn() -> bool + 'static) -> impl IntoView {
 #[component]
 pub fn BlockchainExplorer() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-    let network_name = create_local_resource(
+    let network_name = Resource::new(
         move || rpc_context.get(),
         move |provider| async move { provider.network_name().await.ok() },
     );
 
-    let network_version = create_local_resource(
+    let network_version = Resource::new(
         move || rpc_context.get(),
         move |provider| async move { provider.network_version().await.ok() },
     );

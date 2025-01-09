@@ -3,7 +3,7 @@ use fvm_shared::{
     address::{Address, Network},
     econ::TokenAmount,
 };
-use leptos::{Resource, RwSignal};
+use leptos::prelude::{Resource, RwSignal};
 
 #[derive(Clone)]
 pub(super) struct FaucetModel {

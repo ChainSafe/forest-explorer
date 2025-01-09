@@ -2,7 +2,7 @@ use cid::Cid;
 use fvm_shared::address::{set_current_network, Address, Network};
 use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
-use leptos::*;
+use leptos::prelude::*;
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
@@ -24,8 +24,8 @@ pub struct RpcContext {
 
 impl RpcContext {
     pub fn new() -> Self {
-        let provider = create_rw_signal(Provider::new(GLIF_CALIBNET.to_string()));
-        let network = create_local_resource(
+        let provider = RwSignal::new(Provider::new(GLIF_CALIBNET.to_string()));
+        let network = Resource::new(
             move || provider.get(),
             move |provider| async move {
                 if provider.network_name().await.ok() != Some("mainnet".to_string()) {
@@ -35,7 +35,7 @@ impl RpcContext {
                 }
             },
         );
-        create_effect(move |_| {
+        Effect::new(move |_| {
             log::info!("Updating network: {:?}", network.get());
             set_current_network(network.get().unwrap_or(Network::Testnet));
         });

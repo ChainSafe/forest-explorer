@@ -1,7 +1,7 @@
 use fvm_shared::address::Network;
-use leptos::{component, event_target_value, view, IntoView, SignalGet};
+use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 
-use leptos::*;
+use leptos::prelude::*;
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
 
@@ -9,7 +9,7 @@ use crate::faucet::controller::FaucetController;
 
 #[component]
 pub fn Faucet(target_network: Network) -> impl IntoView {
-    let faucet = create_rw_signal(FaucetController::new(target_network));
+    let faucet = RwSignal::new(FaucetController::new(target_network));
 
     #[cfg(feature = "hydrate")]
     let _ = use_interval_fn(
@@ -68,6 +68,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 }
                     .into_view()
             } else {
+                #[allow(clippy::unused_unit)]
                 view! {}.into_view()
             }
         }}
@@ -148,6 +149,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     }
                         .into_view()
                 } else {
+                    #[allow(clippy::unused_unit)]
                     view! {}.into_view()
                 }
             }}

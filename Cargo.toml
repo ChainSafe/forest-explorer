@@ -26,11 +26,11 @@ fvm_ipld_encoding = "0.5"
 fvm_shared = { version = "~4.5" }
 hex = "0.4"
 http = { version = "1", optional = true }
-leptos = "0.6"
-leptos-use = "0.13"
-leptos_axum = { version = "0.6", default-features = false, optional = true }
-leptos_meta = "0.6"
-leptos_router = "0.6"
+leptos = "0.7.3"
+leptos-use = "0.15.3"
+leptos_axum = { version = "0.7.3", default-features = false, optional = true }
+leptos_meta = "0.7.3"
+leptos_router = "0.7.3"
 libsecp256k1 = "0.7"
 log = "0.4"
 multihash-codetable = { version = "0.1" }
@@ -47,7 +47,7 @@ worker = { version = "0.4", features = ['http', 'axum'], optional = true }
 worker-macros = { version = "0.4", features = ['http'], optional = true }
 
 [features]
-hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
+hydrate = ["leptos/hydrate"]
 ssr = [
   "dep:tower",
   "dep:http",

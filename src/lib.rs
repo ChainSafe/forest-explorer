@@ -16,7 +16,7 @@ mod utils;
 pub fn hydrate() {
     _ = console_log::init_with_level(log::Level::Debug);
     console_error_panic_hook::set_once();
-    leptos::mount_to_body(App);
+    leptos::mount::mount_to_body(App);
 }
 
 #[cfg(feature = "ssr")]
@@ -25,7 +25,7 @@ mod ssr_imports {
 
     use crate::{app::App, faucet};
     use axum::{routing::post, Extension, Router};
-    use leptos::*;
+    use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use worker::{event, Context, Env, HttpRequest, Result};
 
