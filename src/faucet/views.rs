@@ -75,7 +75,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <div class="my-4 flex">
                 <input
                     type="text"
-                    placeholder="Enter target address"
+                    placeholder="Enter target address (Filecoin or Ethereum style)"
                     prop:value=faucet.get().get_target_address()
                     on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
                     on:keydown=move |ev| {
@@ -158,12 +158,10 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
 #[component]
 pub fn Faucets() -> impl IntoView {
     view! {
-        <div>
+        <div class="text-center">
             <h2 class="text-2xl font-bold mb-4">Faucet List</h2>
-            <ul class="list-disc pl-5">
-                <li><a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a></li>
-                <li><a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a></li>
-            </ul>
+                <a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a><br />
+                <a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a>
         </div>
     }
 }
@@ -175,6 +173,9 @@ pub fn Faucet_Calibnet() -> impl IntoView {
             <h1 class="text-4xl font-bold mb-6 text-center">Calibnet Faucet</h1>
             <Faucet target_network=Network::Testnet />
         </div>
+        <div class="text-center mt-4">
+            "This faucet distributes 1 tFIL per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
+        </div>
     }
 }
 
@@ -184,6 +185,9 @@ pub fn Faucet_Mainnet() -> impl IntoView {
         <div>
             <h1 class="text-4xl font-bold mb-6 text-center">Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
+        <div class="text-center mt-4">
+            "This faucet distributes 0.01 FIL per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."
+        </div>
         </div>
     }
 }
