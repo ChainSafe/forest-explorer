@@ -61,6 +61,7 @@ impl FaucetController {
             },
             Some(TokenAmount::from_atto(0)),
         );
+
         let faucet = FaucetModel {
             network,
             send_disabled: create_rw_signal(false),
@@ -115,6 +116,14 @@ impl FaucetController {
 
     pub fn get_target_address(&self) -> String {
         self.faucet.target_address.get()
+    }
+
+    pub fn get_fil_unit(&self) -> String {
+        match self.faucet.network {
+            Network::Mainnet => crate::constants::FIL_MAINNET_UNIT,
+            _ => crate::constants::FIL_CALIBNET_UNIT,
+        }
+        .to_string()
     }
 
     pub fn set_target_address(&self, address: String) {
