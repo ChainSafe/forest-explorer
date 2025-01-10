@@ -2,11 +2,11 @@ use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 use leptos_meta::*;
 use leptos_router::components::*;
-
+use leptos_router::path;
 use crate::rpc_context::RpcContext;
 
 #[component]
-pub fn Loader(loading: impl Fn() -> bool + 'static) -> impl IntoView {
+pub fn Loader(loading: impl Fn() -> bool + 'static + Send) -> impl IntoView {
     view! { <span class:loader=loading /> }
 }
 
@@ -34,12 +34,12 @@ pub fn BlockchainExplorer() -> impl IntoView {
         <p>StateNetworkName</p>
         <p class="px-8">
             <span>{move || network_name.get()}</span>
-            <Loader loading=move || network_name.loading().get() />
+            <Loader loading=move || network_name.get().is_none() />
         </p>
         <p>StateNetworkVersion</p>
         <p class="px-8">
             <span>{move || network_version.get()}</span>
-            <Loader loading=move || network_name.loading().get() />
+            <Loader loading=move || network_version.get().is_none() />
         </p>
     }
 }
@@ -53,11 +53,11 @@ pub fn App() -> impl IntoView {
         <Stylesheet href="/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/favicon.ico" />
         <Router>
-            <Routes>
-                <Route path="/" view=BlockchainExplorer />
-                <Route path="/faucet" view=crate::faucet::views::Faucets />
-                <Route path="/faucet/calibnet" view=crate::faucet::views::Faucet_Calibnet />
-                <Route path="/faucet/mainnet" view=crate::faucet::views::Faucet_Mainnet />
+            <Routes fallback=|| "Not found.">
+                <Route path=path!("/") view=BlockchainExplorer />
+                <Route path=path!("/faucet") view=crate::faucet::views::Faucets />
+                <Route path=path!("/faucet/calibnet") view=crate::faucet::views::Faucet_Calibnet />
+                <Route path=path!("/faucet/mainnet") view=crate::faucet::views::Faucet_Mainnet />
             </Routes>
         </Router>
     }

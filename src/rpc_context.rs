@@ -4,6 +4,7 @@ use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
 use leptos::prelude::*;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::LazyLock;
 
@@ -15,10 +16,36 @@ static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 const GLIF_CALIBNET: &str = "https://api.calibration.node.glif.io";
 const GLIF_MAINNET: &str = "https://api.node.glif.io";
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum NetworkWrapper {
+    Mainnet,
+    Testnet,
+}
+
+impl From<Network> for NetworkWrapper {
+    fn from(network: Network) -> Self {
+        match network {
+            Network::Mainnet => NetworkWrapper::Mainnet,
+            Network::Testnet => NetworkWrapper::Testnet,
+        }
+    }
+}
+
+impl From<NetworkWrapper> for Network {
+    fn from(serde_network: NetworkWrapper) -> Self {
+        match serde_network {
+            NetworkWrapper::Mainnet => Network::Mainnet,
+            NetworkWrapper::Testnet => Network::Testnet,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Serialize)]
 pub struct RpcContext {
     #[allow(unused)]
-    network: Resource<Provider, Network>,
+    #[serde(skip)]
+    network: Resource<NetworkWrapper>,
     provider: RwSignal<Provider>,
 }
 
@@ -29,15 +56,15 @@ impl RpcContext {
             move || provider.get(),
             move |provider| async move {
                 if provider.network_name().await.ok() != Some("mainnet".to_string()) {
-                    Network::Testnet
+                    NetworkWrapper::Testnet
                 } else {
-                    Network::Mainnet
+                    NetworkWrapper::Mainnet
                 }
             },
         );
         Effect::new(move |_| {
             log::info!("Updating network: {:?}", network.get());
-            set_current_network(network.get().unwrap_or(Network::Testnet));
+            set_current_network(network.get().unwrap_or(NetworkWrapper::Testnet).into());
         });
         Self { network, provider }
     }
@@ -59,7 +86,7 @@ impl RpcContext {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Provider {
     url: String,
 }

@@ -33,7 +33,6 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     view! {
         {move || {
             let errors = faucet.get().get_error_messages();
-            if !errors.is_empty() {
                 view! {
                     <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
                         {errors
@@ -67,10 +66,6 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     </div>
                 }
                     .into_view()
-            } else {
-                #[allow(clippy::unused_unit)]
-                view! {}.into_view()
-            }
         }}
         <div class="max-w-2xl mx-auto">
             <div class="my-4 flex">
@@ -87,30 +82,31 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     class="flex-grow border border-gray-300 p-2 rounded-l"
                 />
                 {move || {
-                    if faucet.get().is_send_disabled() {
-                        view! {
-                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
-                                "Sending..."
-                            </button>
-                        }
+                    let is_disabled = faucet.get().is_send_disabled() || faucet.get().get_send_rate_limit_remaining() > 0;
+                    let button_text = if faucet.get().is_send_disabled() {
+                        "Sending...".to_string()
                     } else if faucet.get().get_send_rate_limit_remaining() > 0 {
                         let duration = faucet.get().get_send_rate_limit_remaining();
-                        view! {
-                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
-                                {format!("Rate-limited! {duration}s")}
-                            </button>
-                        }
+                        format!("Rate-limited! {duration}s")
                     } else {
-                        view! {
-                            <button
-                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
-                                on:click=move |_| {
+                        "Send".to_string()
+                    };
+                    view! {
+                        <button
+                            class={if is_disabled {
+                                "bg-gray-400 text-white font-bold py-2 px-4 rounded-r"
+                            } else {
+                                "bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
+                            }}
+                            disabled={is_disabled}
+                            on:click=move |_| {
+                                if !is_disabled {
                                     faucet.get().drip();
                                 }
-                            >
-                                Send
-                            </button>
-                        }
+                            }
+                        >
+                            {button_text}
+                        </button>
                     }
                 }}
 
@@ -128,7 +124,6 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <hr class="my-4 border-t border-gray-300" />
             {move || {
                 let messages = faucet.get().get_sent_messages();
-                if !messages.is_empty() {
                     view! {
                         <div class="mt-4">
                             <h3 class="text-lg font-semibold">Transactions:</h3>
@@ -148,10 +143,6 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                         </div>
                     }
                         .into_view()
-                } else {
-                    #[allow(clippy::unused_unit)]
-                    view! {}.into_view()
-                }
             }}
         </div>
     }
