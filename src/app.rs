@@ -44,6 +44,15 @@ pub fn BlockchainExplorer() -> impl IntoView {
 }
 
 #[component]
+fn Footer() -> impl IntoView {
+    view! {
+        <footer class="p-4 text-center">
+            <a class="text-green-600" href="https://github.com/ChainSafe/forest-explorer">Forest Explorer</a>", built with ❤️ by " <a class="text-blue-600" href="https://chainsafe.io">ChainSafe Systems</a>
+        </footer>
+    }
+}
+
+#[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
     RpcContext::provide_context();
@@ -58,6 +67,7 @@ pub fn App() -> impl IntoView {
                 <Route path="/faucet/calibnet" view=crate::faucet::views::Faucet_Calibnet />
                 <Route path="/faucet/mainnet" view=crate::faucet::views::Faucet_Mainnet />
             </Routes>
+            <Footer />
         </Router>
     }
 }

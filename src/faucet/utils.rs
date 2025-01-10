@@ -23,14 +23,13 @@ pub async fn sign_with_secret_key(
     is_mainnet: bool,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
     use crate::message::message_cid;
-    use fvm_shared::econ::TokenAmount;
     use leptos::server_fn::error::NoCustomError;
     use send_wrapper::SendWrapper;
     let LotusJson(msg) = msg;
     let cid = message_cid(&msg);
     let amount_limit = match is_mainnet {
-        true => TokenAmount::from_nano(1_000_000),
-        false => TokenAmount::from_nano(1_000_000_000),
+        true => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
+        false => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
     };
     if msg.value > amount_limit {
         return Err(ServerFnError::ServerError(
@@ -50,9 +49,10 @@ pub async fn sign_with_secret_key(
         let may_sign = rate_limiter_disabled || query_rate_limiter().await?;
 
         if !may_sign {
-            return Err(ServerFnError::ServerError(
-                "Rate limit exceeded - wait 30 seconds".to_string(),
-            ));
+            return Err(ServerFnError::ServerError(format!(
+                "Rate limit exceeded - wait {} seconds",
+                crate::constants::RATE_LIMIT_SECONDS
+            )));
         }
 
         let network = if is_mainnet {

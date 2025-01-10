@@ -27,7 +27,7 @@ CID/SM
 CIDs
 ChainSafe/M
 CLI
-CloudFlare
+CloudFlare/SM
 clonable
 codebase
 codecov
@@ -125,6 +125,7 @@ synchronizer
 syscall/S
 TCP
 testnet
+tFIL
 tipset/SM
 tipsetkey/S
 TOML

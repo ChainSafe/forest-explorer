@@ -175,9 +175,9 @@ impl FaucetController {
                             from,
                             addr,
                             if is_mainnet {
-                                TokenAmount::from_nano(1_000_000)
+                                crate::constants::MAINNET_DRIP_AMOUNT.clone()
                             } else {
-                                TokenAmount::from_whole(1)
+                                crate::constants::CALIBNET_DRIP_AMOUNT.clone()
                             },
                         );
                         msg.sequence = nonce;
@@ -192,7 +192,9 @@ impl FaucetController {
                             }
                             Err(e) => {
                                 log::error!("Failed to sign message: {}", e);
-                                faucet.send_limited.set(30);
+                                faucet
+                                    .send_limited
+                                    .set(crate::constants::RATE_LIMIT_SECONDS as i32);
                             }
                         }
                         Ok(())

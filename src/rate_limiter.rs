@@ -1,8 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 use worker::*;
 
-const LIMIT_SECONDS: i64 = 30;
-
 #[durable_object]
 pub struct RateLimiter {
     state: State,
@@ -24,9 +22,11 @@ impl DurableObject for RateLimiter {
             // This Durable Object will be deleted after the alarm is triggered
             self.state
                 .storage()
-                .set_alarm(std::time::Duration::from_secs(LIMIT_SECONDS as u64 + 1))
+                .set_alarm(std::time::Duration::from_secs(
+                    crate::constants::RATE_LIMIT_SECONDS as u64 + 1,
+                ))
                 .await?;
-            self.block_until = now + Duration::seconds(LIMIT_SECONDS);
+            self.block_until = now + Duration::seconds(crate::constants::RATE_LIMIT_SECONDS);
 
             Response::from_json(&true)
         } else {
