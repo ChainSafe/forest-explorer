@@ -128,6 +128,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <hr class="my-4 border-t border-gray-300" />
             {move || {
                 let messages = faucet.get().get_sent_messages();
+                if !messages.is_empty() {
                     view! {
                         <div class="mt-4">
                             <h3 class="text-lg font-semibold">Transactions:</h3>
@@ -146,7 +147,10 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             </ul>
                         </div>
                     }
-                        .into_view()
+                        .into_any()
+                } else {
+                    view! {}.into_any()
+                }
             }}
         </div>
     }
