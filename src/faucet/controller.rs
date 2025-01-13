@@ -20,10 +20,10 @@ impl FaucetController {
     pub fn new(network: Network) -> Self {
         let is_mainnet = network == Network::Mainnet;
         let target_address = RwSignal::new(String::new());
-        let target_balance = Resource::new(
-            move || target_address.get(),
-            move |address| async move {
-                if let Ok(address) = parse_address(&address, network) {
+        let target_balance = LocalResource::new(move || {
+            let target_address = target_address.get();
+            async move {
+                if let Ok(address) = parse_address(&target_address, network) {
                     Provider::from_network(network)
                         .wallet_balance(address)
                         .await
@@ -32,31 +32,25 @@ impl FaucetController {
                 } else {
                     TokenAmount::from_atto(0)
                 }
-            },
-        );
-        let sender_address = Resource::new(
-            move || (),
-            move |()| async move {
-                faucet_address(is_mainnet)
+            }
+        });
+        let sender_address = LocalResource::new(move || async move {
+            faucet_address(is_mainnet)
+                .await
+                .map(|LotusJson(addr)| addr)
+                .ok()
+        });
+        let faucet_balance = LocalResource::new(move || async move {
+            if let Some(addr) = sender_address.await {
+                Provider::from_network(network)
+                    .wallet_balance(addr)
                     .await
-                    .map(|LotusJson(addr)| addr)
                     .ok()
-            },
-        );
-        let faucet_balance = Resource::new(
-            move || sender_address.get().flatten(),
-            move |addr| async move {
-                if let Some(addr) = addr {
-                    Provider::from_network(network)
-                        .wallet_balance(addr)
-                        .await
-                        .ok()
-                        .unwrap_or(TokenAmount::from_atto(0))
-                } else {
-                    TokenAmount::from_atto(0)
-                }
-            },
-        );
+                    .unwrap_or(TokenAmount::from_atto(0))
+            } else {
+                TokenAmount::from_atto(0)
+            }
+        });
         let faucet = FaucetModel {
             network,
             send_disabled: RwSignal::new(false),
@@ -75,8 +69,9 @@ impl FaucetController {
         use leptos::prelude::GetUntracked;
 
         log::info!("Checking for new transactions");
-        self.faucet.target_balance.refetch();
-        self.faucet.faucet_balance.refetch();
+        // FIXME
+        // self.faucet.target_balance.refetch();
+        // self.faucet.faucet_balance.refetch();
         let pending = self
             .faucet
             .sent_messages
@@ -106,7 +101,12 @@ impl FaucetController {
         }));
     }
     pub fn get_target_balance(&self) -> TokenAmount {
-        self.faucet.target_balance.get().unwrap_or_default()
+        self.faucet
+            .target_balance
+            .get()
+            .as_deref()
+            .cloned()
+            .unwrap_or_default()
     }
 
     pub fn get_target_address(&self) -> String {
@@ -118,7 +118,12 @@ impl FaucetController {
     }
 
     pub fn get_faucet_balance(&self) -> TokenAmount {
-        self.faucet.faucet_balance.get().unwrap_or_default()
+        self.faucet
+            .faucet_balance
+            .get()
+            .as_deref()
+            .cloned()
+            .unwrap_or_default()
     }
 
     pub fn get_error_messages(&self) -> Vec<String> {

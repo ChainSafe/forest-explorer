@@ -45,26 +45,33 @@ impl From<NetworkWrapper> for Network {
 pub struct RpcContext {
     #[allow(unused)]
     #[serde(skip)]
-    network: Resource<NetworkWrapper>,
+    network: LocalResource<NetworkWrapper>,
     provider: RwSignal<Provider>,
 }
 
 impl RpcContext {
     pub fn new() -> Self {
         let provider = RwSignal::new(Provider::new(GLIF_CALIBNET.to_string()));
-        let network = Resource::new(
-            move || provider.get(),
-            move |provider| async move {
+        let network = LocalResource::new(move || {
+            let provider = provider.get();
+            async move {
                 if provider.network_name().await.ok() != Some("mainnet".to_string()) {
                     NetworkWrapper::Testnet
                 } else {
                     NetworkWrapper::Mainnet
                 }
-            },
-        );
+            }
+        });
         Effect::new(move |_| {
             log::info!("Updating network: {:?}", network.get());
-            set_current_network(network.get().unwrap_or(NetworkWrapper::Testnet).into());
+            set_current_network(
+                network
+                    .get()
+                    .as_deref()
+                    .cloned()
+                    .unwrap_or(NetworkWrapper::Testnet)
+                    .into(),
+            );
         });
         Self { network, provider }
     }
