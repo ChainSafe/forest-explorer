@@ -4,7 +4,6 @@ use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
 use leptos::prelude::*;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::LazyLock;
 
@@ -43,8 +42,7 @@ impl RpcContext {
                     .get()
                     .as_deref()
                     .cloned()
-                    .unwrap_or(Network::Testnet)
-                    .into(),
+                    .unwrap_or(Network::Testnet),
             );
         });
         Self { network, provider }
@@ -67,7 +65,7 @@ impl RpcContext {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Provider {
     url: String,
 }
