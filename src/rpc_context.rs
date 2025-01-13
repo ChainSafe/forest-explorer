@@ -16,10 +16,9 @@ static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 const GLIF_CALIBNET: &str = "https://api.calibration.node.glif.io";
 const GLIF_MAINNET: &str = "https://api.node.glif.io";
 
-#[derive(Clone, Copy, Serialize)]
+#[derive(Clone, Copy)]
 pub struct RpcContext {
     #[allow(unused)]
-    #[serde(skip)]
     network: LocalResource<Network>,
     provider: RwSignal<Provider>,
 }
