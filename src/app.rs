@@ -13,15 +13,15 @@ pub fn Loader(loading: impl Fn() -> bool + 'static + Send) -> impl IntoView {
 #[component]
 pub fn BlockchainExplorer() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-    let network_name = Resource::new(
-        move || rpc_context.get(),
-        move |provider| async move { provider.network_name().await.ok() },
-    );
+    let network_name = LocalResource::new(move || {
+        let provider = rpc_context.get();
+        async move { provider.network_name().await.ok() }
+    });
 
-    let network_version = Resource::new(
-        move || rpc_context.get(),
-        move |provider| async move { provider.network_version().await.ok() },
-    );
+    let network_version = LocalResource::new(move || {
+        let provider = rpc_context.get();
+        async move { provider.network_version().await.ok() }
+    });
 
     view! {
         <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
@@ -33,12 +33,12 @@ pub fn BlockchainExplorer() -> impl IntoView {
         </select>
         <p>StateNetworkName</p>
         <p class="px-8">
-            <span>{move || network_name.get()}</span>
+            <span>{move || network_name.get().as_deref().flatten().cloned()}</span>
             <Loader loading=move || network_name.get().is_none() />
         </p>
         <p>StateNetworkVersion</p>
         <p class="px-8">
-            <span>{move || network_version.get()}</span>
+            <span>{move || network_version.get().as_deref().flatten().cloned()}</span>
             <Loader loading=move || network_version.get().is_none() />
         </p>
     }
