@@ -20,6 +20,7 @@ impl FaucetController {
     pub fn new(network: Network) -> Self {
         let is_mainnet = network == Network::Mainnet;
         let target_address = RwSignal::new(String::new());
+        let balance_trigger = Trigger::new();
         let target_balance = LocalResource::new(move || {
             let target_address = target_address.get();
             async move {
@@ -34,21 +35,27 @@ impl FaucetController {
                 }
             }
         });
-        let sender_address = LocalResource::new(move || async move {
-            faucet_address(is_mainnet)
-                .await
-                .map(|LotusJson(addr)| addr)
-                .ok()
-        });
-        let faucet_balance = LocalResource::new(move || async move {
-            if let Some(addr) = sender_address.await {
-                Provider::from_network(network)
-                    .wallet_balance(addr)
+        let sender_address = LocalResource::new(move || {
+            balance_trigger.track();
+            async move {
+                faucet_address(is_mainnet)
                     .await
+                    .map(|LotusJson(addr)| addr)
                     .ok()
-                    .unwrap_or(TokenAmount::from_atto(0))
-            } else {
-                TokenAmount::from_atto(0)
+            }
+        });
+        let faucet_balance = LocalResource::new(move || {
+            balance_trigger.track();
+            async move {
+                if let Some(addr) = sender_address.await {
+                    Provider::from_network(network)
+                        .wallet_balance(addr)
+                        .await
+                        .ok()
+                        .unwrap_or(TokenAmount::from_atto(0))
+                } else {
+                    TokenAmount::from_atto(0)
+                }
             }
         });
         let faucet = FaucetModel {
@@ -57,6 +64,7 @@ impl FaucetController {
             send_limited: RwSignal::new(0),
             sent_messages: RwSignal::new(Vec::new()),
             error_messages: RwSignal::new(Vec::new()),
+            balance_trigger,
             target_balance,
             faucet_balance,
             target_address,
@@ -69,9 +77,7 @@ impl FaucetController {
         use leptos::prelude::GetUntracked;
 
         log::info!("Checking for new transactions");
-        // FIXME
-        // self.faucet.target_balance.refetch();
-        // self.faucet.faucet_balance.refetch();
+        self.faucet.balance_trigger.notify();
         let pending = self
             .faucet
             .sent_messages

@@ -1,6 +1,6 @@
 use cid::Cid;
 use fvm_shared::{address::Network, econ::TokenAmount};
-use leptos::prelude::{LocalResource, RwSignal};
+use leptos::prelude::{LocalResource, RwSignal, Trigger};
 
 #[derive(Clone)]
 pub(super) struct FaucetModel {
@@ -9,6 +9,7 @@ pub(super) struct FaucetModel {
     pub send_limited: RwSignal<i32>,
     pub sent_messages: RwSignal<Vec<(Cid, bool)>>,
     pub error_messages: RwSignal<Vec<String>>,
+    pub balance_trigger: Trigger,
     pub faucet_balance: LocalResource<TokenAmount>,
     pub target_balance: LocalResource<TokenAmount>,
     pub target_address: RwSignal<String>,
