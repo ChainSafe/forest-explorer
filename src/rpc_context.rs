@@ -16,36 +16,11 @@ static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 const GLIF_CALIBNET: &str = "https://api.calibration.node.glif.io";
 const GLIF_MAINNET: &str = "https://api.node.glif.io";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum NetworkWrapper {
-    Mainnet,
-    Testnet,
-}
-
-impl From<Network> for NetworkWrapper {
-    fn from(network: Network) -> Self {
-        match network {
-            Network::Mainnet => NetworkWrapper::Mainnet,
-            Network::Testnet => NetworkWrapper::Testnet,
-        }
-    }
-}
-
-impl From<NetworkWrapper> for Network {
-    fn from(serde_network: NetworkWrapper) -> Self {
-        match serde_network {
-            NetworkWrapper::Mainnet => Network::Mainnet,
-            NetworkWrapper::Testnet => Network::Testnet,
-        }
-    }
-}
-
 #[derive(Clone, Copy, Serialize)]
 pub struct RpcContext {
     #[allow(unused)]
     #[serde(skip)]
-    network: LocalResource<NetworkWrapper>,
+    network: LocalResource<Network>,
     provider: RwSignal<Provider>,
 }
 
@@ -56,9 +31,9 @@ impl RpcContext {
             let provider = provider.get();
             async move {
                 if provider.network_name().await.ok() != Some("mainnet".to_string()) {
-                    NetworkWrapper::Testnet
+                    Network::Testnet
                 } else {
-                    NetworkWrapper::Mainnet
+                    Network::Mainnet
                 }
             }
         });
@@ -69,7 +44,7 @@ impl RpcContext {
                     .get()
                     .as_deref()
                     .cloned()
-                    .unwrap_or(NetworkWrapper::Testnet)
+                    .unwrap_or(Network::Testnet)
                     .into(),
             );
         });

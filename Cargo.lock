@@ -908,6 +908,7 @@ dependencies = [
  "derive_more",
  "fvm_ipld_encoding",
  "fvm_shared",
+ "getrandom",
  "hex",
  "http",
  "leptos",
