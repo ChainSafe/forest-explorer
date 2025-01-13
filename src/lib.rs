@@ -3,6 +3,7 @@ mod rpc_context;
 #[cfg(feature = "hydrate")]
 use app::App;
 mod address;
+mod constants;
 mod faucet;
 mod key;
 mod lotus_json;

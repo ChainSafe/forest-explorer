@@ -6,6 +6,7 @@ use leptos::prelude::*;
 use leptos_use::*;
 
 use crate::faucet::controller::FaucetController;
+use crate::faucet::utils::format_balance;
 
 #[component]
 pub fn Faucet(target_network: Network) -> impl IntoView {
@@ -71,7 +72,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <div class="my-4 flex">
                 <input
                     type="text"
-                    placeholder="Enter target address"
+                    placeholder="Enter target address (Filecoin or Ethereum style)"
                     prop:value=faucet.get().get_target_address()
                     on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
                     on:keydown=move |ev| {
@@ -114,11 +115,11 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <div class="flex justify-between my-4">
                 <div>
                     <h3 class="text-lg font-semibold">Faucet Balance:</h3>
-                    <p class="text-xl">{move || faucet.get().get_faucet_balance().to_string()}</p>
+                    <p class="text-xl">{ move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }</p>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold">Target Balance:</h3>
-                    <p class="text-xl">{move || faucet.get().get_target_balance().to_string()}</p>
+                    <p class="text-xl">{ move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit()) }</p>
                 </div>
             </div>
             <hr class="my-4 border-t border-gray-300" />
@@ -151,12 +152,10 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
 #[component]
 pub fn Faucets() -> impl IntoView {
     view! {
-        <div>
+        <div class="text-center">
             <h2 class="text-2xl font-bold mb-4">Faucet List</h2>
-            <ul class="list-disc pl-5">
-                <li><a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a></li>
-                <li><a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a></li>
-            </ul>
+                <a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a><br />
+                <a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a>
         </div>
     }
 }
@@ -168,6 +167,9 @@ pub fn Faucet_Calibnet() -> impl IntoView {
             <h1 class="text-4xl font-bold mb-6 text-center">Calibnet Faucet</h1>
             <Faucet target_network=Network::Testnet />
         </div>
+        <div class="text-center mt-4">
+            "This faucet distributes " { format_balance(&crate::constants::CALIBNET_DRIP_AMOUNT, crate::constants::FIL_CALIBNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
+        </div>
     }
 }
 
@@ -177,6 +179,9 @@ pub fn Faucet_Mainnet() -> impl IntoView {
         <div>
             <h1 class="text-4xl font-bold mb-6 text-center">Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
+        <div class="text-center mt-4">
+            "This faucet distributes " { format_balance(&crate::constants::MAINNET_DRIP_AMOUNT, crate::constants::FIL_MAINNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."
+        </div>
         </div>
     }
 }

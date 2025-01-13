@@ -119,6 +119,14 @@ impl FaucetController {
         self.faucet.target_address.get()
     }
 
+    pub fn get_fil_unit(&self) -> String {
+        match self.faucet.network {
+            Network::Mainnet => crate::constants::FIL_MAINNET_UNIT,
+            _ => crate::constants::FIL_CALIBNET_UNIT,
+        }
+        .to_string()
+    }
+
     pub fn set_target_address(&self, address: String) {
         self.faucet.target_address.set(address);
     }
@@ -182,9 +190,9 @@ impl FaucetController {
                             from,
                             addr,
                             if is_mainnet {
-                                TokenAmount::from_nano(1_000_000)
+                                crate::constants::MAINNET_DRIP_AMOUNT.clone()
                             } else {
-                                TokenAmount::from_whole(1)
+                                crate::constants::CALIBNET_DRIP_AMOUNT.clone()
                             },
                         );
                         msg.sequence = nonce;
@@ -199,7 +207,9 @@ impl FaucetController {
                             }
                             Err(e) => {
                                 log::error!("Failed to sign message: {}", e);
-                                faucet.send_limited.set(30);
+                                faucet
+                                    .send_limited
+                                    .set(crate::constants::RATE_LIMIT_SECONDS as i32);
                             }
                         }
                         Ok(())

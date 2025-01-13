@@ -3,7 +3,7 @@ use crate::key::{sign, Key};
 use crate::{lotus_json::LotusJson, message::SignedMessage};
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
-use fvm_shared::{address::Address, message::Message};
+use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
 use leptos::{prelude::ServerFnError, server};
 
 #[server]
@@ -23,14 +23,13 @@ pub async fn sign_with_secret_key(
     is_mainnet: bool,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
     use crate::message::message_cid;
-    use fvm_shared::econ::TokenAmount;
     use leptos::server_fn::error::NoCustomError;
     use send_wrapper::SendWrapper;
     let LotusJson(msg) = msg;
     let cid = message_cid(&msg);
     let amount_limit = match is_mainnet {
-        true => TokenAmount::from_nano(1_000_000),
-        false => TokenAmount::from_nano(1_000_000_000),
+        true => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
+        false => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
     };
     if msg.value > amount_limit {
         return Err(ServerFnError::ServerError(
@@ -50,9 +49,10 @@ pub async fn sign_with_secret_key(
         let may_sign = rate_limiter_disabled || query_rate_limiter().await?;
 
         if !may_sign {
-            return Err(ServerFnError::ServerError(
-                "Rate limit exceeded - wait 30 seconds".to_string(),
-            ));
+            return Err(ServerFnError::ServerError(format!(
+                "Rate limit exceeded - wait {} seconds",
+                crate::constants::RATE_LIMIT_SECONDS
+            )));
         }
 
         let network = if is_mainnet {
@@ -112,4 +112,31 @@ pub async fn query_rate_limiter() -> Result<bool, ServerFnError> {
         .await?
         .json::<bool>()
         .await?)
+}
+
+/// Formats FIL balance to a human-readable string with two decimal places and a unit.
+pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
+    format!(
+        "{:.2} {unit}",
+        balance.to_string().parse::<f32>().unwrap_or_default(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use fvm_shared::econ::TokenAmount;
+
+    #[test]
+    fn test_format_balance() {
+        let cases = [
+            (TokenAmount::from_whole(1), "1.00 FIL"),
+            (TokenAmount::from_whole(0), "0.00 FIL"),
+            (TokenAmount::from_nano(10e6 as i64), "0.01 FIL"),
+            (TokenAmount::from_nano(999_999_999), "1.00 FIL"),
+        ];
+        for (balance, expected) in cases.iter() {
+            assert_eq!(format_balance(balance, "FIL"), *expected);
+        }
+    }
 }
