@@ -3,7 +3,7 @@ use crate::key::{sign, Key};
 use crate::{lotus_json::LotusJson, message::SignedMessage};
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
-use fvm_shared::{address::Address, message::Message};
+use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
 use leptos::{server, ServerFnError};
 
 #[server]
@@ -112,4 +112,31 @@ pub async fn query_rate_limiter() -> Result<bool, ServerFnError> {
         .await?
         .json::<bool>()
         .await?)
+}
+
+/// Formats FIL balance to a human-readable string with two decimal places and a unit.
+pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
+    format!(
+        "{:.2} {unit}",
+        balance.to_string().parse::<f32>().unwrap_or_default(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use fvm_shared::econ::TokenAmount;
+
+    #[test]
+    fn test_format_balance() {
+        let cases = [
+            (TokenAmount::from_whole(1), "1.00 FIL"),
+            (TokenAmount::from_whole(0), "0.00 FIL"),
+            (TokenAmount::from_nano(10e6 as i64), "0.01 FIL"),
+            (TokenAmount::from_nano(999_999_999), "1.00 FIL"),
+        ];
+        for (balance, expected) in cases.iter() {
+            assert_eq!(format_balance(balance, "FIL"), *expected);
+        }
+    }
 }

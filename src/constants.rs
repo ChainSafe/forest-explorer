@@ -11,3 +11,5 @@ pub static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
 /// The amount of calibnet tFIL to be dripped to the user.
 pub static CALIBNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(1));
+pub static FIL_MAINNET_UNIT: &str = "FIL";
+pub static FIL_CALIBNET_UNIT: &str = "tFIL";
