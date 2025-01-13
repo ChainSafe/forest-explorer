@@ -34,6 +34,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     view! {
         {move || {
             let errors = faucet.get().get_error_messages();
+            if !errors.is_empty() {
                 view! {
                     <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
                         {errors
@@ -66,7 +67,10 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             .collect::<Vec<_>>()}
                     </div>
                 }
-                    .into_view()
+                    .into_any()
+            } else {
+                view! {}.into_any()
+            }
         }}
         <div class="max-w-2xl mx-auto">
             <div class="my-4 flex">
@@ -83,31 +87,30 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     class="flex-grow border border-gray-300 p-2 rounded-l"
                 />
                 {move || {
-                    let is_disabled = faucet.get().is_send_disabled() || faucet.get().get_send_rate_limit_remaining() > 0;
-                    let button_text = if faucet.get().is_send_disabled() {
-                        "Sending...".to_string()
+                    if faucet.get().is_send_disabled() {
+                        view! {
+                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                                "Sending..."
+                            </button>
+                        }.into_any()
                     } else if faucet.get().get_send_rate_limit_remaining() > 0 {
                         let duration = faucet.get().get_send_rate_limit_remaining();
-                        format!("Rate-limited! {duration}s")
+                        view! {
+                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                                {format!("Rate-limited! {duration}s")}
+                            </button>
+                        }.into_any()
                     } else {
-                        "Send".to_string()
-                    };
-                    view! {
-                        <button
-                            class={if is_disabled {
-                                "bg-gray-400 text-white font-bold py-2 px-4 rounded-r"
-                            } else {
-                                "bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
-                            }}
-                            disabled={is_disabled}
-                            on:click=move |_| {
-                                if !is_disabled {
+                        view! {
+                            <button
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
+                                on:click=move |_| {
                                     faucet.get().drip();
                                 }
-                            }
-                        >
-                            {button_text}
-                        </button>
+                            >
+                                Send
+                            </button>
+                        }.into_any()
                     }
                 }}
 
