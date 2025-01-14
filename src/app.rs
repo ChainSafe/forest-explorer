@@ -17,9 +17,6 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <HydrationScripts options/>
                 <MetaTags/>
             </head>
-            <body class="bg-sky-100">
-                <App/>
-            </body>
         </html>
     }
 }
@@ -85,7 +82,6 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet href="/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/favicon.ico" />
-        <Suspense fallback={|| view! { <p>Loading application...</p> }}>
             <Router>
                 <Routes fallback=|| "Not found.">
                     <Route path=path!("/") view=BlockchainExplorer />
@@ -95,6 +91,5 @@ pub fn App() -> impl IntoView {
                 </Routes>
                 <Footer />
             </Router>
-        </Suspense>
     }
 }
