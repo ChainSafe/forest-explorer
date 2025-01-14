@@ -69,7 +69,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 }
                     .into_any()
             } else {
-                view! {}.into_any()
+                ().into_any()
             }
         }}
         <div class="max-w-2xl mx-auto">
@@ -153,7 +153,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     }
                         .into_any()
                 } else {
-                    view! {}.into_any()
+                    ().into_any()
                 }
             }}
         </div>
