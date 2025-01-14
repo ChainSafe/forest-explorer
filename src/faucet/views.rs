@@ -1,7 +1,7 @@
 use fvm_shared::address::Network;
-use leptos::{component, event_target_value, view, IntoView, SignalGet};
+use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 
-use leptos::*;
+use leptos::prelude::*;
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
 
@@ -10,7 +10,7 @@ use crate::faucet::utils::format_balance;
 
 #[component]
 pub fn Faucet(target_network: Network) -> impl IntoView {
-    let faucet = create_rw_signal(FaucetController::new(target_network));
+    let faucet = RwSignal::new(FaucetController::new(target_network));
 
     #[cfg(feature = "hydrate")]
     let _ = use_interval_fn(
@@ -67,9 +67,9 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             .collect::<Vec<_>>()}
                     </div>
                 }
-                    .into_view()
+                    .into_any()
             } else {
-                view! {}.into_view()
+                ().into_any()
             }
         }}
         <div class="max-w-2xl mx-auto">
@@ -92,14 +92,14 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
                                 "Sending..."
                             </button>
-                        }
+                        }.into_any()
                     } else if faucet.get().get_send_rate_limit_remaining() > 0 {
                         let duration = faucet.get().get_send_rate_limit_remaining();
                         view! {
                             <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
                                 {format!("Rate-limited! {duration}s")}
                             </button>
-                        }
+                        }.into_any()
                     } else {
                         view! {
                             <button
@@ -110,7 +110,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             >
                                 Send
                             </button>
-                        }
+                        }.into_any()
                     }
                 }}
 
@@ -118,11 +118,15 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <div class="flex justify-between my-4">
                 <div>
                     <h3 class="text-lg font-semibold">Faucet Balance:</h3>
-                    <p class="text-xl">{ move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }</p>
+                    <Suspense fallback={move || view!{ <p>Loading faucet balance...</p> }}>
+                        <p class="text-xl">{ move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }</p>
+                    </Suspense>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold">Target Balance:</h3>
-                    <p class="text-xl">{ move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit()) }</p>
+                    <Suspense fallback={move || view!{ <p>Loading target balance...</p> }}>
+                        <p class="text-xl">{ move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit()) }</p>
+                    </Suspense>
                 </div>
             </div>
             <hr class="my-4 border-t border-gray-300" />
@@ -147,9 +151,9 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             </ul>
                         </div>
                     }
-                        .into_view()
+                        .into_any()
                 } else {
-                    view! {}.into_view()
+                    ().into_any()
                 }
             }}
         </div>

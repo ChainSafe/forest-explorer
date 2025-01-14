@@ -2,7 +2,7 @@ use cid::Cid;
 use fvm_shared::address::{set_current_network, Address, Network};
 use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
-use leptos::*;
+use leptos::prelude::*;
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
@@ -18,26 +18,32 @@ const GLIF_MAINNET: &str = "https://api.node.glif.io";
 #[derive(Clone, Copy)]
 pub struct RpcContext {
     #[allow(unused)]
-    network: Resource<Provider, Network>,
+    network: LocalResource<Network>,
     provider: RwSignal<Provider>,
 }
 
 impl RpcContext {
     pub fn new() -> Self {
-        let provider = create_rw_signal(Provider::new(GLIF_CALIBNET.to_string()));
-        let network = create_local_resource(
-            move || provider.get(),
-            move |provider| async move {
+        let provider = RwSignal::new(Provider::new(GLIF_CALIBNET.to_string()));
+        let network = LocalResource::new(move || {
+            let provider = provider.get();
+            async move {
                 if provider.network_name().await.ok() != Some("mainnet".to_string()) {
                     Network::Testnet
                 } else {
                     Network::Mainnet
                 }
-            },
-        );
-        create_effect(move |_| {
+            }
+        });
+        Effect::new(move |_| {
             log::info!("Updating network: {:?}", network.get());
-            set_current_network(network.get().unwrap_or(Network::Testnet));
+            set_current_network(
+                network
+                    .get()
+                    .as_deref()
+                    .cloned()
+                    .unwrap_or(Network::Testnet),
+            );
         });
         Self { network, provider }
     }

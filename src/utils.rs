@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use leptos::{RwSignal, SignalUpdate as _};
+use leptos::prelude::{RwSignal, Update};
 
 pub async fn catch_all(
     errors: RwSignal<Vec<String>>,

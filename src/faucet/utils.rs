@@ -4,7 +4,7 @@ use crate::{lotus_json::LotusJson, message::SignedMessage};
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
 use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
-use leptos::{server, ServerFnError};
+use leptos::{prelude::ServerFnError, server};
 
 #[server]
 pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
