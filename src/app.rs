@@ -5,6 +5,7 @@ use leptos_meta::*;
 use leptos_router::components::*;
 use leptos_router::path;
 
+#[allow(dead_code)]
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>
