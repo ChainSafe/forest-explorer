@@ -24,7 +24,10 @@ pub fn hydrate() {
 mod ssr_imports {
     use std::sync::Arc;
 
-    use crate::{app::App, faucet};
+    use crate::{
+        app::{shell, App},
+        faucet,
+    };
     use axum::{routing::post, Extension, Router};
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
@@ -39,7 +42,10 @@ mod ssr_imports {
 
         // build our application with a route
         let app: axum::Router<()> = Router::new()
-            .leptos_routes(&leptos_options, routes, App)
+            .leptos_routes(&leptos_options, routes, {
+                let leptos_options = leptos_options.clone();
+                move || shell(leptos_options.clone())
+            })
             .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
             .with_state(leptos_options)
             .layer(Extension(Arc::new(env)));
