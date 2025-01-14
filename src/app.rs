@@ -83,14 +83,14 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet href="/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/favicon.ico" />
-            <Router>
-                <Routes fallback=|| "Not found.">
-                    <Route path=path!("/") view=BlockchainExplorer />
-                    <Route path=path!("/faucet") view=crate::faucet::views::Faucets />
-                    <Route path=path!("/faucet/calibnet") view=crate::faucet::views::Faucet_Calibnet />
-                    <Route path=path!("/faucet/mainnet") view=crate::faucet::views::Faucet_Mainnet />
-                </Routes>
-                <Footer />
-            </Router>
+        <Router>
+            <Routes fallback=|| "Not found.">
+                <Route path=path!("/") view=BlockchainExplorer />
+                <Route path=path!("/faucet") view=crate::faucet::views::Faucets />
+                <Route path=path!("/faucet/calibnet") view=crate::faucet::views::Faucet_Calibnet />
+                <Route path=path!("/faucet/mainnet") view=crate::faucet::views::Faucet_Mainnet />
+            </Routes>
+            <Footer />
+        </Router>
     }
 }
