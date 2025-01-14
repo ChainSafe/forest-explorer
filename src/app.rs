@@ -32,15 +32,20 @@ pub fn BlockchainExplorer() -> impl IntoView {
             <option value="https://api.node.glif.io/">Glif.io Mainnet</option>
         </select>
         <p>StateNetworkName</p>
-        <p class="px-8">
-            <span>{move || network_name.get().as_deref().flatten().cloned()}</span>
-            <Loader loading=move || network_name.get().is_none() />
-        </p>
+        <Suspense fallback={move || view!{ <p>Loading network name...</p> }}>
+            <p class="px-8">
+                <span>{move || network_name.get().as_deref().flatten().cloned()}</span>
+                <Loader loading={move || network_name.get().is_none()} />
+            </p>
+        </Suspense>
+
         <p>StateNetworkVersion</p>
-        <p class="px-8">
-            <span>{move || network_version.get().as_deref().flatten().cloned()}</span>
-            <Loader loading=move || network_version.get().is_none() />
-        </p>
+        <Suspense fallback={move || view!{ <p>Loading network version...</p> }}>
+            <p class="px-8">
+                <span>{move || network_version.get().as_deref().flatten().cloned()}</span>
+                <Loader loading={move || network_version.get().is_none()} />
+            </p>
+        </Suspense>
     }
 }
 
@@ -61,14 +66,16 @@ pub fn App() -> impl IntoView {
     view! {
         <Stylesheet href="/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/favicon.ico" />
-        <Router>
-            <Routes fallback=|| "Not found.">
-                <Route path=path!("/") view=BlockchainExplorer />
-                <Route path=path!("/faucet") view=crate::faucet::views::Faucets />
-                <Route path=path!("/faucet/calibnet") view=crate::faucet::views::Faucet_Calibnet />
-                <Route path=path!("/faucet/mainnet") view=crate::faucet::views::Faucet_Mainnet />
-            </Routes>
-            <Footer />
-        </Router>
+        <Suspense fallback={|| view! { <p>Loading application...</p> }}>
+            <Router>
+                <Routes fallback=|| "Not found.">
+                    <Route path=path!("/") view=BlockchainExplorer />
+                    <Route path=path!("/faucet") view=crate::faucet::views::Faucets />
+                    <Route path=path!("/faucet/calibnet") view=crate::faucet::views::Faucet_Calibnet />
+                    <Route path=path!("/faucet/mainnet") view=crate::faucet::views::Faucet_Mainnet />
+                </Routes>
+                <Footer />
+            </Router>
+        </Suspense>
     }
 }
