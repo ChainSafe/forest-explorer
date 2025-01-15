@@ -218,7 +218,10 @@ impl FaucetController {
                 });
             }
             Err(e) => {
-                self.add_error_message(format!("Invalid address: {}", &self.faucet.target_address.get()));
+                self.add_error_message(format!(
+                    "Invalid address: {}",
+                    &self.faucet.target_address.get()
+                ));
                 log::error!("Error parsing address: {}", e);
             }
         }

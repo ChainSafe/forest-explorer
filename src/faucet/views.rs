@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use fvm_shared::address::Network;
-use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 use leptos::task::spawn_local;
+use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 
 use leptos::prelude::*;
 #[cfg(feature = "hydrate")]
@@ -60,7 +60,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                             set_fading_messages.update(|fading| {
                                                 fading.retain(|x| *x != id);
                                             });
-                                            
+
                                             faucet.get().remove_error_message(id);
                                         },
                                         Duration::new(3, 500_000_000),
