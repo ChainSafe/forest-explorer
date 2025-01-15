@@ -1,5 +1,8 @@
+use std::time::Duration;
+
 use fvm_shared::address::Network;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
+use leptos::task::spawn_local;
 
 use leptos::prelude::*;
 #[cfg(feature = "hydrate")]
@@ -31,6 +34,8 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         5000,
     );
 
+    let (fading_messages, set_fading_messages) = signal(Vec::new());
+
     view! {
         {move || {
             let errors = faucet.get().get_error_messages();
@@ -39,12 +44,39 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
                         {errors
                             .into_iter()
-                            .enumerate()
-                            .map(|(index, error)| {
+                            .map(|(id, error)| {
+                                spawn_local(async move {
+                                    // Start fading message after 3 seconds
+                                    set_timeout(
+                                        move || {
+                                            set_fading_messages.update(|fading| fading.push(id));
+                                        },
+                                        Duration::new(3, 0),
+                                    );
+
+                                    // Remove message after 3.5 seconds
+                                    set_timeout(
+                                        move || {
+                                            set_fading_messages.update(|fading| {
+                                                fading.retain(|x| *x != id);
+                                            });
+                                            
+                                            faucet.get().remove_error_message(id);
+                                        },
+                                        Duration::new(3, 500_000_000),
+                                    );
+                                });
+
                                 view! {
                                     <div
-                                        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
-                                        role="alert"
+                                    class=move || {
+                                        if fading_messages.get().contains(&id) {
+                                            "opacity-0 transition-opacity bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
+                                        } else {
+                                            "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
+                                        }
+                                    }
+                                    role="alert"
                                     >
                                         <span class="block sm:inline">{error}</span>
                                         <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
@@ -54,7 +86,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 viewBox="0 0 20 20"
                                                 on:click=move |_| {
-                                                    faucet.get().remove_error_message(index);
+                                                    faucet.get().remove_error_message(id);
                                                 }
                                             >
                                                 <title>Close</title>

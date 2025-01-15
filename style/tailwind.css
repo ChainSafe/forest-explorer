@@ -63,3 +63,15 @@
         transform: scaleY(-1) rotate(-135deg)
     }
 }
+
+.opacity-0 {
+    opacity: 0;
+}
+
+.opacity-100 {
+    opacity: 1;
+}
+
+.transition-opacity {
+    transition: opacity 0.5s ease-in-out;
+}

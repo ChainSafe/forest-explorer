@@ -927,6 +927,7 @@ dependencies = [
  "serde_tuple 1.1.0",
  "tower",
  "tower-service",
+ "uuid",
  "wasm-bindgen",
  "worker",
  "worker-macros",
