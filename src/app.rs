@@ -49,20 +49,20 @@ pub fn BlockchainExplorer() -> impl IntoView {
             <option value="https://api.node.glif.io/">Glif.io Mainnet</option>
         </select>
         <p>StateNetworkName</p>
-        <Suspense fallback={move || view!{ <p>Loading network name...</p> }}>
+        <Transition fallback={move || view!{ <p>Loading network name...</p> }}>
             <p class="px-8">
                 <span>{move || network_name.get().as_deref().flatten().cloned()}</span>
                 <Loader loading={move || network_name.get().is_none()} />
             </p>
-        </Suspense>
+        </Transition>
 
         <p>StateNetworkVersion</p>
-        <Suspense fallback={move || view!{ <p>Loading network version...</p> }}>
+        <Transition fallback={move || view!{ <p>Loading network version...</p> }}>
             <p class="px-8">
                 <span>{move || network_version.get().as_deref().flatten().cloned()}</span>
                 <Loader loading={move || network_version.get().is_none()} />
             </p>
-        </Suspense>
+        </Transition>
     }
 }
 

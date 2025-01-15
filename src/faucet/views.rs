@@ -150,15 +150,15 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <div class="flex justify-between my-4">
                 <div>
                     <h3 class="text-lg font-semibold">Faucet Balance:</h3>
-                    <Suspense fallback={move || view!{ <p>Loading faucet balance...</p> }}>
+                    <Transition fallback={move || view!{ <p>Loading faucet balance...</p> }}>
                         <p class="text-xl">{ move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }</p>
-                    </Suspense>
+                    </Transition>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold">Target Balance:</h3>
-                    <Suspense fallback={move || view!{ <p>Loading target balance...</p> }}>
+                    <Transition fallback={move || view!{ <p>Loading target balance...</p> }}>
                         <p class="text-xl">{ move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit()) }</p>
-                    </Suspense>
+                    </Transition>
                 </div>
             </div>
             <hr class="my-4 border-t border-gray-300" />
