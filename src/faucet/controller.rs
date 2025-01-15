@@ -23,6 +23,7 @@ impl FaucetController {
         let balance_trigger = Trigger::new();
         let target_balance = LocalResource::new(move || {
             let target_address = target_address.get();
+            balance_trigger.track();
             async move {
                 if let Ok(address) = parse_address(&target_address, network) {
                     Provider::from_network(network)
@@ -35,14 +36,11 @@ impl FaucetController {
                 }
             }
         });
-        let sender_address = LocalResource::new(move || {
-            balance_trigger.track();
-            async move {
-                faucet_address(is_mainnet)
-                    .await
-                    .map(|LotusJson(addr)| addr)
-                    .ok()
-            }
+        let sender_address = LocalResource::new(move || async move {
+            faucet_address(is_mainnet)
+                .await
+                .map(|LotusJson(addr)| addr)
+                .ok()
         });
         let faucet_balance = LocalResource::new(move || {
             balance_trigger.track();
