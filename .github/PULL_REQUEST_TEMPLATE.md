@@ -29,5 +29,9 @@ Closes
       [documentation standards](https://github.com/ChainSafe/forest/wiki/Documentation-practices),
 - [ ] I have added tests that prove my fix is effective or that my feature works
       (if possible),
+- [ ] I have made sure the [CHANGELOG][1] is up-to-date. All user-facing changes
+      should be reflected in this document.
 
 <!-- Thank you 🔥 -->
+
+[1]: https://github.com/ChainSafe/forest-explorer/blob/main/CHANGELOG.md
