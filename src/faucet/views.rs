@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::time::Duration;
 
 use fvm_shared::address::Network;
@@ -10,6 +11,9 @@ use leptos_use::*;
 
 use crate::faucet::controller::FaucetController;
 use crate::faucet::utils::format_balance;
+
+const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
+const MESSAGE_REMOVAL_AFTER: Duration = Duration::new(3, 500_000_000);
 
 #[component]
 pub fn Faucet(target_network: Network) -> impl IntoView {
@@ -34,7 +38,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         5000,
     );
 
-    let (fading_messages, set_fading_messages) = signal(Vec::new());
+    let (fading_messages, set_fading_messages) = signal(HashSet::new());
 
     view! {
         {move || {
@@ -49,21 +53,21 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                     // Start fading message after 3 seconds
                                     set_timeout(
                                         move || {
-                                            set_fading_messages.update(|fading| fading.push(id));
+                                            set_fading_messages.update(|fading| { fading.insert(id); });
                                         },
-                                        Duration::new(3, 0),
+                                        MESSAGE_FADE_AFTER,
                                     );
 
                                     // Remove message after 3.5 seconds
                                     set_timeout(
                                         move || {
                                             set_fading_messages.update(|fading| {
-                                                fading.retain(|x| *x != id);
+                                                fading.remove(&id);
                                             });
 
                                             faucet.get().remove_error_message(id);
                                         },
-                                        Duration::new(3, 500_000_000),
+                                        MESSAGE_REMOVAL_AFTER,
                                     );
                                 });
 
