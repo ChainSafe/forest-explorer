@@ -3,6 +3,7 @@ use cid::Cid;
 use fvm_shared::{address::Network, econ::TokenAmount};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
+use uuid::Uuid;
 
 use crate::{
     address::parse_address, lotus_json::LotusJson, message::message_transfer,
@@ -138,19 +139,19 @@ impl FaucetController {
             .unwrap_or_default()
     }
 
-    pub fn get_error_messages(&self) -> Vec<String> {
+    pub fn get_error_messages(&self) -> Vec<(Uuid, String)> {
         self.faucet.error_messages.get().clone()
     }
 
     pub fn add_error_message(&self, message: String) {
         self.faucet.error_messages.update(|messages| {
-            messages.push(message);
+            messages.push((Uuid::new_v4(), message));
         });
     }
 
-    pub fn remove_error_message(&self, index: usize) {
+    pub fn remove_error_message(&self, id: Uuid) {
         self.faucet.error_messages.update(|messages| {
-            messages.remove(index);
+            messages.retain(|(x, _)| *x != id);
         });
     }
 
@@ -217,7 +218,10 @@ impl FaucetController {
                 });
             }
             Err(e) => {
-                self.add_error_message("Invalid address".to_string());
+                self.add_error_message(format!(
+                    "Invalid address: {}",
+                    &self.faucet.target_address.get()
+                ));
                 log::error!("Error parsing address: {}", e);
             }
         }
