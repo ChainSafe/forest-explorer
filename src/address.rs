@@ -40,7 +40,12 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Whenever we change the network in tests, we need to fork the test to avoid
+    // changing the network for other tests. This is because the network is a global
+    // variable. This is not a problem when run with `cargo nextest` because each test
+    // is run separately.
     use fvm_shared::address::set_current_network;
+    use rusty_fork::rusty_fork_test;
 
     #[test]
     fn test_check_address_prefix() {
@@ -67,6 +72,7 @@ mod tests {
         assert!(!is_valid_prefix("456...", Network::Testnet));
     }
 
+    rusty_fork_test! {
     #[test]
     fn test_parse_mainnet_address() {
         let addr_str = "f1alg2sxw32ns3ech2w7r3dmp2gl2fputkl7x7jta";
@@ -75,7 +81,9 @@ mod tests {
         set_current_network(Network::Mainnet); // Required to correctly stringify address
         assert_eq!(addr.to_string(), addr_str);
     }
+    }
 
+    rusty_fork_test! {
     #[test]
     fn test_parse_testnet_address() {
         let addr_str = "t410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
@@ -83,6 +91,7 @@ mod tests {
 
         set_current_network(Network::Testnet); // Required to correctly stringify address
         assert_eq!(addr.to_string(), addr_str);
+    }
     }
 
     #[test]
