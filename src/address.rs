@@ -83,6 +83,7 @@ mod tests {
     }
     }
 
+    rusty_fork_test! {
     #[test]
     fn test_parse_testnet_address() {
         let addr_str = "t410f2oekwcmo2pueydmaq53eic2i62crtbeyuzx2gmy";
@@ -90,6 +91,7 @@ mod tests {
 
         set_current_network(Network::Testnet); // Required to correctly stringify address
         assert_eq!(addr.to_string(), addr_str);
+    }
     }
 
     #[test]
@@ -103,7 +105,6 @@ mod tests {
         assert_eq!(err.to_string(), "Not a valid Mainnet address");
     }
 
-    rusty_fork_test! {
     #[test]
     fn test_parse_eth_address_testnet() {
         let addr_str = "0xd388ab098ed3e84c0d808776440b48f685198498";
@@ -113,7 +114,6 @@ mod tests {
         let exp_addr = parse_address(exp_addr_str, Network::Testnet).unwrap();
 
         assert_eq!(exp_addr, addr);
-    }
     }
 
     #[test]
