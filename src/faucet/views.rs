@@ -200,7 +200,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
 pub fn Faucets() -> impl IntoView {
     view! {
         <div class="text-center">
-            <h2 class="text-2xl font-bold mb-4">Faucet List</h2>
+            <h2 class="text-2xl font-bold mb-4">Filecoin Faucet List</h2>
                 <a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a><br />
                 <a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a>
         </div>
@@ -211,7 +211,7 @@ pub fn Faucets() -> impl IntoView {
 pub fn Faucet_Calibnet() -> impl IntoView {
     view! {
         <div>
-            <h1 class="text-4xl font-bold mb-6 text-center">Calibnet Faucet</h1>
+            <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Calibnet Faucet</h1>
             <Faucet target_network=Network::Testnet />
         </div>
         <div class="text-center mt-4">
@@ -224,7 +224,7 @@ pub fn Faucet_Calibnet() -> impl IntoView {
 pub fn Faucet_Mainnet() -> impl IntoView {
     view! {
         <div>
-            <h1 class="text-4xl font-bold mb-6 text-center">Mainnet Faucet</h1>
+            <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
         <div class="text-center mt-4">
             "This faucet distributes " { format_balance(&crate::constants::MAINNET_DRIP_AMOUNT, crate::constants::FIL_MAINNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."
