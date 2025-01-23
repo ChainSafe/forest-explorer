@@ -6,6 +6,7 @@ use leptos::task::spawn_local;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 
 use leptos::prelude::*;
+use leptos_meta::{Meta, Title};
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
 
@@ -193,14 +194,21 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 }
             }}
         </div>
+        <div class="flex flex-col items-center">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+              <a href="/faucet">Back to faucet list</a>
+            </button>
+        </div>
     }
 }
 
 #[component]
 pub fn Faucets() -> impl IntoView {
     view! {
+        <Title text="Filecoin Faucets" />
+        <Meta name="description" content="Filecoin Faucet list" />
         <div class="text-center">
-            <h2 class="text-2xl font-bold mb-4">Filecoin Faucet List</h2>
+            <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Faucet List</h1>
                 <a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a><br />
                 <a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a>
         </div>
@@ -210,6 +218,8 @@ pub fn Faucets() -> impl IntoView {
 #[component]
 pub fn Faucet_Calibnet() -> impl IntoView {
     view! {
+        <Title text="Filecoin Faucet - Calibration Network" />
+        <Meta name="description" content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes." />
         <div>
             <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Calibnet Faucet</h1>
             <Faucet target_network=Network::Testnet />
@@ -223,6 +233,8 @@ pub fn Faucet_Calibnet() -> impl IntoView {
 #[component]
 pub fn Faucet_Mainnet() -> impl IntoView {
     view! {
+        <Title text="Filecoin Faucet - Mainnet" />
+        <Meta name="description" content="Filecoin Mainnet Faucet dispensing tokens for testing purposes." />
         <div>
             <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
