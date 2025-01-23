@@ -11,7 +11,9 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
+                <title>Forest Filecoin Explorer</title>
                 <meta charset="utf-8"/>
+                <meta name="robots" content="index, follow" />
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
                 <AutoReload options=options.clone() />
@@ -41,6 +43,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
     });
 
     view! {
+        <div class="flex flex-col items-center">
         <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
             Forest Explorer
         </h1>
@@ -63,6 +66,10 @@ pub fn BlockchainExplorer() -> impl IntoView {
                 <Loader loading={move || network_version.get().is_none()} />
             </p>
         </Transition>
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+          <a href="/faucet">To faucet list</a>
+        </button>
+        </div>
     }
 }
 
@@ -70,7 +77,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
 fn Footer() -> impl IntoView {
     view! {
         <footer class="p-4 text-center">
-            <a class="text-green-600" href="https://github.com/ChainSafe/forest-explorer">Forest Explorer</a>", built with ❤️ by " <a class="text-blue-600" href="https://chainsafe.io">ChainSafe Systems</a>
+            <a class="text-green-600" target="_blank" rel="noopener noreferrer" href="https://github.com/ChainSafe/forest-explorer">Forest Explorer</a>", built with ❤️ by " <a class="text-blue-600" target="_blank" rel="noopener noreferrer" href="https://chainsafe.io">ChainSafe Systems</a>
         </footer>
     }
 }
