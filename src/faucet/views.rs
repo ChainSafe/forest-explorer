@@ -51,37 +51,40 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             .into_iter()
                             .map(|(id, error)| {
                                 spawn_local(async move {
-                                    // Start fading message after 3 seconds
                                     set_timeout(
                                         move || {
-                                            set_fading_messages.update(|fading| { fading.insert(id); });
+                                            set_fading_messages
+                                                .update(|fading| {
+                                                    fading.insert(id);
+                                                });
                                         },
                                         MESSAGE_FADE_AFTER,
                                     );
-
-                                    // Remove message after 3.5 seconds
                                     set_timeout(
                                         move || {
-                                            set_fading_messages.update(|fading| {
-                                                fading.remove(&id);
-                                            });
-
+                                            set_fading_messages
+                                                .update(|fading| {
+                                                    fading.remove(&id);
+                                                });
                                             faucet.get().remove_error_message(id);
                                         },
                                         MESSAGE_REMOVAL_AFTER,
                                     );
                                 });
+                                // Start fading message after 3 seconds
+
+                                // Remove message after 3.5 seconds
 
                                 view! {
                                     <div
-                                    class=move || {
-                                        if fading_messages.get().contains(&id) {
-                                            "opacity-0 transition-opacity bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
-                                        } else {
-                                            "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
+                                        class=move || {
+                                            if fading_messages.get().contains(&id) {
+                                                "opacity-0 transition-opacity bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
+                                            } else {
+                                                "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
+                                            }
                                         }
-                                    }
-                                    role="alert"
+                                        role="alert"
                                     >
                                         <span class="block sm:inline">{error}</span>
                                         <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
@@ -117,7 +120,9 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     prop:value=faucet.get().get_target_address()
                     on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
                     on:keydown=move |ev| {
-                        if ev.key() == "Enter" && !faucet.get().is_send_disabled() && faucet.get().get_send_rate_limit_remaining() <= 0 {
+                        if ev.key() == "Enter" && !faucet.get().is_send_disabled()
+                            && faucet.get().get_send_rate_limit_remaining() <= 0
+                        {
                             faucet.get().drip();
                         }
                     }
@@ -129,14 +134,16 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
                                 "Sending..."
                             </button>
-                        }.into_any()
+                        }
+                            .into_any()
                     } else if faucet.get().get_send_rate_limit_remaining() > 0 {
                         let duration = faucet.get().get_send_rate_limit_remaining();
                         view! {
                             <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
                                 {format!("Rate-limited! {duration}s")}
                             </button>
-                        }.into_any()
+                        }
+                            .into_any()
                     } else {
                         view! {
                             <button
@@ -147,7 +154,8 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             >
                                 Send
                             </button>
-                        }.into_any()
+                        }
+                            .into_any()
                     }
                 }}
 
@@ -155,14 +163,18 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             <div class="flex justify-between my-4">
                 <div>
                     <h3 class="text-lg font-semibold">Faucet Balance:</h3>
-                    <Transition fallback={move || view!{ <p>Loading faucet balance...</p> }}>
-                        <p class="text-xl">{ move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }</p>
+                    <Transition fallback=move || view! { <p>Loading faucet balance...</p> }>
+                        <p class="text-xl">
+                            {move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit())}
+                        </p>
                     </Transition>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold">Target Balance:</h3>
-                    <Transition fallback={move || view!{ <p>Loading target balance...</p> }}>
-                        <p class="text-xl">{ move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit()) }</p>
+                    <Transition fallback=move || view! { <p>Loading target balance...</p> }>
+                        <p class="text-xl">
+                            {move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit())}
+                        </p>
                     </Transition>
                 </div>
             </div>
@@ -196,7 +208,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         </div>
         <div class="flex flex-col items-center">
             <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-              <a href="/faucet">Back to faucet list</a>
+                <a href="/faucet">Back to faucet list</a>
             </button>
         </div>
     }
@@ -209,8 +221,13 @@ pub fn Faucets() -> impl IntoView {
         <Meta name="description" content="Filecoin Faucet list" />
         <div class="text-center">
             <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Faucet List</h1>
-                <a class="text-blue-600" href="/faucet/calibnet">Calibration Network Faucet</a><br />
-                <a class="text-blue-600" href="/faucet/mainnet">Mainnet Network Faucet</a>
+            <a class="text-blue-600" href="/faucet/calibnet">
+                Calibration Network Faucet
+            </a>
+            <br />
+            <a class="text-blue-600" href="/faucet/mainnet">
+                Mainnet Network Faucet
+            </a>
         </div>
     }
 }
@@ -219,13 +236,19 @@ pub fn Faucets() -> impl IntoView {
 pub fn Faucet_Calibnet() -> impl IntoView {
     view! {
         <Title text="Filecoin Faucet - Calibration Network" />
-        <Meta name="description" content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes." />
+        <Meta
+            name="description"
+            content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes."
+        />
         <div>
             <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Calibnet Faucet</h1>
             <Faucet target_network=Network::Testnet />
         </div>
         <div class="text-center mt-4">
-            "This faucet distributes " { format_balance(&crate::constants::CALIBNET_DRIP_AMOUNT, crate::constants::FIL_CALIBNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
+            "This faucet distributes "
+            {format_balance(&crate::constants::CALIBNET_DRIP_AMOUNT, crate::constants::FIL_CALIBNET_UNIT)}
+            " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS}
+            " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
         </div>
     }
 }
@@ -238,9 +261,12 @@ pub fn Faucet_Mainnet() -> impl IntoView {
         <div>
             <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
-        <div class="text-center mt-4">
-            "This faucet distributes " { format_balance(&crate::constants::MAINNET_DRIP_AMOUNT, crate::constants::FIL_MAINNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."
-        </div>
+            <div class="text-center mt-4">
+                "This faucet distributes "
+                {format_balance(&crate::constants::MAINNET_DRIP_AMOUNT, crate::constants::FIL_MAINNET_UNIT)}
+                " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS}
+                " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."
+            </div>
         </div>
     }
 }
