@@ -18,6 +18,12 @@ impl DurableObject for RateLimiter {
 
     async fn fetch(&mut self, _req: Request) -> Result<Response> {
         let now = Utc::now();
+        console_log!(
+            "Rate limiter invoked: now={:?}, block_until={:?}, may_sign={:?}",
+            now,
+            self.block_until,
+            self.block_until <= now
+        );
         if self.block_until <= now {
             // This Durable Object will be deleted after the alarm is triggered
             self.state
@@ -35,6 +41,7 @@ impl DurableObject for RateLimiter {
     }
 
     async fn alarm(&mut self) -> Result<Response> {
+        console_log!("Rate limiter alarm triggered. DurableObject will be deleted.");
         Response::ok("OK")
     }
 }

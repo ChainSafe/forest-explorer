@@ -16,6 +16,9 @@ new_classes = ["RateLimiter"]
 [assets]
 directory = "assets"
 
+[observability.logs]
+enabled = true
+
 [build]
 command = """
 yarn assets &&
