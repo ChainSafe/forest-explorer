@@ -4,7 +4,8 @@ use worker::*;
 #[durable_object]
 pub struct RateLimiter {
     state: State,
-    _block_until: DateTime<Utc>,
+    #[allow(unused)]
+    block_until: DateTime<Utc>,
 }
 
 #[durable_object]
@@ -12,7 +13,7 @@ impl DurableObject for RateLimiter {
     fn new(state: State, _env: Env) -> Self {
         Self {
             state,
-            _block_until: Utc::now(),
+            block_until: Utc::now(),
         }
     }
 
