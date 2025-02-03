@@ -4,6 +4,7 @@ use worker::*;
 #[durable_object]
 pub struct RateLimiter {
     state: State,
+    #[allow(unused)]
     block_until: DateTime<Utc>,
 }
 
@@ -18,13 +19,20 @@ impl DurableObject for RateLimiter {
 
     async fn fetch(&mut self, _req: Request) -> Result<Response> {
         let now = Utc::now();
+        let block_until = self
+            .state
+            .storage()
+            .get("block_until")
+            .await
+            .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
+            .unwrap_or(Utc::now());
         console_log!(
             "Rate limiter invoked: now={:?}, block_until={:?}, may_sign={:?}",
             now,
-            self.block_until,
-            self.block_until <= now
+            block_until,
+            block_until <= now
         );
-        if self.block_until <= now {
+        if block_until <= now {
             // This Durable Object will be deleted after the alarm is triggered
             self.state
                 .storage()
@@ -32,7 +40,11 @@ impl DurableObject for RateLimiter {
                     crate::constants::RATE_LIMIT_SECONDS as u64 + 1,
                 ))
                 .await?;
-            self.block_until = now + Duration::seconds(crate::constants::RATE_LIMIT_SECONDS);
+            let block_until = now + Duration::seconds(crate::constants::RATE_LIMIT_SECONDS);
+            self.state
+                .storage()
+                .put("block_until", block_until.timestamp())
+                .await?;
 
             Response::from_json(&true)
         } else {
