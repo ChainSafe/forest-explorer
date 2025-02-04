@@ -13,7 +13,6 @@ use leptos_use::*;
 use crate::faucet::controller::FaucetController;
 use crate::faucet::utils::format_balance;
 
-const FAUCET_TOPUP_REQ_URL: &str = "https://github.com/ChainSafe/forest-explorer/discussions/134";
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
 const MESSAGE_REMOVAL_AFTER: Duration = Duration::new(3, 500_000_000);
 
@@ -45,6 +44,8 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         Network::Mainnet => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
         Network::Testnet => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
     };
+    let topup_req_url =
+        std::env::var("FAUCET_TOPUP_REQ_URL").expect("Faucet Top-up request url not set");
     view! {
         {move || {
             let errors = faucet.get().get_error_messages();
@@ -143,7 +144,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                         }.into_any()
                     } else if faucet.get().get_faucet_balance() < drip_amount {
                         view! {
-                            <a href={FAUCET_TOPUP_REQ_URL} target="_blank" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r">
+                            <a href={topup_req_url.clone()} target="_blank" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r">
                                 "Request Faucet Top-up"
                             </a>
                         }.into_any()
