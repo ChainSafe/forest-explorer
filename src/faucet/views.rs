@@ -40,7 +40,11 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-
+    let drip_amount = match target_network {
+        Network::Mainnet => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
+        Network::Testnet => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+    };
+    let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
     view! {
         {move || {
             let errors = faucet.get().get_error_messages();
@@ -136,6 +140,12 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
                                 {format!("Rate-limited! {duration}s")}
                             </button>
+                        }.into_any()
+                    } else if faucet.get().get_faucet_balance() < drip_amount {
+                        view! {
+                            <a href={topup_req_url} target="_blank" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r">
+                                "Request Faucet Top-up"
+                            </a>
                         }.into_any()
                     } else {
                         view! {
