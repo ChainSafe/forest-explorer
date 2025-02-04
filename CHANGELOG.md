@@ -29,8 +29,8 @@
 
 ### Added
 
-- [#135] (https://github.com/ChainSafe/forest-explorer/pull/135) Added option to
-  request for faucet top-up.
+- [#135] (https://github.com/ChainSafe/forest-explorer/pull/135) Added link to
+  request for faucet top-up which is configurable using github env var.
 
 ### Changed
 
