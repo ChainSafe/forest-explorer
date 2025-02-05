@@ -34,6 +34,9 @@
 
 ### Changed
 
+- [#136](https://github.com/ChainSafe/forest-explorer/pull/136) Increased the
+  drip time to 10 minutes.
+
 ### Removed
 
 ### Fixed
