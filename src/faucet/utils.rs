@@ -46,7 +46,7 @@ pub async fn sign_with_secret_key(
             .secret("RATE_LIMITER_DISABLED")
             .map(|v| v.to_string().to_lowercase() == "true")
             .unwrap_or(false);
-        let network = if is_mainnet { "MAINNET" } else { "CALIBNET" };
+        let network = if is_mainnet { "mainnet" } else { "calibnet" };
         let may_sign = rate_limiter_disabled || query_rate_limiter(network).await?;
         let rate_limit_seconds = if is_mainnet {
             crate::constants::MAINNET_RATE_LIMIT_SECONDS
