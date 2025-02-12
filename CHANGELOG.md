@@ -31,8 +31,8 @@
 
 - [#135] (https://github.com/ChainSafe/forest-explorer/pull/135) Added link to
   request for faucet top-up which is configurable using github env var.
-- [#137] (https://github.com/ChainSafe/forest-explorer/issues/137) Split rate
-  limitter for calibnet and mainnet
+- [#137] (https://github.com/ChainSafe/forest-explorer/issues/137) Different
+  rate limitter for calibnet and mainnet
 
 ### Changed
 
