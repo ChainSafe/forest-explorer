@@ -40,11 +40,10 @@
         worker-build-bin = worker-build.packages.${system}.default;
         wrangler-bin = wrangler.packages.${system}.default;
 
+        rustToolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+
         # Initialize crane with our custom toolchain
-        craneLib = (crane.mkLib pkgs).overrideToolchain (p:
-          p.rust-bin.stable.latest.default.override {
-            targets = ["wasm32-unknown-unknown"];
-          });
+        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         # Custom source filter that extends crane's default cargo filtering
         # but also excludes wrangler.toml
@@ -213,7 +212,7 @@
         };
 
         # Development shell with required tools
-        devShell = pkgs.mkShell {
+        devShell = craneLib.devShell {
           buildInputs = with pkgs; [
             pinned-wasm-bindgen-cli
             wasm-pack
@@ -221,15 +220,22 @@
             wrangler-bin
             binaryen
             corepack
+            cargo-deny
+            cargo-spellcheck
+            taplo
           ];
 
           shellHook = ''
             echo "🌲 Welcome to Forest Explorer Development Shell 🌲"
             echo ""
             echo "Installed tools: wrangler, wasm-opt, wasm-pack, worker-build, wasm-bindgen"
+            echo "Installed lints: cargo-deny, cargo-spellcheck, taplo"
             echo ""
             echo "To start the development server:"
             echo "  yarn dev"
+            echo ""
+            echo "To validate your changes:"
+            echo "  make lint-all"
             echo ""
           '';
         };
