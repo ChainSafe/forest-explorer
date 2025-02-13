@@ -14,12 +14,12 @@ lint-all: deny spellcheck fmt-lints cargo-clippy
 fmt:
 	cargo fmt --all
 	taplo fmt
-	corepack enable && yarn && yarn md-fmt
+	yarn && yarn md-fmt
 
 fmt-lints: cargo-fmt taplo md-lint
 
 md-lint:
-	corepack enable && yarn && yarn md-check
+	yarn && yarn md-check
 
 cargo-fmt:
 	cargo fmt --all --check
