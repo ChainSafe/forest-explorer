@@ -36,3 +36,8 @@ yarn css-minify &&
 yarn wasm-pack-dev &&
 worker-build --dev --no-opt --features ssr --no-default-features
 """
+
+[env.prebuilt]
+kv_namespaces = [{ binding = "RATE_LIMIT", id = "4dc6f9a495dc44849d2c3c9066f23dca" }]
+[env.prebuilt.build]
+command = ""
