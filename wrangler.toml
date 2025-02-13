@@ -29,6 +29,8 @@ worker-build --release --features ssr --no-default-features
 
 [env.quick]
 kv_namespaces = [{ binding = "RATE_LIMIT", id = "4dc6f9a495dc44849d2c3c9066f23dca" }]
+[env.quick.durable_objects]
+bindings = [{ name = "RATE_LIMITER", class_name = "RateLimiter" }]
 [env.quick.build]
 command = """
 yarn assets &&
@@ -39,5 +41,7 @@ worker-build --dev --no-opt --features ssr --no-default-features
 
 [env.prebuilt]
 kv_namespaces = [{ binding = "RATE_LIMIT", id = "4dc6f9a495dc44849d2c3c9066f23dca" }]
+[env.prebuilt.durable_objects]
+bindings = [{ name = "RATE_LIMITER", class_name = "RateLimiter" }]
 [env.prebuilt.build]
 command = ""
