@@ -223,6 +223,7 @@
             cargo-deny
             cargo-spellcheck
             taplo
+            openssl
           ];
 
           shellHook = ''
