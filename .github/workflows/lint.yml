@@ -43,3 +43,13 @@ jobs:
         env:
           RUSTFLAGS: "-Cstrip=symbols"
       - run: make lint-all
+  lint-nix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          determinate: true
+      - uses: DeterminateSystems/flakehub-cache-action@main
+      - run: nix develop --command make lint-all
