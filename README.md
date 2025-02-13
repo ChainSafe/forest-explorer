@@ -33,40 +33,46 @@ the optimization step.
 
 ## Nix Development
 
-Forest Explorer can be built and developed using [Nix](https://nixos.org/). This provides a reproducible development environment and build process.
+Forest Explorer can be built and developed using [Nix](https://nixos.org/). This
+provides a reproducible development environment and build process.
 
 ### Setup
 
 Install Determinate Nix:
 
-   ```bash
-   curl -fsSL https://install.determinate.systems/nix | sh -s -- install --determinate
-   ```
+```bash
+curl -fsSL https://install.determinate.systems/nix | sh -s -- install --determinate
+```
 
 ### Development Environment
 
 Enter a development shell with all required tools:
+
 ```bash
 nix develop
 ```
 
-This provides access to `wrangler`, `wasm-pack`, `worker-build`, `node`, `yarn`, and other necessary tools.
+This provides access to `wrangler`, `wasm-pack`, `worker-build`, `node`, `yarn`,
+and other necessary tools.
 
 ### Building Components
 
 Build individual components:
 
-- Stylesheet:
+- CSS:
+
   ```bash
   nix build .#explorer-styles
   ```
 
 - Server WASM:
+
   ```bash
   nix build .#explorer-server
   ```
 
 - Client WASM:
+
   ```bash
   nix build .#explorer-client
   ```
@@ -79,11 +85,13 @@ Build individual components:
 ### Preview
 
 Run a local preview of the explorer (exactly as it will be deployed):
+
 ```bash
 nix run .
 ```
 
-This will start a local development server with the pre-built assets that match what will be deployed to CloudFlare.
+This will start a local development server with the pre-built assets that match
+what will be deployed to CloudFlare.
 
 ## Secrets
 
