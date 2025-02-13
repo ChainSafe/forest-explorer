@@ -46,15 +46,26 @@
             targets = ["wasm32-unknown-unknown"];
           });
 
+        # Custom source filter that extends crane's default cargo filtering
+        # but also excludes wrangler.toml
+        customFilter = path: type:
+          (craneLib.filterCargoSources path type) && baseNameOf path != "wrangler.toml";
+
+        # Common source definition for all derivations
+        commonSrc = pkgs.lib.cleanSourceWith {
+          src = ./.;
+          filter = customFilter;
+        };
+
         explorer-client-deps = craneLib.buildDepsOnly {
-          src = craneLib.cleanCargoSource ./.;
+          src = commonSrc;
           cargoExtraArgs = "--target wasm32-unknown-unknown --features hydrate --no-default-features";
           doCheck = false;
         };
 
         # Create a derivation for building the client-side Wasm using crane
         explorer-client = craneLib.buildPackage {
-          src = craneLib.cleanCargoSource ./.;
+          src = commonSrc;
           cargoArtifacts = explorer-client-deps;
           buildPhaseCargoCommand = ''
             HOME=$PWD/tmp wasm-pack build \
@@ -82,14 +93,14 @@
         };
 
         explorer-server-deps = craneLib.buildDepsOnly {
-          src = craneLib.cleanCargoSource ./.;
+          src = commonSrc;
           cargoExtraArgs = "--target wasm32-unknown-unknown --features ssr --no-default-features";
           doCheck = false;
         };
 
         # Create a derivation for building the server-side Wasm using crane
         explorer-server = craneLib.buildPackage {
-          src = craneLib.cleanCargoSource ./.;
+          src = commonSrc;
           cargoArtifacts = explorer-server-deps;
           buildPhaseCargoCommand = "HOME=$PWD/tmp worker-build --release --features ssr --no-default-features";
           doNotPostBuildInstallCargoBinaries = true;
@@ -110,7 +121,7 @@
         # Create a derivation for the styles
         explorer-styles = pkgs.stdenv.mkDerivation {
           name = "explorer-styles";
-          src = craneLib.cleanCargoSource ./.;
+          src = commonSrc;
 
           nativeBuildInputs = with pkgs; [
             tailwindcss
