@@ -224,6 +224,7 @@
             cargo-spellcheck
             taplo
             openssl
+            pkg-config
           ];
 
           shellHook = ''
