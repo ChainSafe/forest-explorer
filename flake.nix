@@ -160,6 +160,28 @@
           # Run wrangler in development mode
           exec ${wrangler-bin}/bin/wrangler dev --env prebuilt --live-reload false
         '';
+
+        # Create a deployment script
+        explorer-deploy = pkgs.writeScriptBin "explorer-deploy" ''
+          #!${pkgs.bash}/bin/bash
+
+          # Create a temporary directory for the deployment
+          WORK_DIR=$(mktemp -d)
+          trap 'rm -rf "$WORK_DIR"' EXIT
+
+          # Link the necessary directories
+          ln -s ${explorer}/assets $WORK_DIR/assets
+          ln -s ${explorer}/build $WORK_DIR/build
+
+          # Link the wrangler configuration
+          ln -s ${./wrangler.toml} $WORK_DIR/wrangler.toml
+
+          # Change to the work directory
+          cd $WORK_DIR
+
+          # Run wrangler deploy with any additional arguments
+          exec ${wrangler-bin}/bin/wrangler deploy --env prebuilt "$@"
+        '';
       in {
         packages = {
           inherit explorer explorer-client explorer-server explorer-styles;
@@ -171,6 +193,12 @@
         apps.default = {
           type = "app";
           program = "${explorer-preview}/bin/explorer-preview";
+        };
+
+        # Create a deployment script
+        apps.deploy = {
+          type = "app";
+          program = "${explorer-deploy}/bin/explorer-deploy";
         };
 
         # Development shell with required tools
