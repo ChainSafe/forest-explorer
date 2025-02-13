@@ -80,7 +80,7 @@ jobs:
       - uses: DeterminateSystems/flakehub-cache-action@main
 
       - name: Build
-        run: nix build .
+        run: nix build . --no-link
 
       - name: Dry Run
         if: github.ref != 'refs/heads/main'
