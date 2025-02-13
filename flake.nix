@@ -136,10 +136,7 @@
               cp ${explorer-styles}/style.css $out/assets/style.css
               cp -r ${explorer-client}/pkg $out/assets/
             '')
-            (pkgs.runCommand "explorer-build" {} ''
-              mkdir -p $out/build
-              cp -r ${explorer-server}/build/* $out/build/
-            '')
+            explorer-server
           ];
         };
 
