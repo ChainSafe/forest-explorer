@@ -65,3 +65,28 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
+  deploy-nix:
+    runs-on: ubuntu-22.04-arm # Arm64 is slightly cheaper than x86_64
+
+    permissions:
+      contents: read
+      id-token: write
+    # if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          determinate: true
+      - uses: DeterminateSystems/flakehub-cache-action@main
+
+      - name: Dry Run
+        if: github.ref != 'refs/heads/main'
+        run: nix run .#deploy -- --dry-run
+
+      - name: Publish
+        if: github.ref == 'refs/heads/main'
+        run: nix run .#deploy
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
