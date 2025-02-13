@@ -79,6 +79,9 @@ jobs:
           determinate: true
       - uses: DeterminateSystems/flakehub-cache-action@main
 
+      - name: Build
+        run: nix build .
+
       - name: Dry Run
         if: github.ref != 'refs/heads/main'
         run: nix run .#deploy -- --dry-run
