@@ -14,16 +14,16 @@ on:
     branches:
       - main
 
-env:
-  CACHE_TIMEOUT_MINUTES: 5
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: sccache
-  CC: sccache clang
-  CXX: sccache clang++
-
 jobs:
   lint:
     runs-on: ubuntu-latest
+
+    env:
+      CACHE_TIMEOUT_MINUTES: 5
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: sccache
+      CC: sccache clang
+      CXX: sccache clang++
 
     steps:
       - name: Setup sccache
