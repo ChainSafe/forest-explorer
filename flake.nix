@@ -228,7 +228,7 @@
           shellHook = ''
             echo "🌲 Welcome to Forest Explorer Development Shell 🌲"
             echo ""
-            echo "Installed tools: wrangler, wasm-opt, wasm-pack, worker-build, wasm-bindgen"
+            echo "Installed tools: yarn, wrangler, wasm-opt, wasm-pack, worker-build, wasm-bindgen"
             echo "Installed lints: cargo-deny, cargo-spellcheck, taplo"
             echo ""
             echo "To start the development server:"
