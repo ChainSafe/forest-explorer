@@ -38,6 +38,7 @@ jobs:
           max_attempts: 3
           command: |
             sudo apt-get install -y libclang-dev # required dep for cargo-spellcheck
+      - run: corepack enable
       - run: make install-lint-tools-ci
         env:
           RUSTFLAGS: "-Cstrip=symbols"
