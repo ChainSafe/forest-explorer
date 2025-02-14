@@ -46,17 +46,12 @@ pub async fn sign_with_secret_key(
             .secret("RATE_LIMITER_DISABLED")
             .map(|v| v.to_string().to_lowercase() == "true")
             .unwrap_or(false);
-        let network = if is_mainnet { "mainnet" } else { "calibnet" };
-        let may_sign = rate_limiter_disabled || query_rate_limiter(network).await?;
-        let rate_limit_seconds = if is_mainnet {
-            crate::constants::MAINNET_RATE_LIMIT_SECONDS
-        } else {
-            crate::constants::CALIBNET_RATE_LIMIT_SECONDS
-        };
+        let may_sign = rate_limiter_disabled || query_rate_limiter().await?;
+
         if !may_sign {
             return Err(ServerFnError::ServerError(format!(
                 "Rate limit exceeded - wait {} seconds",
-                rate_limit_seconds
+                crate::constants::RATE_LIMIT_SECONDS
             )));
         }
 
@@ -101,7 +96,7 @@ pub async fn secret_key(network: Network) -> Result<Key, ServerFnError> {
 }
 
 #[cfg(feature = "ssr")]
-pub async fn query_rate_limiter(network: &str) -> Result<bool, ServerFnError> {
+pub async fn query_rate_limiter() -> Result<bool, ServerFnError> {
     use axum::Extension;
     use leptos_axum::extract;
     use std::sync::Arc;
@@ -110,13 +105,10 @@ pub async fn query_rate_limiter(network: &str) -> Result<bool, ServerFnError> {
     let Extension(env): Extension<Arc<Env>> = extract().await?;
     let rate_limiter = env
         .durable_object("RATE_LIMITER")?
-        .id_from_name(network)?
+        .id_from_name("RATE_LIMITER")?
         .get_stub()?;
     Ok(rate_limiter
-        .fetch_with_request(Request::new(
-            &format!("http://do/rate_limiter/{}", network),
-            Method::Get,
-        )?)
+        .fetch_with_request(Request::new("http://do/rate_limiter", Method::Get)?)
         .await?
         .json::<bool>()
         .await?)
