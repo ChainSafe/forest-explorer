@@ -4,8 +4,7 @@ use fvm_shared::econ::TokenAmount;
 
 /// The rate limit imposed by the CloudFlare's rate limiter, and also reflected in the user
 /// interface.
-pub const CALIBNET_RATE_LIMIT_SECONDS: i64 = 60;
-pub const MAINNET_RATE_LIMIT_SECONDS: i64 = 600;
+pub const RATE_LIMIT_SECONDS: i64 = 600;
 /// The amount of mainnet FIL to be dripped to the user. This corresponds to 0.01 FIL.
 pub static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_nano(10_000_000));
