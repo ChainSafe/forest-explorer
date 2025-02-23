@@ -1,7 +1,7 @@
 [package]
 name = "forest-explorer"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Forest Team <forest@chainsafe.io>"]
 
 [lib]
@@ -9,7 +9,6 @@ crate-type = ["cdylib"]
 
 [workspace]
 members = ["e2e"]
-resolver = "2"
 
 [dependencies]
 anyhow = "1"

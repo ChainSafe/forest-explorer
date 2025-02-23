@@ -3,10 +3,10 @@ use fvm_ipld_encoding::Error;
 use fvm_ipld_encoding::RawBytes;
 pub use fvm_shared::message::Message;
 use fvm_shared::{
+    METHOD_SEND,
     address::Address,
     crypto::signature::{Signature, SignatureType},
     econ::TokenAmount,
-    METHOD_SEND,
 };
 use multihash_codetable::{Code, MultihashDigest as _};
 use serde::{Deserialize, Serialize};

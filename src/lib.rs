@@ -25,13 +25,13 @@ mod ssr_imports {
     use std::sync::Arc;
 
     use crate::{
-        app::{shell, App},
+        app::{App, shell},
         faucet,
     };
-    use axum::{routing::post, Extension, Router};
+    use axum::{Extension, Router, routing::post};
     use leptos::prelude::*;
-    use leptos_axum::{generate_route_list, LeptosRoutes};
-    use worker::{event, Context, Env, HttpRequest, Result};
+    use leptos_axum::{LeptosRoutes, generate_route_list};
+    use worker::{Context, Env, HttpRequest, Result, event};
 
     fn router(env: Env) -> Router {
         let leptos_options = LeptosOptions::builder()

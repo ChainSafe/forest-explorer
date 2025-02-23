@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use fvm_shared::address::Network;
 use leptos::task::spawn_local;
-use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
+use leptos::{IntoView, component, leptos_dom::helpers::event_target_value, view};
 
 use leptos::prelude::*;
 use leptos_meta::{Meta, Title};
