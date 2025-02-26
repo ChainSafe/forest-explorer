@@ -41,6 +41,8 @@ jobs:
         run:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+      - run: wasm-pack --version
+
       - uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
