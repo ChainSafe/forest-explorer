@@ -1,6 +1,6 @@
 use anyhow::ensure;
-use fvm_shared::address::{Address, Network};
 use fvm_shared::ActorID;
+use fvm_shared::address::{Address, Network};
 
 // '0x' + 20bytes
 const ETH_ADDRESS_LENGTH: usize = 42;
