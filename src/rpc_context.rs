@@ -102,6 +102,13 @@ impl Provider {
         Self { url }
     }
 
+    pub fn get_network_url(network: Network) -> String {
+        match network {
+            Network::Testnet => GLIF_CALIBNET.to_string(),
+            Network::Mainnet => GLIF_MAINNET.to_string(),
+        }
+    }
+
     pub fn calibnet() -> Self {
         Self {
             url: GLIF_CALIBNET.to_string(),
