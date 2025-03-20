@@ -1,4 +1,5 @@
-use crate::rpc_context::RpcContext;
+use crate::rpc_context::{Provider, RpcContext};
+use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 use leptos_meta::*;
@@ -48,8 +49,8 @@ pub fn BlockchainExplorer() -> impl IntoView {
             Forest Explorer
         </h1>
         <select on:change=move |ev| { rpc_context.set(event_target_value(&ev)) }>
-            <option value="https://api.calibration.node.glif.io">Glif.io Calibnet</option>
-            <option value="https://api.node.glif.io/">Glif.io Mainnet</option>
+            <option value=Provider::get_network_url(Network::Testnet)>Glif.io Calibnet</option>
+            <option value=Provider::get_network_url(Network::Mainnet)>Glif.io Mainnet</option>
         </select>
         <p>StateNetworkName</p>
         <Transition fallback={move || view!{ <p>Loading network name...</p> }}>

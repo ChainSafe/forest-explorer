@@ -12,6 +12,7 @@ use leptos_use::*;
 
 use crate::faucet::controller::FaucetController;
 use crate::faucet::utils::format_balance;
+use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
 const MESSAGE_REMOVAL_AFTER: Duration = Duration::new(3, 500_000_000);
@@ -227,6 +228,13 @@ pub fn Faucets() -> impl IntoView {
 
 #[component]
 pub fn Faucet_Calibnet() -> impl IntoView {
+    let rpc_context = RpcContext::use_context();
+
+    // update the rpc context to the calibnet url
+    Effect::new(move |_| {
+        rpc_context.set(Provider::get_network_url(Network::Testnet));
+    });
+
     view! {
         <Title text="Filecoin Faucet - Calibration Network" />
         <Meta name="description" content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes." />
@@ -242,6 +250,13 @@ pub fn Faucet_Calibnet() -> impl IntoView {
 
 #[component]
 pub fn Faucet_Mainnet() -> impl IntoView {
+    let rpc_context = RpcContext::use_context();
+
+    // update the rpc context to the mainnet url
+    Effect::new(move |_| {
+        rpc_context.set(Provider::get_network_url(Network::Mainnet));
+    });
+
     view! {
         <Title text="Filecoin Faucet - Mainnet" />
         <Meta name="description" content="Filecoin Mainnet Faucet dispensing tokens for testing purposes." />
