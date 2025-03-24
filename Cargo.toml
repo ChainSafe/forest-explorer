@@ -24,7 +24,7 @@ console_log = "1"
 derive_more = { version = "2", features = ["from", "into"] }
 fvm_ipld_encoding = "0.5"
 fvm_shared = { version = "~4.6" }
-getrandom = { version = "0.2", features = ["js"], optional = true }
+getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
 http = { version = "1", optional = true }
 leptos = "0.7"
@@ -63,7 +63,6 @@ ssr = [
   "leptos_router/ssr",
   "dep:worker",
   "dep:worker-macros",
-  "dep:getrandom",
 ]
 
 [profile.release]
