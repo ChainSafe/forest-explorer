@@ -40,7 +40,9 @@
 ### Removed
 
 ### Fixed
-- [#176](https://github.com/ChainSafe/forest-explorer/pull/176) Fixed the message encoding based on the network 
+
+- [#176](https://github.com/ChainSafe/forest-explorer/pull/176) Fixed the
+  message encoding based on the network
 
 ## Forest Explorer v1.0.0
 
