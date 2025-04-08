@@ -20,12 +20,11 @@ impl DurableObject for RateLimiter {
 
     async fn fetch(&mut self, req: Request) -> Result<Response> {
         let now = Utc::now();
-        let url = req.url()?;
-        let network = url.path().split('/').last().unwrap_or_default();
-        let rate_limit_seconds = match network {
-            "calibnet" => CALIBNET_RATE_LIMIT_SECONDS,
-            "mainnet" => MAINNET_RATE_LIMIT_SECONDS,
-            _ => return Err(worker::Error::RustError("Unknown network".into())),
+        let path = req.path();
+        let (network, rate_limit_seconds) = if path.contains("mainnet") {
+            ("mainnet", MAINNET_RATE_LIMIT_SECONDS)
+        } else {
+            ("calibnet", CALIBNET_RATE_LIMIT_SECONDS)
         };
         let storage_key = format!("block_until_{}", network);
         let block_until = self
