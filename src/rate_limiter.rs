@@ -1,4 +1,3 @@
-use crate::constants::{CALIBNET_RATE_LIMIT_SECONDS, MAINNET_RATE_LIMIT_SECONDS};
 use chrono::{DateTime, Duration, Utc};
 use worker::*;
 
@@ -18,19 +17,12 @@ impl DurableObject for RateLimiter {
         }
     }
 
-    async fn fetch(&mut self, req: Request) -> Result<Response> {
+    async fn fetch(&mut self, _req: Request) -> Result<Response> {
         let now = Utc::now();
-        let path = req.path();
-        let (network, rate_limit_seconds) = if path.contains("mainnet") {
-            ("mainnet", MAINNET_RATE_LIMIT_SECONDS)
-        } else {
-            ("calibnet", CALIBNET_RATE_LIMIT_SECONDS)
-        };
-        let storage_key = format!("block_until_{}", network);
         let block_until = self
             .state
             .storage()
-            .get(&storage_key)
+            .get("block_until")
             .await
             .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
             .unwrap_or(Utc::now());
@@ -45,13 +37,13 @@ impl DurableObject for RateLimiter {
             self.state
                 .storage()
                 .set_alarm(std::time::Duration::from_secs(
-                    rate_limit_seconds as u64 + 1,
+                    crate::constants::RATE_LIMIT_SECONDS as u64 + 1,
                 ))
                 .await?;
-            let block_until = now + Duration::seconds(rate_limit_seconds);
+            let block_until = now + Duration::seconds(crate::constants::RATE_LIMIT_SECONDS);
             self.state
                 .storage()
-                .put(&storage_key, block_until.timestamp())
+                .put("block_until", block_until.timestamp())
                 .await?;
 
             Response::from_json(&true)
