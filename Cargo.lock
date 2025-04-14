@@ -1062,9 +1062,9 @@ dependencies = [
 
 [[package]]
 name = "fvm_ipld_encoding"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52627625ec02011e22692e150644b90619343bd9df6d8487df13ca64355db8ab"
+checksum = "c4fd0c7d16be0076920acd5bf13e705a80dfe6540d4722b19745daa9ea93722a"
 dependencies = [
  "anyhow",
  "cid",
@@ -1074,14 +1074,14 @@ dependencies = [
  "serde_ipld_dagcbor",
  "serde_repr",
  "serde_tuple 0.5.0",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
 name = "fvm_shared"
-version = "4.6.1"
+version = "4.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "916e46aee798f0fa676b39bb91a5ce694fc8dcf954f2eae3dfeec6aaea257255"
+checksum = "6fa65a73a8000e49cb23ab9e260285fdfb7a56a1ae0b93e6540674cbb6e01562"
 dependencies = [
  "anyhow",
  "bitflags 2.9.0",
@@ -1090,14 +1090,12 @@ dependencies = [
  "data-encoding",
  "data-encoding-macro",
  "fvm_ipld_encoding",
- "lazy_static",
  "num-bigint",
  "num-derive",
  "num-integer",
  "num-traits",
  "serde",
- "serde_tuple 0.5.0",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "unsigned-varint",
 ]
 
