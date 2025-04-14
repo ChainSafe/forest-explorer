@@ -32,14 +32,6 @@ impl DurableObject for RateLimiter {
 
         let is_allowed = block_until <= now;
 
-        console_log!(
-            "Rate limiter for {} invoked: now={:?}, block_until={:?}, may_sign={:?}",
-            network,
-            now,
-            block_until,
-            is_allowed
-        );
-
         if is_allowed {
             // This Durable Object will be deleted after the alarm is triggered
             let next_block = now + Duration::seconds(rate_limit_seconds);
@@ -47,19 +39,32 @@ impl DurableObject for RateLimiter {
                 .storage()
                 .put("block_until", next_block.timestamp())
                 .await?;
+            console_log!(
+                "Rate limiter for {} set: block_until={:?}",
+                network,
+                next_block
+            );
             self.state
                 .storage()
                 .set_alarm(std::time::Duration::from_secs(
                     rate_limit_seconds as u64 + 1,
                 ))
                 .await?;
+        } else {
+            console_log!(
+                "Rate limiter for {} invoked: now={:?}, block_until={:?}, may_sign={:?}",
+                network,
+                now,
+                block_until,
+                is_allowed
+            );
         }
         Response::from_json(&is_allowed)
     }
 
     async fn alarm(&mut self) -> Result<Response> {
         console_log!("Rate limiter alarm triggered. DurableObject will be deleted.");
-        self.state.storage().delete("block_until").await.ok();
+        self.state.storage().delete_all().await.ok();
         Response::ok("OK")
     }
 }
