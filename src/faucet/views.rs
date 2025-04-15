@@ -41,9 +41,15 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-    let drip_amount = match target_network {
-        Network::Mainnet => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-        Network::Testnet => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+    let (drip_amount, faucet_tx_history_url) = match target_network {
+        Network::Mainnet => (
+            crate::constants::MAINNET_DRIP_AMOUNT.clone(),
+            option_env!("MAINNET_FAUCET_TX_HISTORY_URL"),
+        ),
+        Network::Testnet => (
+            crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+            option_env!("CALIBNET_FAUCET_TX_HISTORY_URL"),
+        ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
     view! {
@@ -205,10 +211,13 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 }
             }}
         </div>
-        <div class="flex flex-col items-center">
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-              <a href="/faucet">Back to faucet list</a>
-            </button>
+        <div class="flex justify-center space-x-4">
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+            <a href={faucet_tx_history_url} target="_blank" rel="noopener noreferrer">Transaction History</a>
+        </button>
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+            <a href="/faucet">Back to faucet list</a>
+        </button>
         </div>
     }
 }
