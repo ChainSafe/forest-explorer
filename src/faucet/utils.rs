@@ -122,6 +122,10 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
     )
 }
 
+pub fn format_tx_url(base_url: &str, address: &str) -> String {
+    format!("{}address/{}", base_url, address)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

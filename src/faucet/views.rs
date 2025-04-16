@@ -11,7 +11,7 @@ use leptos_meta::{Meta, Title};
 use leptos_use::*;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::utils::format_balance;
+use crate::faucet::utils::{format_balance, format_tx_url};
 use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
@@ -41,14 +41,14 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-    let (drip_amount, faucet_tx_history_url) = match target_network {
+    let (drip_amount, faucet_tx_base_url) = match target_network {
         Network::Mainnet => (
             crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-            option_env!("MAINNET_FAUCET_TX_HISTORY_URL"),
+            option_env!("FAUCET_TX_URL_MAINNET"),
         ),
         Network::Testnet => (
             crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
-            option_env!("CALIBNET_FAUCET_TX_HISTORY_URL"),
+            option_env!("FAUCET_TX_URL_CALIBNET"),
         ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
@@ -212,9 +212,23 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             }}
         </div>
         <div class="flex justify-center space-x-4">
-        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-            <a href={faucet_tx_history_url} target="_blank" rel="noopener noreferrer">Transaction History</a>
-        </button>
+        {move || {
+            match faucet_tx_base_url.as_deref() {
+                Some(base_url) => view! {
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+                    <a
+                    href={format_tx_url(&base_url, &faucet.get().get_sender_address())}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >
+                    "Transaction History"
+                    </a>
+                </button>
+                }
+                .into_any(),
+                _ => ().into_any(),
+            }
+            }}
         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
             <a href="/faucet">Back to faucet list</a>
         </button>
