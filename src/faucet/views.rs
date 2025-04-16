@@ -11,7 +11,7 @@ use leptos_meta::{Meta, Title};
 use leptos_use::*;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::utils::format_balance;
+use crate::faucet::utils::{format_balance, format_tx_url};
 use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
@@ -41,9 +41,15 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-    let drip_amount = match target_network {
-        Network::Mainnet => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-        Network::Testnet => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+    let (drip_amount, faucet_tx_base_url) = match target_network {
+        Network::Mainnet => (
+            crate::constants::MAINNET_DRIP_AMOUNT.clone(),
+            option_env!("FAUCET_TX_URL_MAINNET"),
+        ),
+        Network::Testnet => (
+            crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+            option_env!("FAUCET_TX_URL_CALIBNET"),
+        ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
     view! {
@@ -188,10 +194,24 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {messages
                                     .into_iter()
                                     .map(|(msg, sent)| {
+                                        let mut cid = view! { {msg.to_string()} }.into_any();
+                                        let status;
+                                        if sent {
+                                            status = "(confirmed)";
+                                            if let Some(base_url) = faucet_tx_base_url {
+                                                let tx_url = format_tx_url(base_url, &msg.to_string());
+                                                cid = view! {
+                                                    <a href=tx_url target="_blank" class="text-blue-600 hover:underline">
+                                                        {msg.to_string()}
+                                                    </a>
+                                                }.into_any();
+                                            }
+                                        } else {
+                                            status = "(pending)";
+                                        }
                                         view! {
                                             <li>
-                                                "CID: " {msg.to_string()}
-                                                {move || if sent { " (confirmed)" } else { " (pending)" }}
+                                                "CID:" {cid} {status}
                                             </li>
                                         }
                                     })
@@ -199,7 +219,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             </ul>
                         </div>
                     }
-                        .into_any()
+                    .into_any()
                 } else {
                     ().into_any()
                 }

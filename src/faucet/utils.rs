@@ -122,6 +122,11 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
     )
 }
 
+/// Constructs a URL to lookup transaction details on a block explorer.
+pub fn format_tx_url(base_url: &str, tx: &str) -> String {
+    format!("{}txs/{}", base_url, tx)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
