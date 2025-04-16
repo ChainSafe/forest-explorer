@@ -1,11 +1,12 @@
 #[cfg(feature = "ssr")]
 use crate::key::{sign, Key};
 use crate::{lotus_json::LotusJson, message::SignedMessage};
+use anyhow::{anyhow, Result};
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
 use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
 use leptos::{prelude::ServerFnError, server};
-use url::{ParseError, Url};
+use url::Url;
 
 #[server]
 pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
@@ -124,8 +125,11 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
 }
 
 /// Constructs a URL to lookup the faucet history for a given address.
-pub fn format_address_url(base_url: &Url, address: &str) -> Result<Url, ParseError> {
-    base_url.join(&format!("address/{}", address))
+pub fn format_address_url(base_url: &Url, address: &str) -> Result<Url> {
+    base_url
+        .join("address")
+        .and_then(|url| url.join(address))
+        .map_err(|e| anyhow!("Failed to join URL: {}", e))
 }
 
 #[cfg(test)]
