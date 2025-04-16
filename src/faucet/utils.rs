@@ -122,6 +122,7 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
     )
 }
 
+/// Formats a URL for faucet address history.
 pub fn format_address_url(base_url: &str, address: &str) -> String {
     format!("{}address/{}", base_url, address)
 }
