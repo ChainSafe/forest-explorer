@@ -194,22 +194,24 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {messages
                                     .into_iter()
                                     .map(|(msg, sent)| {
-                                        let mut cid = view! {{msg.to_string()}}.into_any();
-                                        let status;
-                                        if sent {
-                                            status = "(confirmed)";
-                                            if let Some(ref base_url) = faucet_tx_base_url {
-                                                if let Ok(tx_url) = format_tx_url(base_url, &msg.to_string()) {
-                                                    cid = view! {
+                                        let (cid, status) = if sent {
+                                            let cid = faucet_tx_base_url
+                                                .as_ref()
+                                                .and_then(|base_url| format_tx_url(base_url, &msg.to_string()).ok())
+                                                .map(|tx_url| {
+                                                    view! {
                                                         <a href=tx_url.to_string() target="_blank" class="text-blue-600 hover:underline">
                                                             {msg.to_string()}
                                                         </a>
-                                                    }.into_any();
-                                                }
-                                            }
+                                                    }.into_any()
+                                                })
+                                                .unwrap_or_else(|| view! {{msg.to_string()}}.into_any());
+
+                                            (cid, "(confirmed)")
                                         } else {
-                                            status = "(pending)";
-                                        }
+                                            let cid = view! {{msg.to_string()}}.into_any();
+                                            (cid, "(pending)")
+                                        };
                                         view! {
                                             <li>
                                                 "CID:" {cid} {status}
