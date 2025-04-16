@@ -2,13 +2,13 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use fvm_shared::address::Network;
+use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
-
-use leptos::prelude::*;
 use leptos_meta::{Meta, Title};
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
+use url::Url;
 
 use crate::faucet::controller::FaucetController;
 use crate::faucet::utils::{format_balance, format_tx_url};
@@ -44,11 +44,11 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     let (drip_amount, faucet_tx_base_url) = match target_network {
         Network::Mainnet => (
             crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-            option_env!("FAUCET_TX_URL_MAINNET"),
+            option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()),
         ),
         Network::Testnet => (
             crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
-            option_env!("FAUCET_TX_URL_CALIBNET"),
+            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
         ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
@@ -194,17 +194,18 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {messages
                                     .into_iter()
                                     .map(|(msg, sent)| {
-                                        let mut cid = view! { {msg.to_string()} }.into_any();
+                                        let mut cid = view! {{msg.to_string()}}.into_any();
                                         let status;
                                         if sent {
                                             status = "(confirmed)";
-                                            if let Some(base_url) = faucet_tx_base_url {
-                                                let tx_url = format_tx_url(base_url, &msg.to_string());
-                                                cid = view! {
-                                                    <a href=tx_url target="_blank" class="text-blue-600 hover:underline">
-                                                        {msg.to_string()}
-                                                    </a>
-                                                }.into_any();
+                                            if let Some(ref base_url) = faucet_tx_base_url {
+                                                if let Ok(tx_url) = format_tx_url(base_url, &msg.to_string()) {
+                                                    cid = view! {
+                                                        <a href=tx_url.to_string() target="_blank" class="text-blue-600 hover:underline">
+                                                            {msg.to_string()}
+                                                        </a>
+                                                    }.into_any();
+                                                }
                                             }
                                         } else {
                                             status = "(pending)";

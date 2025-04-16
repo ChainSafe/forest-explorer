@@ -5,6 +5,7 @@ use crate::{lotus_json::LotusJson, message::SignedMessage};
 use fvm_shared::address::Network;
 use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
 use leptos::{prelude::ServerFnError, server};
+use url::{ParseError, Url};
 
 #[server]
 pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
@@ -123,8 +124,8 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
 }
 
 /// Constructs a URL to lookup transaction details on a block explorer.
-pub fn format_tx_url(base_url: &str, tx: &str) -> String {
-    format!("{}txs/{}", base_url, tx)
+pub fn format_tx_url(base_url: &Url, tx: &str) -> Result<Url, ParseError> {
+    base_url.join(&format!("txs/{}", tx))
 }
 
 #[cfg(test)]
