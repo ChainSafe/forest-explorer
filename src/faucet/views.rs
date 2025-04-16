@@ -214,21 +214,21 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         <div class="flex justify-center space-x-4">
         {move || {
             match faucet_tx_base_url {
-                Some(base_url) => view! {
+            Some(base_url) => view! {
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-                    <a
+                <a
                     href={format_address_url(base_url, &faucet.get().get_sender_address())}
                     target="_blank"
                     rel="noopener noreferrer"
-                    >
+                >
                     "Transaction History"
-                    </a>
+                </a>
                 </button>
-                }
-                .into_any(),
-                _ => ().into_any(),
             }
-            }}
+            .into_any(),
+            _ => ().into_any(),
+            }
+        }}
         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
             <a href="/faucet">Back to faucet list</a>
         </button>
