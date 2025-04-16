@@ -2,13 +2,13 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use fvm_shared::address::Network;
+use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
-
-use leptos::prelude::*;
 use leptos_meta::{Meta, Title};
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
+use url::Url;
 
 use crate::faucet::controller::FaucetController;
 use crate::faucet::utils::{format_address_url, format_balance};
@@ -44,11 +44,11 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     let (drip_amount, faucet_tx_base_url) = match target_network {
         Network::Mainnet => (
             crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-            option_env!("FAUCET_TX_URL_MAINNET"),
+            option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()),
         ),
         Network::Testnet => (
             crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
-            option_env!("FAUCET_TX_URL_CALIBNET"),
+            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
         ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
@@ -214,19 +214,22 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         <div class="flex justify-center space-x-4">
         {move || {
             match faucet_tx_base_url {
-            Some(base_url) => view! {
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-                <a
-                    href={format_address_url(base_url, &faucet.get().get_sender_address())}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    "Transaction History"
-                </a>
-                </button>
-            }
-            .into_any(),
-            _ => ().into_any(),
+                Some(ref base_url) => match format_address_url(base_url, &faucet.get().get_sender_address()) {
+                    Ok(addr_url) => view! {
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+                            <a
+                                href={addr_url.to_string()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                "Transaction History"
+                            </a>
+                        </button>
+                    }
+                    .into_any(),
+                    Err(_) => ().into_any(),
+                },
+                None => ().into_any(),
             }
         }}
         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
