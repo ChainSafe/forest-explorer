@@ -138,11 +138,11 @@ impl SearchPath {
     }
 }
 
-/// Constructs a URL to lookup the faucet history for a given address.
-pub fn format_url(base_url: &Url, path: SearchPath, value: &str) -> Result<Url> {
+/// Constructs a URL combining base url, search path, and an identifier.
+pub fn format_url(base_url: &Url, path: SearchPath, identifier: &str) -> Result<Url> {
     base_url
         .join(path.as_str())?
-        .join(value)
+        .join(identifier)
         .map_err(|e| anyhow!("Failed to join URL: {}", e))
 }
 
