@@ -138,7 +138,7 @@ impl SearchPath {
     }
 }
 
-/// Constructs a URL combining base url, search path, and an identifier.
+/// Constructs a URL combining base URL, search path, and an identifier.
 pub fn format_url(base_url: &Url, path: SearchPath, identifier: &str) -> Result<Url> {
     base_url
         .join(path.as_str())?
