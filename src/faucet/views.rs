@@ -11,7 +11,8 @@ use leptos_use::*;
 use url::Url;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::utils::{format_balance, format_tx_url};
+use crate::faucet::utils::SearchPath;
+use crate::faucet::utils::{format_balance, format_url};
 use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
@@ -197,7 +198,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                         let (cid, status) = if sent {
                                             let cid = faucet_tx_base_url
                                                 .as_ref()
-                                                .and_then(|base_url| format_tx_url(base_url, &msg.to_string()).ok())
+                                                .and_then(|base_url| format_url(base_url, SearchPath::Transaction ,&msg.to_string()).ok())
                                                 .map(|tx_url| {
                                                     view! {
                                                         <a href=tx_url.to_string() target="_blank" class="text-blue-600 hover:underline">
