@@ -2,16 +2,17 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use fvm_shared::address::Network;
+use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
-
-use leptos::prelude::*;
 use leptos_meta::{Meta, Title};
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
+use url::Url;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::utils::format_balance;
+use crate::faucet::utils::SearchPath;
+use crate::faucet::utils::{format_balance, format_url};
 use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
@@ -41,9 +42,15 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-    let drip_amount = match target_network {
-        Network::Mainnet => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-        Network::Testnet => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+    let (drip_amount, faucet_tx_base_url) = match target_network {
+        Network::Mainnet => (
+            crate::constants::MAINNET_DRIP_AMOUNT.clone(),
+            option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()),
+        ),
+        Network::Testnet => (
+            crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
+        ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
     view! {
@@ -188,10 +195,27 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {messages
                                     .into_iter()
                                     .map(|(msg, sent)| {
+                                        let (cid, status) = if sent {
+                                            let cid = faucet_tx_base_url
+                                                .as_ref()
+                                                .and_then(|base_url| format_url(base_url, SearchPath::Transaction ,&msg.to_string()).ok())
+                                                .map(|tx_url| {
+                                                    view! {
+                                                        <a href=tx_url.to_string() target="_blank" class="text-blue-600 hover:underline">
+                                                            {msg.to_string()}
+                                                        </a>
+                                                    }.into_any()
+                                                })
+                                                .unwrap_or_else(|| view! {{msg.to_string()}}.into_any());
+
+                                            (cid, "(confirmed)")
+                                        } else {
+                                            let cid = view! {{msg.to_string()}}.into_any();
+                                            (cid, "(pending)")
+                                        };
                                         view! {
                                             <li>
-                                                "CID: " {msg.to_string()}
-                                                {move || if sent { " (confirmed)" } else { " (pending)" }}
+                                                "CID:" {cid} {status}
                                             </li>
                                         }
                                     })
@@ -199,7 +223,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             </ul>
                         </div>
                     }
-                        .into_any()
+                    .into_any()
                 } else {
                     ().into_any()
                 }
