@@ -11,7 +11,8 @@ use leptos_use::*;
 use url::Url;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::utils::{format_address_url, format_balance};
+use crate::faucet::utils::SearchPath;
+use crate::faucet::utils::{format_balance, format_url};
 use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
@@ -214,7 +215,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         <div class="flex justify-center space-x-4">
         {move || {
             match faucet_tx_base_url {
-                Some(ref base_url) => match format_address_url(base_url, &faucet.get().get_sender_address()) {
+                Some(ref base_url) => match format_url(base_url, SearchPath::Address, &faucet.get().get_sender_address()) {
                     Ok(addr_url) => view! {
                         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
                             <a

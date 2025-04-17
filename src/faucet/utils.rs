@@ -124,11 +124,25 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
     )
 }
 
+/// Types of search paths in Filecoin explorer.
+#[derive(Copy, Clone)]
+pub enum SearchPath {
+    Address,
+}
+
+impl SearchPath {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SearchPath::Address => "address/",
+        }
+    }
+}
+
 /// Constructs a URL to lookup the faucet history for a given address.
-pub fn format_address_url(base_url: &Url, address: &str) -> Result<Url> {
+pub fn format_url(base_url: &Url, path: SearchPath, value: &str) -> Result<Url> {
     base_url
-        .join("address")
-        .and_then(|url| url.join(address))
+        .join(path.as_str())?
+        .join(value)
         .map_err(|e| anyhow!("Failed to join URL: {}", e))
 }
 
@@ -147,6 +161,21 @@ mod tests {
         ];
         for (balance, expected) in cases.iter() {
             assert_eq!(format_balance(balance, "FIL"), *expected);
+        }
+    }
+
+    #[test]
+    fn test_format_url() {
+        let base = Url::parse("https://test.com/").unwrap();
+        let cases = [(
+            SearchPath::Address,
+            "0xabc123",
+            "https://test.com/address/0xabc123",
+        )];
+
+        for (path, query, expected) in cases.iter() {
+            let result = format_url(&base, *path, query).unwrap();
+            assert_eq!(result.as_str(), *expected);
         }
     }
 }
