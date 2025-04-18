@@ -229,11 +229,8 @@ pub fn Faucets() -> impl IntoView {
 #[component]
 pub fn Faucet_Calibnet() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-
-    // update the rpc context to the calibnet url
-    Effect::new(move |_| {
-        rpc_context.set(Provider::get_network_url(Network::Testnet));
-    });
+    // Set rpc context to calibnet url
+    rpc_context.set(Provider::get_network_url(Network::Testnet));
 
     view! {
         <Title text="Filecoin Faucet - Calibration Network" />
@@ -251,11 +248,8 @@ pub fn Faucet_Calibnet() -> impl IntoView {
 #[component]
 pub fn Faucet_Mainnet() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-
-    // update the rpc context to the mainnet url
-    Effect::new(move |_| {
-        rpc_context.set(Provider::get_network_url(Network::Mainnet));
-    });
+    // Set rpc context to mainnet url
+    rpc_context.set(Provider::get_network_url(Network::Mainnet));
 
     view! {
         <Title text="Filecoin Faucet - Mainnet" />
