@@ -20,8 +20,9 @@ pub(super) struct FaucetController {
 impl FaucetController {
     pub fn new(network: Network) -> Self {
         let is_mainnet = network == Network::Mainnet;
-        let target_address = RwSignal::new(String::new());
         let balance_trigger = Trigger::new();
+        let sender_address = RwSignal::new(String::new());
+        let target_address = RwSignal::new(String::new());
         let target_balance = LocalResource::new(move || {
             let target_address = target_address.get();
             balance_trigger.track();
@@ -37,7 +38,7 @@ impl FaucetController {
                 }
             }
         });
-        let sender_address = LocalResource::new(move || async move {
+        let faucet_address = LocalResource::new(move || async move {
             faucet_address(is_mainnet)
                 .await
                 .map(|LotusJson(addr)| addr)
@@ -46,7 +47,8 @@ impl FaucetController {
         let faucet_balance = LocalResource::new(move || {
             balance_trigger.track();
             async move {
-                if let Some(addr) = sender_address.await {
+                if let Some(addr) = faucet_address.await {
+                    sender_address.set(addr.to_string());
                     Provider::from_network(network)
                         .wallet_balance(addr)
                         .await
@@ -66,6 +68,7 @@ impl FaucetController {
             balance_trigger,
             target_balance,
             faucet_balance,
+            sender_address,
             target_address,
         };
         Self { faucet }
@@ -112,6 +115,10 @@ impl FaucetController {
             .as_deref()
             .cloned()
             .unwrap_or_default()
+    }
+
+    pub fn get_sender_address(&self) -> String {
+        self.faucet.sender_address.get()
     }
 
     pub fn get_target_address(&self) -> String {
