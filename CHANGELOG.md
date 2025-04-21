@@ -32,6 +32,9 @@
 - [#135](https://github.com/ChainSafe/forest-explorer/pull/135) Added link to
   request for faucet top-up which is configurable using github env var.
 
+- [#199](https://github.com/ChainSafe/forest-explorer/pull/199) Added faucet
+  transaction history button which is configurable using github env var.
+
 - [#137] (https://github.com/ChainSafe/forest-explorer/issues/137) Different
   rate limitter for calibnet and mainnet
 

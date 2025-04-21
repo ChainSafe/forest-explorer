@@ -2,16 +2,17 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use fvm_shared::address::Network;
+use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
-
-use leptos::prelude::*;
 use leptos_meta::{Meta, Title};
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
+use url::Url;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::utils::format_balance;
+use crate::faucet::utils::SearchPath;
+use crate::faucet::utils::{format_balance, format_url};
 use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
@@ -41,9 +42,15 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-    let drip_amount = match target_network {
-        Network::Mainnet => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-        Network::Testnet => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+    let (drip_amount, faucet_tx_base_url) = match target_network {
+        Network::Mainnet => (
+            crate::constants::MAINNET_DRIP_AMOUNT.clone(),
+            option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()),
+        ),
+        Network::Testnet => (
+            crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
+        ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
     view! {
@@ -205,10 +212,30 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 }
             }}
         </div>
-        <div class="flex flex-col items-center">
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-              <a href="/faucet">Back to faucet list</a>
-            </button>
+        <div class="flex justify-center space-x-4">
+        {move || {
+            match faucet_tx_base_url {
+                Some(ref base_url) => match format_url(base_url, SearchPath::Address, &faucet.get().get_sender_address()) {
+                    Ok(addr_url) => view! {
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+                            <a
+                                href={addr_url.to_string()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                "Transaction History"
+                            </a>
+                        </button>
+                    }
+                    .into_any(),
+                    Err(_) => ().into_any(),
+                },
+                None => ().into_any(),
+            }
+        }}
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+            <a href="/faucet">Back to faucet list</a>
+        </button>
         </div>
     }
 }
@@ -229,11 +256,8 @@ pub fn Faucets() -> impl IntoView {
 #[component]
 pub fn Faucet_Calibnet() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-
-    // update the rpc context to the calibnet url
-    Effect::new(move |_| {
-        rpc_context.set(Provider::get_network_url(Network::Testnet));
-    });
+    // Set rpc context to calibnet url
+    rpc_context.set(Provider::get_network_url(Network::Testnet));
 
     view! {
         <Title text="Filecoin Faucet - Calibration Network" />
@@ -251,11 +275,8 @@ pub fn Faucet_Calibnet() -> impl IntoView {
 #[component]
 pub fn Faucet_Mainnet() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-
-    // update the rpc context to the mainnet url
-    Effect::new(move |_| {
-        rpc_context.set(Provider::get_network_url(Network::Mainnet));
-    });
+    // Set rpc context to mainnet url
+    rpc_context.set(Provider::get_network_url(Network::Mainnet));
 
     view! {
         <Title text="Filecoin Faucet - Mainnet" />

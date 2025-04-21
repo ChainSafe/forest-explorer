@@ -1,10 +1,12 @@
 #[cfg(feature = "ssr")]
 use crate::key::{sign, Key};
 use crate::{lotus_json::LotusJson, message::SignedMessage};
+use anyhow::{anyhow, Result};
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
 use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
 use leptos::{prelude::ServerFnError, server};
+use url::Url;
 
 #[server]
 pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
@@ -130,6 +132,28 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
     )
 }
 
+/// Types of search paths in Filecoin explorer.
+#[derive(Copy, Clone)]
+pub enum SearchPath {
+    Address,
+}
+
+impl SearchPath {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SearchPath::Address => "address/",
+        }
+    }
+}
+
+/// Constructs a URL combining base URL, search path, and an identifier.
+pub fn format_url(base_url: &Url, path: SearchPath, identifier: &str) -> Result<Url> {
+    base_url
+        .join(path.as_str())?
+        .join(identifier)
+        .map_err(|e| anyhow!("Failed to join URL: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,6 +169,21 @@ mod tests {
         ];
         for (balance, expected) in cases.iter() {
             assert_eq!(format_balance(balance, "FIL"), *expected);
+        }
+    }
+
+    #[test]
+    fn test_format_url() {
+        let base = Url::parse("https://test.com/").unwrap();
+        let cases = [(
+            SearchPath::Address,
+            "0xabc123",
+            "https://test.com/address/0xabc123",
+        )];
+
+        for (path, query, expected) in cases.iter() {
+            let result = format_url(&base, *path, query).unwrap();
+            assert_eq!(result.as_str(), *expected);
         }
     }
 }
