@@ -35,6 +35,9 @@
 - [#200](https://github.com/ChainSafe/forest-explorer/pull/200) Make the CID of
   transaction clickable.
 
+- [#199](https://github.com/ChainSafe/forest-explorer/pull/199) Added faucet
+  transaction history button which is configurable using github env var.
+
 ### Changed
 
 - [#136](https://github.com/ChainSafe/forest-explorer/pull/136) Increased the

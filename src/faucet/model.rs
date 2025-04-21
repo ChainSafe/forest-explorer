@@ -13,5 +13,6 @@ pub(super) struct FaucetModel {
     pub balance_trigger: Trigger,
     pub faucet_balance: LocalResource<TokenAmount>,
     pub target_balance: LocalResource<TokenAmount>,
+    pub sender_address: RwSignal<String>,
     pub target_address: RwSignal<String>,
 }
