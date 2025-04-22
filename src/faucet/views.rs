@@ -45,11 +45,15 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     let (drip_amount, faucet_tx_base_url) = match target_network {
         Network::Mainnet => (
             crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-            option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()),
+            RwSignal::new(
+                option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()),
+            ),
         ),
         Network::Testnet => (
             crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
-            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
+            RwSignal::new(
+                option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
+            ),
         ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
@@ -195,10 +199,27 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {messages
                                     .into_iter()
                                     .map(|(msg, sent)| {
+                                        let (cid, status) = if sent {
+                                            let cid = faucet_tx_base_url.get()
+                                                .as_ref()
+                                                .and_then(|base_url| format_url(base_url, SearchPath::Transaction ,&msg.to_string()).ok())
+                                                .map(|tx_url| {
+                                                    view! {
+                                                        <a href=tx_url.to_string() target="_blank" class="text-blue-600 hover:underline">
+                                                            {msg.to_string()}
+                                                        </a>
+                                                    }.into_any()
+                                                })
+                                                .unwrap_or_else(|| view! {{msg.to_string()}}.into_any());
+
+                                            (cid, "(confirmed)")
+                                        } else {
+                                            let cid = view! {{msg.to_string()}}.into_any();
+                                            (cid, "(pending)")
+                                        };
                                         view! {
                                             <li>
-                                                "CID: " {msg.to_string()}
-                                                {move || if sent { " (confirmed)" } else { " (pending)" }}
+                                                "CID:" {cid} {status}
                                             </li>
                                         }
                                     })
@@ -206,7 +227,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             </ul>
                         </div>
                     }
-                        .into_any()
+                    .into_any()
                 } else {
                     ().into_any()
                 }
@@ -214,7 +235,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
         </div>
         <div class="flex justify-center space-x-4">
         {move || {
-            match faucet_tx_base_url {
+            match faucet_tx_base_url.get() {
                 Some(ref base_url) => match format_url(base_url, SearchPath::Address, &faucet.get().get_sender_address()) {
                     Ok(addr_url) => view! {
                         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">

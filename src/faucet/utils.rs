@@ -127,12 +127,14 @@ pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
 /// Types of search paths in Filecoin explorer.
 #[derive(Copy, Clone)]
 pub enum SearchPath {
+    Transaction,
     Address,
 }
 
 impl SearchPath {
     pub fn as_str(&self) -> &'static str {
         match self {
+            SearchPath::Transaction => "txs/",
             SearchPath::Address => "address/",
         }
     }
@@ -167,11 +169,18 @@ mod tests {
     #[test]
     fn test_format_url() {
         let base = Url::parse("https://test.com/").unwrap();
-        let cases = [(
-            SearchPath::Address,
-            "0xabc123",
-            "https://test.com/address/0xabc123",
-        )];
+        let cases = [
+            (
+                SearchPath::Transaction,
+                "0xdef456",
+                "https://test.com/txs/0xdef456",
+            ),
+            (
+                SearchPath::Address,
+                "0xabc123",
+                "https://test.com/address/0xabc123",
+            ),
+        ];
 
         for (path, query, expected) in cases.iter() {
             let result = format_url(&base, *path, query).unwrap();

@@ -32,6 +32,9 @@
 - [#135](https://github.com/ChainSafe/forest-explorer/pull/135) Added link to
   request for faucet top-up which is configurable using github env var.
 
+- [#200](https://github.com/ChainSafe/forest-explorer/pull/200) Make the CID of
+  transaction clickable.
+
 - [#199](https://github.com/ChainSafe/forest-explorer/pull/199) Added faucet
   transaction history button which is configurable using github env var.
 
