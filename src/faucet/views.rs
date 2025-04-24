@@ -42,18 +42,12 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-    let (drip_amount, faucet_tx_base_url) = match target_network {
-        Network::Mainnet => (
-            crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-            RwSignal::new(
-                option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()),
-            ),
-        ),
-        Network::Testnet => (
-            crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
-            RwSignal::new(
-                option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
-            ),
+    let faucet_tx_base_url = match target_network {
+        Network::Mainnet => {
+            RwSignal::new(option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()))
+        }
+        Network::Testnet => RwSignal::new(
+            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
         ),
     };
     let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
@@ -153,11 +147,11 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {format!("Rate-limited! {duration}s")}
                             </button>
                         }.into_any()
-                    } else if faucet.get().get_faucet_balance() < drip_amount {
+                    } else if faucet.get().is_low_balance() {
                         view! {
-                            <a href={topup_req_url} target="_blank" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r">
-                                "Request Faucet Top-up"
-                            </a>
+                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                                "Send"
+                            </button>
                         }.into_any()
                     } else {
                         view! {
@@ -172,13 +166,26 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                         }.into_any()
                     }
                 }}
-
             </div>
             <div class="flex justify-between my-4">
                 <div>
                     <h3 class="text-lg font-semibold">Faucet Balance:</h3>
                     <Transition fallback={move || view!{ <p>Loading faucet balance...</p> }}>
-                        <p class="text-xl">{ move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }</p>
+                    {move || {
+                        if faucet.get().is_low_balance() {
+                            view! {
+                                <a class="text-blue-600" target="_blank" rel="noopener noreferrer" href={topup_req_url}>
+                                    "Request Faucet Top-up"
+                                </a>
+                            }.into_any()
+                        } else {
+                            view! {
+                                <p class="text-xl">
+                                    { format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }
+                                </p>
+                            }.into_any()
+                        }
+                    }}
                     </Transition>
                 </div>
                 <div>
