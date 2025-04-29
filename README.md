@@ -58,7 +58,7 @@ the faucet.
    account ID.
 2. In [`wrangler.toml`](./wrangler.toml), set `pattern` in routes to match your
    domain or comment it out to use default `.workers.dev` domain(recommended for
-   generating preview url).
+   generating Preview URL).
 
 In order to deploy to a different CloudFlare account, you need to do the
 following:
@@ -70,9 +70,10 @@ If you are using a free CloudFlare account:
 1. Replace `new_classes` with `new_sqlite_classes` in `Durable Object`
    configuration.
 2. To disable the rate limiter, run:
-   `npx wrangler@latest secret put RATE_LIMITER_DISABLED true`. :warning: This
-   is not recommended for production use as it will expose your service to
-   abuse.
+   `npx wrangler@latest secret put RATE_LIMITER_DISABLED true`.
+
+:warning: This is not recommended for production use as it will expose your
+service to abuse.
 
 ### Wallets
 
