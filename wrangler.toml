@@ -27,7 +27,6 @@ yarn wasm-pack &&
 worker-build --release --features ssr --no-default-features
 """
 
-[env.quick]
 [env.quick.durable_objects]
 bindings = [{ name = "RATE_LIMITER", class_name = "RateLimiter" }]
 [env.quick.build]
