@@ -174,7 +174,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                     {move || {
                         if faucet.get().is_low_balance() {
                             view! {
-                                <a class="text-blue-600" target="_blank" rel="noopener noreferrer" href={topup_req_url}>
+                                <a class="bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm py-1 px-2 rounded" target="_blank" rel="noopener noreferrer" href={topup_req_url}>
                                     "Request Faucet Top-up"
                                 </a>
                             }.into_any()
