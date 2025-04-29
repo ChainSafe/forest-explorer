@@ -65,7 +65,7 @@ following:
 
 ### Rate limiter
 
-If you are using a free Cloudflare account:
+If you are using a free CloudFlare account:
 
 1. Replace `new_classes` with `new_sqlite_classes` in `Durable Object`
    configuration.
