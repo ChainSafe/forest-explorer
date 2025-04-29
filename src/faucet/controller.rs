@@ -6,8 +6,12 @@ use leptos::task::spawn_local;
 use uuid::Uuid;
 
 use crate::{
-    address::parse_address, lotus_json::LotusJson, message::message_transfer,
-    rpc_context::Provider, utils::catch_all,
+    address::parse_address,
+    constants::{CALIBNET_RATE_LIMIT_SECONDS, MAINNET_RATE_LIMIT_SECONDS},
+    lotus_json::LotusJson,
+    message::message_transfer,
+    rpc_context::Provider,
+    utils::catch_all,
 };
 
 use super::utils::faucet_address;
@@ -213,9 +217,12 @@ impl FaucetController {
                             }
                             Err(e) => {
                                 log::error!("Failed to sign message: {}", e);
-                                faucet
-                                    .send_limited
-                                    .set(crate::constants::RATE_LIMIT_SECONDS as i32);
+                                let rate_limit_seconds = if is_mainnet {
+                                    MAINNET_RATE_LIMIT_SECONDS
+                                } else {
+                                    CALIBNET_RATE_LIMIT_SECONDS
+                                };
+                                faucet.send_limited.set(rate_limit_seconds as i32);
                             }
                         }
                         Ok(())
