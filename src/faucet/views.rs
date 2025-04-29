@@ -19,6 +19,56 @@ const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
 const MESSAGE_REMOVAL_AFTER: Duration = Duration::new(3, 500_000_000);
 
 #[component]
+fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
+    view! {
+        <div>
+            <h3 class="text-lg font-semibold">Faucet Balance:</h3>
+            <Transition fallback={move || view!{ <p>Loading faucet balance...</p> }}>
+                {move || {
+                    if faucet.get().is_low_balance() {
+                        let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
+                        view! {
+                            <a class="bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm py-1 px-2 rounded"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               href={topup_req_url}>
+                                "Request Faucet Top-up"
+                            </a>
+                        }.into_any()
+                    } else {
+                        view! {
+                            <p class="text-xl">
+                                { format_balance(
+                                    &faucet.get().get_faucet_balance(),
+                                    &faucet.get().get_fil_unit()
+                                  ) }
+                            </p>
+                        }.into_any()
+                    }
+                }}
+            </Transition>
+        </div>
+    }
+}
+
+#[component]
+fn TargetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
+    view! {
+        <div>
+            <h3 class="text-lg font-semibold">Target Balance:</h3>
+            <Transition fallback={move || view!{ <p>Loading target balance...</p> }}>
+                <p class="text-xl">
+                    { move || format_balance(
+                        &faucet.get().get_target_balance(),
+                        &faucet.get().get_fil_unit()
+                      ) }
+                </p>
+            </Transition>
+        </div>
+    }
+}
+
+#[component]
 pub fn Faucet(target_network: Network) -> impl IntoView {
     let faucet = RwSignal::new(FaucetController::new(target_network));
 
@@ -50,7 +100,6 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
             option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
         ),
     };
-    let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
     view! {
         {move || {
             let errors = faucet.get().get_error_messages();
@@ -168,32 +217,8 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 }}
             </div>
             <div class="flex justify-between my-4">
-                <div>
-                    <h3 class="text-lg font-semibold">Faucet Balance:</h3>
-                    <Transition fallback={move || view!{ <p>Loading faucet balance...</p> }}>
-                    {move || {
-                        if faucet.get().is_low_balance() {
-                            view! {
-                                <a class="bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm py-1 px-2 rounded" target="_blank" rel="noopener noreferrer" href={topup_req_url}>
-                                    "Request Faucet Top-up"
-                                </a>
-                            }.into_any()
-                        } else {
-                            view! {
-                                <p class="text-xl">
-                                    { format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }
-                                </p>
-                            }.into_any()
-                        }
-                    }}
-                    </Transition>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold">Target Balance:</h3>
-                    <Transition fallback={move || view!{ <p>Loading target balance...</p> }}>
-                        <p class="text-xl">{ move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit()) }</p>
-                    </Transition>
-                </div>
+                <FaucetBalance faucet={faucet}/>
+                <TargetBalance faucet={faucet}/>
             </div>
             <hr class="my-4 border-t border-gray-300" />
             {move || {
