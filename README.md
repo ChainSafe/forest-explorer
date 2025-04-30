@@ -54,7 +54,7 @@ the faucet.
 
 ### Account & domain
 
-Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
+Update the configuration in [`wrangler.toml`](./wrangler.toml):
 
 1. Set `account_id` to your CloudFlare account ID.
 2. Set the routes field to match your custom domain, or comment it out — by
@@ -68,6 +68,9 @@ Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
 
 :warning: This is not recommended for production use as it will expose your
 service to abuse.
+
+2. If you have a free CloudFlare account, use `new_sqlite_classes` instead of
+   `new_classes`.
 
 ### Wallets
 
