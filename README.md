@@ -50,7 +50,7 @@ the faucet.
 - [wasm-pack](https://github.com/rustwasm/wasm-pack)
 - [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build)
 
-# Preview deployments
+# Custom deployments
 
 ### Account & domain
 
