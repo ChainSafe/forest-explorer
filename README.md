@@ -50,15 +50,16 @@ the faucet.
 - [wasm-pack](https://github.com/rustwasm/wasm-pack)
 - [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build)
 
-## Preview deployments
+## Custom deployments
 
 ### Account & domain
 
 Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
 
 1. Set `account_id` to your CloudFlare account ID.
-2. Optional: Set `routes` to match your custom domain. By default it will deploy
-   to: `<YOUR_WORKER_NAME>.<YOUR_SUBDOMAIN>.workers.dev`
+2. Set the routes field to match your custom domain, or comment it out — by
+   default, the Worker will be deployed to:
+   `<YOUR_WORKER_NAME>.<YOUR_SUBDOMAIN>.workers.dev`.
 
 ### Rate limiter
 
@@ -76,7 +77,7 @@ Set `SECRET_WALLET` (calibnet) and/or `SECRET_MAINNET_WALLET` (mainnet) using
 
 ### Deployment
 
-Run `npx wrangler@latest deploy --env preview`.
+Run `npx wrangler@latest deploy`.
 
 :information_source: **Note:** To generate clean and consistent preview URLs,
 it's recommended to configure your **CloudFlare Workers subdomain**
@@ -87,7 +88,7 @@ Then, during deployment, use the `--name` option to set the preview worker name
 based on the latest Git commit hash:
 
 ```bash
-npx wrangler@latest deploy --env preview --name $(git rev-parse --short HEAD)
+npx wrangler@latest deploy --name $(git rev-parse --short HEAD)
 ```
 
 This will deploy your worker to a URL like:
@@ -99,5 +100,5 @@ If you use a commit-based name, you **must also specify it when setting
 secrets**, so they are attached to the correct worker:
 
 ```bash
-npx wrangler@latest secret put MY_SECRET --env preview --name $(git rev-parse --short HEAD)
+npx wrangler@latest secret put MY_SECRET --name $(git rev-parse --short HEAD)
 ```
