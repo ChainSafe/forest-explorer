@@ -4,7 +4,7 @@
 
 Forest Explorer is a server-less inspector of the Filecoin blockchain.
 
-# Implementation
+## Implementation
 
 [Rust](https://www.rust-lang.org/) + [Leptos](https://leptos.dev/) application
 which is compiled to a server [WASM](https://webassembly.org/) module and a
@@ -16,7 +16,7 @@ via the client WASM module.
 Anything pushed to `main` will automatically be deployed at
 <https://forest-explorer.chainsafe.dev>.
 
-# Development
+## Development
 
 Installing node(LTS versions recommended).
 
@@ -44,13 +44,13 @@ Note - the `RATE_LIMITER_DISABLED` variable is required to be set to `true` in
 order to bypass the rate limiter in the local environment if you want to test
 the faucet.
 
-# Dependencies
+## Dependencies
 
 - [wrangler](https://github.com/cloudflare/wrangler2)
 - [wasm-pack](https://github.com/rustwasm/wasm-pack)
 - [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build)
 
-# Custom deployments
+## Custom/Preview deployments
 
 ### Account & domain
 
