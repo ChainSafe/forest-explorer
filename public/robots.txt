@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://forest-explorer.chainsafe.dev/sitemap.xml 

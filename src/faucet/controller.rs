@@ -183,6 +183,20 @@ impl FaucetController {
         self.faucet.send_limited.set(remaining);
     }
 
+    fn get_drip_amount(&self) -> TokenAmount {
+        if self.faucet.network == Network::Mainnet {
+            crate::constants::MAINNET_DRIP_AMOUNT.clone()
+        } else {
+            crate::constants::CALIBNET_DRIP_AMOUNT.clone()
+        }
+    }
+
+    pub fn is_low_balance(&self) -> bool {
+        let target_balance = self.get_faucet_balance();
+        let drip_amount = self.get_drip_amount();
+        target_balance < drip_amount
+    }
+
     pub fn drip(&self) {
         let is_mainnet = self.faucet.network == Network::Mainnet;
         let faucet = self.faucet.clone();
