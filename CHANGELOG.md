@@ -53,6 +53,9 @@
 - [#176](https://github.com/ChainSafe/forest-explorer/pull/176) Fixed the
   message encoding based on the network
 
+-[#205](https://github.com/ChainSafe/forest-explorer/pull/205) Reposition top-up
+request link.
+
 ## Forest Explorer v1.0.0
 
 The first release of the Forest Explorer, featuring:
