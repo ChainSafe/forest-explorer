@@ -62,7 +62,7 @@ Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
 
 ### Rate limiter
 
-1. RateLimiter is enabled by default. To disable the rate limiter, run:
+1. Rate Limiter is enabled by default. To disable the rate limiter, run:
    `npx wrangler@latest secret put RATE_LIMITER_DISABLED true`.
 
 :warning: This is not recommended for production use as it will expose your
@@ -78,11 +78,10 @@ Set `SECRET_WALLET` (calibnet) and/or `SECRET_MAINNET_WALLET` (mainnet) using
 
 Run `npx wrangler@latest deploy --env preview`.
 
-:information_source: **Note:**  
-To generate clean and consistent preview URLs, it's recommended to configure
-your **Cloudflare Workers subdomain** (`account_name`) as
-`forest-explorer-preview` in the Cloudflare dashboard (you only need to do this
-once).
+:information_source: **Note:** To generate clean and consistent preview URLs,
+it's recommended to configure your **CloudFlare Workers subdomain**
+(`account_name`) as `forest-explorer-preview` in the CloudFlare dashboard (you
+only need to do this once).
 
 Then, during deployment, use the `--name` option to set the preview worker name
 based on the latest Git commit hash:
