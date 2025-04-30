@@ -36,3 +36,8 @@ yarn css-minify &&
 yarn wasm-pack-dev &&
 worker-build --dev --no-opt --features ssr --no-default-features
 """
+
+[env.preview]
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+[env.preview.durable_objects]
+bindings = [{ name = "RATE_LIMITER", class_name = "RateLimiter" }]

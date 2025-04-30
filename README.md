@@ -50,26 +50,19 @@ the faucet.
 - [wasm-pack](https://github.com/rustwasm/wasm-pack)
 - [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build)
 
-# Custom deployments
+# Preview deployments
 
 ### Account & domain
 
-1. In [`wrangler.toml`](./wrangler.toml), set `account_id` to your CloudFlare
-   account ID.
-2. In [`wrangler.toml`](./wrangler.toml), set `pattern` in routes to match your
-   domain or comment it out to use default `.workers.dev` domain(recommended for
-   generating Preview URL).
+Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
 
-In order to deploy to a different CloudFlare account, you need to do the
-following:
+1. Set `account_id` to your CloudFlare account ID.
+2. Optional: Set `pattern` in routes to match your custom domain. By default it
+   will deploy to the default URL: `<worker_name>.<account_name>.workers.dev`
 
 ### Rate limiter
 
-If you are using a free CloudFlare account:
-
-1. Replace `new_classes` with `new_sqlite_classes` in `Durable Object`
-   configuration.
-2. To disable the rate limiter, run:
+1. RateLimiter is enabled by default. To disable the rate limiter, run:
    `npx wrangler@latest secret put RATE_LIMITER_DISABLED true`.
 
 :warning: This is not recommended for production use as it will expose your
@@ -83,4 +76,32 @@ Set `SECRET_WALLET` (calibnet) and/or `SECRET_MAINNET_WALLET` (mainnet) using
 
 ### Deployment
 
-Run `npx wrangler@latest deploy`.
+Run `npx wrangler@latest deploy --env preview`.
+
+:information_source: **Note:**  
+To generate clean and consistent preview URLs, it's recommended to configure
+your **Cloudflare Workers subdomain** (`account_name`) as
+`forest-explorer-preview` in the Cloudflare dashboard (you only need to do this
+once).
+
+Then, during deployment, use the `--name` option to set the preview Worker name
+based on the latest Git commit hash:
+
+```bash
+wrangler deploy --env preview --name $(git rev-parse --short HEAD)
+```
+
+This will deploy your worker to a URL like:
+
+```
+https://<commit_hash>.forest-explorer-preview.workers.dev
+```
+
+:lock: **Setting Secrets for Preview Workers**
+
+If you use a commit-based name, you **must also specify it when setting
+secrets**, so they are attached to the correct Worker:
+
+```bash
+wrangler secret put MY_SECRET --env preview --name $(git rev-parse --short HEAD)
+```
