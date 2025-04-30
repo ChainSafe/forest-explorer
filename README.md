@@ -58,7 +58,7 @@ Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
 
 1. Set `account_id` to your CloudFlare account ID.
 2. Optional: Set `pattern` in routes to match your custom domain. By default it
-   will deploy to the default URL: `<worker_name>.<account_name>.workers.dev`
+   will deploy to: `<worker_name>.<account_name>.workers.dev`
 
 ### Rate limiter
 
@@ -88,7 +88,7 @@ Then, during deployment, use the `--name` option to set the preview Worker name
 based on the latest Git commit hash:
 
 ```bash
-wrangler deploy --env preview --name $(git rev-parse --short HEAD)
+npx wrangler@latest deploy --env preview --name $(git rev-parse --short HEAD)
 ```
 
 This will deploy your worker to a URL like:
@@ -103,5 +103,5 @@ If you use a commit-based name, you **must also specify it when setting
 secrets**, so they are attached to the correct Worker:
 
 ```bash
-wrangler secret put MY_SECRET --env preview --name $(git rev-parse --short HEAD)
+npx wrangler@latest secret put MY_SECRET --env preview --name $(git rev-parse --short HEAD)
 ```
