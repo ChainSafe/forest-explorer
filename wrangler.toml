@@ -1,6 +1,6 @@
 name = "forest-explorer"
 main = "build/worker/shim.mjs"
-compatibility_date = "2024-07-13"
+compatibility_date = "2025-04-16"
 # ChainSafe Static Hosting
 account_id = '2238a825c5aca59233eab1f221f7aefb'
 
@@ -27,8 +27,8 @@ yarn wasm-pack &&
 worker-build --release --features ssr --no-default-features
 """
 
-[env.quick]
-kv_namespaces = [{ binding = "RATE_LIMIT", id = "4dc6f9a495dc44849d2c3c9066f23dca" }]
+[env.quick.durable_objects]
+bindings = [{ name = "RATE_LIMITER", class_name = "RateLimiter" }]
 [env.quick.build]
 command = """
 yarn assets &&
