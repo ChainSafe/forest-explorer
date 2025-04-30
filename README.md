@@ -58,7 +58,7 @@ Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
 
 1. Set `account_id` to your CloudFlare account ID.
 2. Optional: Set `routes` to match your custom domain. By default it will deploy
-   to: `<worker_name>.<account_name>.workers.dev`
+   to: `<YOUR_WORKER_NAME>.<YOUR_SUBDOMAIN>.workers.dev`
 
 ### Rate limiter
 
@@ -92,10 +92,7 @@ npx wrangler@latest deploy --env preview --name $(git rev-parse --short HEAD)
 ```
 
 This will deploy your worker to a URL like:
-
-```
-https://<commit_hash>.forest-explorer-preview.workers.dev
-```
+`https://<COMMIT_HASH>.forest-explorer-preview.workers.dev`
 
 :lock: **Setting Secrets for Preview Workers**
 
