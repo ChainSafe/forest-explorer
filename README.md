@@ -50,7 +50,7 @@ the faucet.
 - [wasm-pack](https://github.com/rustwasm/wasm-pack)
 - [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build)
 
-## Custom/Preview deployments
+## Preview deployments
 
 ### Account & domain
 
@@ -84,7 +84,7 @@ your **Cloudflare Workers subdomain** (`account_name`) as
 `forest-explorer-preview` in the Cloudflare dashboard (you only need to do this
 once).
 
-Then, during deployment, use the `--name` option to set the preview Worker name
+Then, during deployment, use the `--name` option to set the preview worker name
 based on the latest Git commit hash:
 
 ```bash
@@ -97,7 +97,7 @@ This will deploy your worker to a URL like:
 :lock: **Setting Secrets for Preview Workers**
 
 If you use a commit-based name, you **must also specify it when setting
-secrets**, so they are attached to the correct Worker:
+secrets**, so they are attached to the correct worker:
 
 ```bash
 npx wrangler@latest secret put MY_SECRET --env preview --name $(git rev-parse --short HEAD)
