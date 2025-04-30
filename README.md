@@ -57,8 +57,8 @@ the faucet.
 Update the `[env.preview]` configuration in [`wrangler.toml`](./wrangler.toml):
 
 1. Set `account_id` to your CloudFlare account ID.
-2. Optional: Set `pattern` in routes to match your custom domain. By default it
-   will deploy to: `<worker_name>.<account_name>.workers.dev`
+2. Optional: Set `routes` to match your custom domain. By default it will deploy
+   to: `<worker_name>.<account_name>.workers.dev`
 
 ### Rate limiter
 
