@@ -57,8 +57,8 @@ the faucet.
 Update the configuration in [`wrangler.toml`](./wrangler.toml):
 
 1. Set `account_id` to your CloudFlare account ID.
-2. Set the routes field to match your custom domain, or comment it out — by
-   default, the Worker will be deployed to:
+2. Set the routes field to match your custom domain, or comment it out. By
+   default, the worker will be deployed to:
    `<YOUR_WORKER_NAME>.<YOUR_SUBDOMAIN>.workers.dev`.
 
 ### Rate limiter
