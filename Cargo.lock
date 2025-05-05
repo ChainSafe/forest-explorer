@@ -984,7 +984,7 @@ name = "forest-explorer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "axum 0.7.9",
+ "axum 0.8.4",
  "base64",
  "blake2b_simd",
  "bls-signatures",

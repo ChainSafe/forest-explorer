@@ -113,12 +113,7 @@ impl FaucetController {
         }));
     }
     pub fn get_target_balance(&self) -> TokenAmount {
-        self.faucet
-            .target_balance
-            .get()
-            .as_deref()
-            .cloned()
-            .unwrap_or_default()
+        self.faucet.target_balance.get().unwrap_or_default()
     }
 
     pub fn get_sender_address(&self) -> String {
@@ -142,12 +137,7 @@ impl FaucetController {
     }
 
     pub fn get_faucet_balance(&self) -> TokenAmount {
-        self.faucet
-            .faucet_balance
-            .get()
-            .as_deref()
-            .cloned()
-            .unwrap_or_default()
+        self.faucet.faucet_balance.get().unwrap_or_default()
     }
 
     pub fn get_error_messages(&self) -> Vec<(Uuid, String)> {
