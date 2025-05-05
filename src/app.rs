@@ -12,10 +12,11 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <title>Forest Filecoin Explorer</title>
+                <title>Filecoin Forest Explorer Faucet - Get Free tFIL and FIL</title>
                 <meta charset="utf-8"/>
                 <meta name="robots" content="index, follow" />
                 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta name="description" content="Get free tFIL and FIL on the Filecoin Forest Explorer Faucet by ChainSafe. Quickly connect your wallet, request tokens, and start building or experimenting on the Filecoin testnet or mainnet with ease."/>
 
                 <AutoReload options=options.clone() />
                 <HydrationScripts options/>
