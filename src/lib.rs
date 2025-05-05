@@ -46,7 +46,7 @@ mod ssr_imports {
                 let leptos_options = leptos_options.clone();
                 move || shell(leptos_options.clone())
             })
-            .route("/api/*fn_name", post(leptos_axum::handle_server_fns))
+            .route("/api/{*fn_name}", post(leptos_axum::handle_server_fns))
             .with_state(leptos_options)
             .layer(Extension(Arc::new(env)));
         app

@@ -67,6 +67,7 @@ HAMT
 hasher
 healthcheck
 implementor/SM
+information_source
 IPFS
 ip
 IPLD

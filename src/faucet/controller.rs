@@ -6,8 +6,12 @@ use leptos::task::spawn_local;
 use uuid::Uuid;
 
 use crate::{
-    address::parse_address, lotus_json::LotusJson, message::message_transfer,
-    rpc_context::Provider, utils::catch_all,
+    address::parse_address,
+    constants::{CALIBNET_RATE_LIMIT_SECONDS, MAINNET_RATE_LIMIT_SECONDS},
+    lotus_json::LotusJson,
+    message::message_transfer,
+    rpc_context::Provider,
+    utils::catch_all,
 };
 
 use super::utils::faucet_address;
@@ -20,8 +24,9 @@ pub(super) struct FaucetController {
 impl FaucetController {
     pub fn new(network: Network) -> Self {
         let is_mainnet = network == Network::Mainnet;
-        let target_address = RwSignal::new(String::new());
         let balance_trigger = Trigger::new();
+        let sender_address = RwSignal::new(String::new());
+        let target_address = RwSignal::new(String::new());
         let target_balance = LocalResource::new(move || {
             let target_address = target_address.get();
             balance_trigger.track();
@@ -37,7 +42,7 @@ impl FaucetController {
                 }
             }
         });
-        let sender_address = LocalResource::new(move || async move {
+        let faucet_address = LocalResource::new(move || async move {
             faucet_address(is_mainnet)
                 .await
                 .map(|LotusJson(addr)| addr)
@@ -46,7 +51,8 @@ impl FaucetController {
         let faucet_balance = LocalResource::new(move || {
             balance_trigger.track();
             async move {
-                if let Some(addr) = sender_address.await {
+                if let Some(addr) = faucet_address.await {
+                    sender_address.set(addr.to_string());
                     Provider::from_network(network)
                         .wallet_balance(addr)
                         .await
@@ -66,6 +72,7 @@ impl FaucetController {
             balance_trigger,
             target_balance,
             faucet_balance,
+            sender_address,
             target_address,
         };
         Self { faucet }
@@ -106,12 +113,11 @@ impl FaucetController {
         }));
     }
     pub fn get_target_balance(&self) -> TokenAmount {
-        self.faucet
-            .target_balance
-            .get()
-            .as_deref()
-            .cloned()
-            .unwrap_or_default()
+        self.faucet.target_balance.get().unwrap_or_default()
+    }
+
+    pub fn get_sender_address(&self) -> String {
+        self.faucet.sender_address.get()
     }
 
     pub fn get_target_address(&self) -> String {
@@ -131,12 +137,7 @@ impl FaucetController {
     }
 
     pub fn get_faucet_balance(&self) -> TokenAmount {
-        self.faucet
-            .faucet_balance
-            .get()
-            .as_deref()
-            .cloned()
-            .unwrap_or_default()
+        self.faucet.faucet_balance.get().unwrap_or_default()
     }
 
     pub fn get_error_messages(&self) -> Vec<(Uuid, String)> {
@@ -170,6 +171,20 @@ impl FaucetController {
     #[allow(dead_code)]
     pub fn set_send_rate_limit_remaining(&self, remaining: i32) {
         self.faucet.send_limited.set(remaining);
+    }
+
+    fn get_drip_amount(&self) -> TokenAmount {
+        if self.faucet.network == Network::Mainnet {
+            crate::constants::MAINNET_DRIP_AMOUNT.clone()
+        } else {
+            crate::constants::CALIBNET_DRIP_AMOUNT.clone()
+        }
+    }
+
+    pub fn is_low_balance(&self) -> bool {
+        let target_balance = self.get_faucet_balance();
+        let drip_amount = self.get_drip_amount();
+        target_balance < drip_amount
     }
 
     pub fn drip(&self) {
@@ -206,9 +221,12 @@ impl FaucetController {
                             }
                             Err(e) => {
                                 log::error!("Failed to sign message: {}", e);
-                                faucet
-                                    .send_limited
-                                    .set(crate::constants::RATE_LIMIT_SECONDS as i32);
+                                let rate_limit_seconds = if is_mainnet {
+                                    MAINNET_RATE_LIMIT_SECONDS
+                                } else {
+                                    CALIBNET_RATE_LIMIT_SECONDS
+                                };
+                                faucet.send_limited.set(rate_limit_seconds as i32);
                             }
                         }
                         Ok(())

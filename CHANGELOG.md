@@ -32,6 +32,15 @@
 - [#135](https://github.com/ChainSafe/forest-explorer/pull/135) Added link to
   request for faucet top-up which is configurable using github env var.
 
+- [#200](https://github.com/ChainSafe/forest-explorer/pull/200) Make the CID of
+  transaction clickable.
+
+- [#199](https://github.com/ChainSafe/forest-explorer/pull/199) Added faucet
+  transaction history button which is configurable using github env var.
+
+- [#137] (https://github.com/ChainSafe/forest-explorer/issues/137) Different
+  rate limitter for calibnet and mainnet
+
 ### Changed
 
 - [#136](https://github.com/ChainSafe/forest-explorer/pull/136) Increased the
@@ -43,6 +52,9 @@
 
 - [#176](https://github.com/ChainSafe/forest-explorer/pull/176) Fixed the
   message encoding based on the network
+
+-[#205](https://github.com/ChainSafe/forest-explorer/pull/205) Reposition top-up
+request link.
 
 ## Forest Explorer v1.0.0
 

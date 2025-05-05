@@ -37,13 +37,7 @@ impl RpcContext {
         });
         Effect::new(move |_| {
             log::info!("Updating network: {:?}", network.get());
-            set_current_network(
-                network
-                    .get()
-                    .as_deref()
-                    .cloned()
-                    .unwrap_or(Network::Testnet),
-            );
+            set_current_network(network.get().unwrap_or(Network::Testnet));
         });
         Self { network, provider }
     }

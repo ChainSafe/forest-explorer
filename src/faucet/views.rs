@@ -2,20 +2,71 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use fvm_shared::address::Network;
+use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::{IntoView, component, leptos_dom::helpers::event_target_value, view};
-
-use leptos::prelude::*;
 use leptos_meta::{Meta, Title};
 #[cfg(feature = "hydrate")]
 use leptos_use::*;
+use url::Url;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::utils::format_balance;
+use crate::faucet::utils::SearchPath;
+use crate::faucet::utils::{format_balance, format_url};
 use crate::rpc_context::{Provider, RpcContext};
 
 const MESSAGE_FADE_AFTER: Duration = Duration::new(3, 0);
 const MESSAGE_REMOVAL_AFTER: Duration = Duration::new(3, 500_000_000);
+
+#[component]
+fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
+    view! {
+        <div>
+            <h3 class="text-lg font-semibold">Faucet Balance:</h3>
+            <Transition fallback={move || view!{ <p>Loading faucet balance...</p> }}>
+                {move || {
+                    if faucet.get().is_low_balance() {
+                        let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
+                        view! {
+                            <a class="bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm py-1 px-2 rounded"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               href={topup_req_url}>
+                                "Request Faucet Top-up"
+                            </a>
+                        }.into_any()
+                    } else {
+                        view! {
+                            <p class="text-xl">
+                                { format_balance(
+                                    &faucet.get().get_faucet_balance(),
+                                    &faucet.get().get_fil_unit()
+                                  ) }
+                            </p>
+                        }.into_any()
+                    }
+                }}
+            </Transition>
+        </div>
+    }
+}
+
+#[component]
+fn TargetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
+    view! {
+        <div>
+            <h3 class="text-lg font-semibold">Target Balance:</h3>
+            <Transition fallback={move || view!{ <p>Loading target balance...</p> }}>
+                <p class="text-xl">
+                    { move || format_balance(
+                        &faucet.get().get_target_balance(),
+                        &faucet.get().get_fil_unit()
+                      ) }
+                </p>
+            </Transition>
+        </div>
+    }
+}
 
 #[component]
 pub fn Faucet(target_network: Network) -> impl IntoView {
@@ -41,11 +92,14 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
     );
 
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
-    let drip_amount = match target_network {
-        Network::Mainnet => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-        Network::Testnet => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+    let faucet_tx_base_url = match target_network {
+        Network::Mainnet => {
+            RwSignal::new(option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()))
+        }
+        Network::Testnet => RwSignal::new(
+            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
+        ),
     };
-    let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
     view! {
         {move || {
             let errors = faucet.get().get_error_messages();
@@ -142,11 +196,11 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {format!("Rate-limited! {duration}s")}
                             </button>
                         }.into_any()
-                    } else if faucet.get().get_faucet_balance() < drip_amount {
+                    } else if faucet.get().is_low_balance() {
                         view! {
-                            <a href={topup_req_url} target="_blank" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r">
-                                "Request Faucet Top-up"
-                            </a>
+                            <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                                "Send"
+                            </button>
                         }.into_any()
                     } else {
                         view! {
@@ -161,21 +215,10 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                         }.into_any()
                     }
                 }}
-
             </div>
             <div class="flex justify-between my-4">
-                <div>
-                    <h3 class="text-lg font-semibold">Faucet Balance:</h3>
-                    <Transition fallback={move || view!{ <p>Loading faucet balance...</p> }}>
-                        <p class="text-xl">{ move || format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit()) }</p>
-                    </Transition>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold">Target Balance:</h3>
-                    <Transition fallback={move || view!{ <p>Loading target balance...</p> }}>
-                        <p class="text-xl">{ move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit()) }</p>
-                    </Transition>
-                </div>
+                <FaucetBalance faucet={faucet}/>
+                <TargetBalance faucet={faucet}/>
             </div>
             <hr class="my-4 border-t border-gray-300" />
             {move || {
@@ -188,10 +231,27 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                                 {messages
                                     .into_iter()
                                     .map(|(msg, sent)| {
+                                        let (cid, status) = if sent {
+                                            let cid = faucet_tx_base_url.get()
+                                                .as_ref()
+                                                .and_then(|base_url| format_url(base_url, SearchPath::Transaction ,&msg.to_string()).ok())
+                                                .map(|tx_url| {
+                                                    view! {
+                                                        <a href=tx_url.to_string() target="_blank" class="text-blue-600 hover:underline">
+                                                            {msg.to_string()}
+                                                        </a>
+                                                    }.into_any()
+                                                })
+                                                .unwrap_or_else(|| view! {{msg.to_string()}}.into_any());
+
+                                            (cid, "(confirmed)")
+                                        } else {
+                                            let cid = view! {{msg.to_string()}}.into_any();
+                                            (cid, "(pending)")
+                                        };
                                         view! {
                                             <li>
-                                                "CID: " {msg.to_string()}
-                                                {move || if sent { " (confirmed)" } else { " (pending)" }}
+                                                "CID:" {cid} {status}
                                             </li>
                                         }
                                     })
@@ -199,16 +259,36 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                             </ul>
                         </div>
                     }
-                        .into_any()
+                    .into_any()
                 } else {
                     ().into_any()
                 }
             }}
         </div>
-        <div class="flex flex-col items-center">
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-              <a href="/faucet">Back to faucet list</a>
-            </button>
+        <div class="flex justify-center space-x-4">
+        {move || {
+            match faucet_tx_base_url.get() {
+                Some(ref base_url) => match format_url(base_url, SearchPath::Address, &faucet.get().get_sender_address()) {
+                    Ok(addr_url) => view! {
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+                            <a
+                                href={addr_url.to_string()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                "Transaction History"
+                            </a>
+                        </button>
+                    }
+                    .into_any(),
+                    Err(_) => ().into_any(),
+                },
+                None => ().into_any(),
+            }
+        }}
+        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+            <a href="/faucet">Back to faucet list</a>
+        </button>
         </div>
     }
 }
@@ -229,11 +309,8 @@ pub fn Faucets() -> impl IntoView {
 #[component]
 pub fn Faucet_Calibnet() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-
-    // update the rpc context to the calibnet url
-    Effect::new(move |_| {
-        rpc_context.set(Provider::get_network_url(Network::Testnet));
-    });
+    // Set rpc context to calibnet url
+    rpc_context.set(Provider::get_network_url(Network::Testnet));
 
     view! {
         <Title text="Filecoin Faucet - Calibration Network" />
@@ -243,7 +320,7 @@ pub fn Faucet_Calibnet() -> impl IntoView {
             <Faucet target_network=Network::Testnet />
         </div>
         <div class="text-center mt-4">
-            "This faucet distributes " { format_balance(&crate::constants::CALIBNET_DRIP_AMOUNT, crate::constants::FIL_CALIBNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
+            "This faucet distributes " { format_balance(&crate::constants::CALIBNET_DRIP_AMOUNT, crate::constants::FIL_CALIBNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::CALIBNET_RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
         </div>
     }
 }
@@ -251,11 +328,8 @@ pub fn Faucet_Calibnet() -> impl IntoView {
 #[component]
 pub fn Faucet_Mainnet() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
-
-    // update the rpc context to the mainnet url
-    Effect::new(move |_| {
-        rpc_context.set(Provider::get_network_url(Network::Mainnet));
-    });
+    // Set rpc context to mainnet url
+    rpc_context.set(Provider::get_network_url(Network::Mainnet));
 
     view! {
         <Title text="Filecoin Faucet - Mainnet" />
@@ -264,7 +338,7 @@ pub fn Faucet_Mainnet() -> impl IntoView {
             <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
         <div class="text-center mt-4">
-            "This faucet distributes " { format_balance(&crate::constants::MAINNET_DRIP_AMOUNT, crate::constants::FIL_MAINNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."
+            "This faucet distributes " { format_balance(&crate::constants::MAINNET_DRIP_AMOUNT, crate::constants::FIL_MAINNET_UNIT) } " per request. It is rate-limited to 1 request per " {crate::constants::MAINNET_RATE_LIMIT_SECONDS} " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."
         </div>
         </div>
     }

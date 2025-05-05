@@ -55,7 +55,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
         <p>StateNetworkName</p>
         <Transition fallback={move || view!{ <p>Loading network name...</p> }}>
             <p class="px-8">
-                <span>{move || network_name.get().as_deref().flatten().cloned()}</span>
+                <span>{move || network_name.get().flatten()}</span>
                 <Loader loading={move || network_name.get().is_none()} />
             </p>
         </Transition>
@@ -63,7 +63,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
         <p>StateNetworkVersion</p>
         <Transition fallback={move || view!{ <p>Loading network version...</p> }}>
             <p class="px-8">
-                <span>{move || network_version.get().as_deref().flatten().cloned()}</span>
+                <span>{move || network_version.get().flatten()}</span>
                 <Loader loading={move || network_version.get().is_none()} />
             </p>
         </Transition>
