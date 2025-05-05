@@ -113,12 +113,7 @@ impl FaucetController {
         }));
     }
     pub fn get_target_balance(&self) -> TokenAmount {
-        self.faucet
-            .target_balance
-            .get()
-            .as_deref()
-            .cloned()
-            .unwrap_or_default()
+        self.faucet.target_balance.get().unwrap_or_default()
     }
 
     pub fn get_sender_address(&self) -> String {
@@ -142,12 +137,7 @@ impl FaucetController {
     }
 
     pub fn get_faucet_balance(&self) -> TokenAmount {
-        self.faucet
-            .faucet_balance
-            .get()
-            .as_deref()
-            .cloned()
-            .unwrap_or_default()
+        self.faucet.faucet_balance.get().unwrap_or_default()
     }
 
     pub fn get_error_messages(&self) -> Vec<(Uuid, String)> {
@@ -181,6 +171,20 @@ impl FaucetController {
     #[allow(dead_code)]
     pub fn set_send_rate_limit_remaining(&self, remaining: i32) {
         self.faucet.send_limited.set(remaining);
+    }
+
+    fn get_drip_amount(&self) -> TokenAmount {
+        if self.faucet.network == Network::Mainnet {
+            crate::constants::MAINNET_DRIP_AMOUNT.clone()
+        } else {
+            crate::constants::CALIBNET_DRIP_AMOUNT.clone()
+        }
+    }
+
+    pub fn is_low_balance(&self) -> bool {
+        let target_balance = self.get_faucet_balance();
+        let drip_amount = self.get_drip_amount();
+        target_balance < drip_amount
     }
 
     pub fn drip(&self) {

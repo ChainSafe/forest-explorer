@@ -25,7 +25,7 @@ pub async fn sign_with_secret_key(
     is_mainnet: bool,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
     use crate::message::message_cid;
-    use leptos::server_fn::error::NoCustomError;
+    use leptos::server_fn::error;
     use send_wrapper::SendWrapper;
     let LotusJson(msg) = msg;
     let cid = message_cid(&msg);
@@ -68,12 +68,13 @@ pub async fn sign_with_secret_key(
             Network::Testnet
         };
         let key = secret_key(network).await?;
+        #[allow(deprecated)]
         let sig = sign(
             key.key_info.r#type,
             &key.key_info.private_key,
             cid.to_bytes().as_slice(),
         )
-        .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
+        .map_err(|e| ServerFnError::<error::NoCustomError>::ServerError(e.to_string()))?;
         Ok(LotusJson(SignedMessage {
             message: msg,
             signature: sig,
@@ -86,7 +87,7 @@ pub async fn sign_with_secret_key(
 pub async fn secret_key(network: Network) -> Result<Key, ServerFnError> {
     use crate::key::KeyInfo;
     use axum::Extension;
-    use leptos::server_fn::error::NoCustomError;
+    use leptos::server_fn::error;
     use leptos_axum::extract;
     use std::{str::FromStr as _, sync::Arc};
     use worker::Env;
@@ -97,8 +98,9 @@ pub async fn secret_key(network: Network) -> Result<Key, ServerFnError> {
     };
 
     let Extension(env): Extension<Arc<Env>> = extract().await?;
+    #[allow(deprecated)]
     let key_info = KeyInfo::from_str(&env.secret(secret_key_name)?.to_string())
-        .map_err(|e| ServerFnError::<NoCustomError>::ServerError(e.to_string()))?;
+        .map_err(|e| ServerFnError::<error::NoCustomError>::ServerError(e.to_string()))?;
     Key::try_from(key_info).map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 
