@@ -13,14 +13,17 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <html lang="en">
             <head>
                 <title>Filecoin Forest Explorer Faucet - Get Free tFIL and FIL</title>
-                <meta charset="utf-8"/>
+                <meta charset="utf-8" />
                 <meta name="robots" content="index, follow" />
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <meta name="description" content="Get free tFIL and FIL on the Filecoin Forest Explorer Faucet by ChainSafe. Quickly connect your wallet, request tokens, and start building or experimenting on the Filecoin testnet or mainnet with ease."/>
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <meta
+                    name="description"
+                    content="Get free tFIL and FIL on the Filecoin Forest Explorer Faucet by ChainSafe. Quickly connect your wallet, request tokens, and start building or experimenting on the Filecoin testnet or mainnet with ease."
+                />
 
                 <AutoReload options=options.clone() />
-                <HydrationScripts options/>
-                <MetaTags/>
+                <HydrationScripts options />
+                <MetaTags />
             </head>
         </html>
     }
@@ -46,31 +49,31 @@ pub fn BlockchainExplorer() -> impl IntoView {
 
     view! {
         <div class="flex flex-col items-center">
-        <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
-            Forest Explorer
-        </h1>
-        <select on:change=move |ev| { rpc_context.set(event_target_value(&ev)) }>
-            <option value=Provider::get_network_url(Network::Testnet)>Glif.io Calibnet</option>
-            <option value=Provider::get_network_url(Network::Mainnet)>Glif.io Mainnet</option>
-        </select>
-        <p>StateNetworkName</p>
-        <Transition fallback={move || view!{ <p>Loading network name...</p> }}>
-            <p class="px-8">
-                <span>{move || network_name.get().flatten()}</span>
-                <Loader loading={move || network_name.get().is_none()} />
-            </p>
-        </Transition>
+            <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
+                Forest Explorer
+            </h1>
+            <select on:change=move |ev| { rpc_context.set(event_target_value(&ev)) }>
+                <option value=Provider::get_network_url(Network::Testnet)>Glif.io Calibnet</option>
+                <option value=Provider::get_network_url(Network::Mainnet)>Glif.io Mainnet</option>
+            </select>
+            <p>StateNetworkName</p>
+            <Transition fallback=move || view! { <p>Loading network name...</p> }>
+                <p class="px-8">
+                    <span>{move || network_name.get().flatten()}</span>
+                    <Loader loading=move || network_name.get().is_none() />
+                </p>
+            </Transition>
 
-        <p>StateNetworkVersion</p>
-        <Transition fallback={move || view!{ <p>Loading network version...</p> }}>
-            <p class="px-8">
-                <span>{move || network_version.get().flatten()}</span>
-                <Loader loading={move || network_version.get().is_none()} />
-            </p>
-        </Transition>
-        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
-          <a href="/faucet">To faucet list</a>
-        </button>
+            <p>StateNetworkVersion</p>
+            <Transition fallback=move || view! { <p>Loading network version...</p> }>
+                <p class="px-8">
+                    <span>{move || network_version.get().flatten()}</span>
+                    <Loader loading=move || network_version.get().is_none() />
+                </p>
+            </Transition>
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+                <a href="/faucet">To faucet list</a>
+            </button>
         </div>
     }
 }
@@ -79,7 +82,18 @@ pub fn BlockchainExplorer() -> impl IntoView {
 fn Footer() -> impl IntoView {
     view! {
         <footer class="p-4 text-center">
-            <a class="text-green-600" target="_blank" rel="noopener noreferrer" href="https://github.com/ChainSafe/forest-explorer">Forest Explorer</a>", built with ❤️ by " <a class="text-blue-600" target="_blank" rel="noopener noreferrer" href="https://chainsafe.io">ChainSafe Systems</a>
+            <a
+                class="text-green-600"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://github.com/ChainSafe/forest-explorer"
+            >
+                Forest Explorer
+            </a>
+            ", built with ❤️ by "
+            <a class="text-blue-600" target="_blank" rel="noopener noreferrer" href="https://chainsafe.io">
+                ChainSafe Systems
+            </a>
         </footer>
     }
 }
