@@ -51,7 +51,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
         <main class="min-h-screen flex flex-col flex-grow space-y-8">
             <div class="space-y-6 flex flex-col items-center">
                 <h1 class="text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
-                    Forest Explorer
+                    Filecoin Forest Explorer Faucet
                 </h1>
                 <p class="max-w-2xl">The Filecoin Forest Explorer Faucet provides developers and users with free calibnet(tFil) and mainnet(FIL) to support their exploration, testing and development on the Filecoin network.
                 </p>
