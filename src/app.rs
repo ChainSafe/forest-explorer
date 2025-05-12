@@ -65,7 +65,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
                             <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                             </svg>
-                            <span class="text-gray-600">Free testnet FIL for experimentation and development.</span>
+                            <span class="text-gray-600">Free calibnet tFIL for experimentation and development.</span>
                         </li>
                         <li class="flex items-start">
                             <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
