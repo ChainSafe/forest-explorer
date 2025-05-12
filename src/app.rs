@@ -129,7 +129,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
                     </div>
                 </div>
                 <div class="flex items-center w-[300px] justify-between">
-                    <p>StateNetworkName</p>
+                    <p>Network:</p>
                     <Transition fallback=move || view! { <p>Loading network name...</p> }>
                         <p>
                             <span>{move || network_name.get().flatten()}</span>
