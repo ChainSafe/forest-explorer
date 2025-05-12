@@ -1,4 +1,5 @@
 use crate::rpc_context::{Provider, RpcContext};
+use crate::icons::{CheckIcon, LightningIcon};
 use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
@@ -53,7 +54,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
                 <h1 class="text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
                     Filecoin Forest Explorer Faucet
                 </h1>
-                <p class="max-w-2xl">The Filecoin Forest Explorer Faucet provides developers and users with free calibnet(tFil) and mainnet(FIL) to support their exploration, testing and development on the Filecoin network.
+                <p class="max-w-2xl text-center">The Filecoin Forest Explorer Faucet provides developers and users with free calibnet(tFil) and mainnet(FIL) to support their exploration, testing and development on the Filecoin network.
                 </p>
             </div>
 
@@ -62,21 +63,15 @@ pub fn BlockchainExplorer() -> impl IntoView {
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">What does the faucet offer?</h2>
                     <ul class="space-y-3">
                         <li class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <CheckIcon />
                             <span class="text-gray-600">Free calibnet tFIL for experimentation and development.</span>
                         </li>
                         <li class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <CheckIcon />
                             <span class="text-gray-600">Real mainnet FIL for contributors engaging with the Filecoin ecosystem.</span>
                         </li>
                         <li class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <CheckIcon />
                             <span class="text-gray-600">A Quick and Easy way to request free tFIL and FIL - Just enter your wallet address.</span>
                         </li>
                     </ul>
@@ -86,28 +81,20 @@ pub fn BlockchainExplorer() -> impl IntoView {
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Why use this faucet?</h2>
                     <ul class="space-y-3">
                         <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
+                            <LightningIcon class="text-blue-500".to_string() />
                             <span class="text-gray-600">Supports both calibnet and mainnet, unlike typical faucets.</span>
                         </li>
                         <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
+                            <LightningIcon class="text-blue-500".to_string() />
                             <span class="text-gray-600">Enables testing of smart contracts, storage deals, and blockchain interactions without financial risk.</span>
                         </li>
                         <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
+                            <LightningIcon class="text-blue-500".to_string() />
                             <span class="text-gray-600">Easy access to FIL for developers and users building on Filecoin.</span>
                         </li>
                         <li class="flex items-start">
-                            <svg class="h-5 w-5 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span class="text-gray-600">Need help? Check the documentation or connect with the community for support.</span>
+                            <LightningIcon class="text-blue-500".to_string() />
+                            <span class="text-gray-600">Need help? Visit the <a class="text-blue-500" href="https://filecoin.io/slack" target="_blank">{" "}Filecoin Slack</a>{" "} or <a class="text-blue-500" href="https://docs.filecoin.io" target="_blank">{" "}documentation</a>.</span>
                         </li>
                     </ul>
                 </div>
@@ -115,7 +102,7 @@ pub fn BlockchainExplorer() -> impl IntoView {
 
             <div class="space-y-6 flex flex-col items-center">
                 <div class="relative w-64">
-                    <select 
+                    <select
                         on:change=move |ev| { rpc_context.set(event_target_value(&ev)) }
                         class="w-full px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors cursor-pointer appearance-none"
                     >
@@ -146,11 +133,11 @@ pub fn BlockchainExplorer() -> impl IntoView {
                         </p>
                     </Transition>
                 </div>
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-full">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
                 <a href="/faucet">To faucet list</a>
                 </button>
             </div>
-           
+
         </main>
     }
 }
