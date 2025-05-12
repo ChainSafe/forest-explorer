@@ -1160,9 +1160,9 @@ dependencies = [
 
 [[package]]
 name = "fvm_shared"
-version = "4.7.1"
+version = "4.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c10ef1358ac64a770dc40f614466e0cc450babb23b620cdd74915012ad7bcadd"
+checksum = "88b5c39242bcd16daafbca5c25a0586ff5beb0b419b9a904641e90df5eb0a9ca"
 dependencies = [
  "anyhow",
  "bitflags 2.9.0",
