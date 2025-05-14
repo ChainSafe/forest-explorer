@@ -1,28 +1,33 @@
 install-lint-tools:
-	cargo install --locked cargo-spellcheck
-	cargo install --locked taplo-cli
-	cargo install --locked cargo-deny
+	cargo +stable install --locked cargo-spellcheck
+	cargo +stable install --locked taplo-cli
+	cargo +stable install --locked leptosfmt
+	cargo +stable install --locked cargo-deny
 	
 install-lint-tools-ci:
 	wget https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz
 	tar xzf cargo-binstall-x86_64-unknown-linux-musl.tgz
 	cp cargo-binstall ~/.cargo/bin/cargo-binstall
-	cargo binstall --no-confirm cargo-spellcheck taplo-cli cargo-deny
+	cargo +stable binstall --no-confirm cargo-spellcheck taplo-cli cargo-deny leptosfmt
 
 lint-all: deny spellcheck fmt-lints cargo-clippy
 
 fmt:
 	cargo fmt --all
 	taplo fmt
+	leptosfmt .
 	corepack enable && yarn && yarn md-fmt
 
-fmt-lints: cargo-fmt taplo md-lint
+fmt-lints: cargo-fmt taplo md-lint leptos-fmt
 
 md-lint:
 	corepack enable && yarn && yarn md-check
 
 cargo-fmt:
 	cargo fmt --all --check
+
+leptos-fmt:
+	leptosfmt --check .
 
 cargo-clippy:
 	cargo clippy --workspace --all-features --all-targets --quiet --no-deps -- --deny warnings

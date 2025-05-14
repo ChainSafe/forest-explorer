@@ -4,5 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.98"
+reqwest = "0.12.15"
 thirtyfour = "0.35"
 tokio = { version = "1", features = ["full"] }
+url = "2.5.4"

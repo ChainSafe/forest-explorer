@@ -21,14 +21,13 @@ jobs:
           fetch-depth: 2 # needed by codecov sometimes
       - uses: taiki-e/install-action@cargo-llvm-cov
       - run: cargo llvm-cov --all-features --lcov --output-path lcov.info
-        env:
-          RUSTC_WRAPPER:
       - uses: actions/upload-artifact@v4
         with:
           name: lcov.info
           path: lcov.info
           if-no-files-found: error
       - name: Upload to codecov
+        if: env.CODECOV_TOKEN != ''
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
