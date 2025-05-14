@@ -15,6 +15,7 @@ lint-all: deny spellcheck fmt-lints cargo-clippy
 fmt:
 	cargo fmt --all
 	taplo fmt
+	leptosfmt .
 	corepack enable && yarn && yarn md-fmt
 
 fmt-lints: cargo-fmt taplo md-lint leptos-fmt
