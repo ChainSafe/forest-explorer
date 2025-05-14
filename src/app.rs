@@ -1,5 +1,5 @@
-use crate::rpc_context::{Provider, RpcContext};
 use crate::icons::{CheckIcon, LightningIcon};
+use crate::rpc_context::{Provider, RpcContext};
 use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
@@ -54,7 +54,8 @@ pub fn BlockchainExplorer() -> impl IntoView {
                 <h1 class="text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
                     Filecoin Forest Explorer Faucet
                 </h1>
-                <p class="max-w-2xl text-center">The Filecoin Forest Explorer Faucet provides developers and users with free calibnet(tFil) and mainnet(FIL) to support their exploration, testing and development on the Filecoin network.
+                <p class="max-w-2xl text-center">
+                    The Filecoin Forest Explorer Faucet provides developers and users with free calibnet(tFil) and mainnet(FIL) to support their exploration, testing and development on the Filecoin network.
                 </p>
             </div>
 
@@ -68,11 +69,15 @@ pub fn BlockchainExplorer() -> impl IntoView {
                         </li>
                         <li class="flex items-start">
                             <CheckIcon />
-                            <span class="text-gray-600">Real mainnet FIL for contributors engaging with the Filecoin ecosystem.</span>
+                            <span class="text-gray-600">
+                                Real mainnet FIL for contributors engaging with the Filecoin ecosystem.
+                            </span>
                         </li>
                         <li class="flex items-start">
                             <CheckIcon />
-                            <span class="text-gray-600">A Quick and Easy way to request free tFIL and FIL - Just enter your wallet address.</span>
+                            <span class="text-gray-600">
+                                A Quick and Easy way to request free tFIL and FIL - Just enter your wallet address.
+                            </span>
                         </li>
                     </ul>
                 </div>
@@ -82,19 +87,34 @@ pub fn BlockchainExplorer() -> impl IntoView {
                     <ul class="space-y-3">
                         <li class="flex items-start">
                             <LightningIcon class="text-blue-500".to_string() />
-                            <span class="text-gray-600">Supports both calibnet and mainnet, unlike typical faucets.</span>
+                            <span class="text-gray-600">
+                                Supports both calibnet and mainnet, unlike typical faucets.
+                            </span>
                         </li>
                         <li class="flex items-start">
                             <LightningIcon class="text-blue-500".to_string() />
-                            <span class="text-gray-600">Enables testing of smart contracts, storage deals, and blockchain interactions without financial risk.</span>
+                            <span class="text-gray-600">
+                                Enables testing of smart contracts, storage deals, and blockchain interactions without financial risk.
+                            </span>
                         </li>
                         <li class="flex items-start">
                             <LightningIcon class="text-blue-500".to_string() />
-                            <span class="text-gray-600">Easy access to FIL for developers and users building on Filecoin.</span>
+                            <span class="text-gray-600">
+                                Easy access to FIL for developers and users building on Filecoin.
+                            </span>
                         </li>
                         <li class="flex items-start">
                             <LightningIcon class="text-blue-500".to_string() />
-                            <span class="text-gray-600">Need help? Visit the <a class="text-blue-500" href="https://filecoin.io/slack" target="_blank">{" "}Filecoin Slack</a>{" "} or <a class="text-blue-500" href="https://docs.filecoin.io" target="_blank">{" "}documentation</a>.</span>
+                            <span class="text-gray-600">
+                                Need help? Visit the
+                                <a class="text-blue-500" href="https://filecoin.io/slack" target="_blank">
+                                    {" "}
+                                    Filecoin Slack
+                                </a>{" "}or <a class="text-blue-500" href="https://docs.filecoin.io" target="_blank">
+                                    {" "}
+                                    documentation
+                                </a>.
+                            </span>
                         </li>
                     </ul>
                 </div>
@@ -128,13 +148,13 @@ pub fn BlockchainExplorer() -> impl IntoView {
                     <p>Version:</p>
                     <Transition fallback=move || view! { <p>Loading network version...</p> }>
                         <p>
-                        <span>{move || network_version.get().flatten()}</span>
-                        <Loader loading=move || network_version.get().is_none() />
+                            <span>{move || network_version.get().flatten()}</span>
+                            <Loader loading=move || network_version.get().is_none() />
                         </p>
                     </Transition>
                 </div>
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
-                <a href="/faucet">To faucet list</a>
+                    <a href="/faucet">To faucet list</a>
                 </button>
             </div>
 
