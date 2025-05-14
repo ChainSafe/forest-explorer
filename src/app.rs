@@ -11,7 +11,7 @@ use leptos_router::path;
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>
-        <html lang="en" class="py-10 px-6 min-h-screen">
+        <html lang="en">
             <head>
                 <title>Filecoin Forest Explorer Faucet - Get Free tFIL and FIL</title>
                 <meta charset="utf-8" />
@@ -171,7 +171,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet href="/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/favicon.ico" />
         <Router>
-            <div class="flex flex-col min-h-screen space-y-8">
+            <div class="flex flex-col min-h-screen space-y-8 py-10 px-6 min-h-screen">
                 <Routes fallback=|| "Not found.">
                     <Route path=path!("/") view=BlockchainExplorer />
                     <Route path=path!("/faucet") view=crate::faucet::views::Faucets />
