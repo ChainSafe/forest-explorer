@@ -5,6 +5,7 @@ use app::App;
 mod address;
 mod constants;
 mod faucet;
+mod icons;
 mod key;
 mod lotus_json;
 mod message;
