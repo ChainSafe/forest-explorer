@@ -1,7 +1,7 @@
 #[cfg(feature = "ssr")]
-use crate::key::{sign, Key};
+use crate::key::{Key, sign};
 use crate::{lotus_json::LotusJson, message::SignedMessage};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
 use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
