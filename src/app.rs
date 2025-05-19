@@ -2,7 +2,7 @@ use crate::icons::{CheckIcon, LightningIcon};
 use crate::rpc_context::{Provider, RpcContext};
 use fvm_shared::address::Network;
 use leptos::prelude::*;
-use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
+use leptos::{IntoView, component, leptos_dom::helpers::event_target_value, view};
 use leptos_meta::*;
 use leptos_router::components::*;
 use leptos_router::path;
