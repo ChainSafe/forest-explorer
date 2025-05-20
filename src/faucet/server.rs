@@ -1,12 +1,11 @@
+use crate::lotus_json::{signed_message::SignedMessage, LotusJson};
 #[cfg(feature = "ssr")]
-use crate::key::{sign, Key};
-use crate::{lotus_json::LotusJson, message::SignedMessage};
-use anyhow::{anyhow, Result};
+use crate::utils::key::{sign, Key};
+use anyhow::Result;
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
-use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
+use fvm_shared::{address::Address, message::Message};
 use leptos::{prelude::ServerFnError, server};
-use url::Url;
 
 #[server]
 pub async fn faucet_address(is_mainnet: bool) -> Result<LotusJson<Address>, ServerFnError> {
@@ -24,14 +23,14 @@ pub async fn sign_with_secret_key(
     msg: LotusJson<Message>,
     is_mainnet: bool,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
-    use crate::message::message_cid;
+    use crate::lotus_json::signed_message::message_cid;
     use leptos::server_fn::error;
     use send_wrapper::SendWrapper;
     let LotusJson(msg) = msg;
     let cid = message_cid(&msg);
     let amount_limit = match is_mainnet {
-        true => crate::constants::MAINNET_DRIP_AMOUNT.clone(),
-        false => crate::constants::CALIBNET_DRIP_AMOUNT.clone(),
+        true => crate::faucet::mainnet::MAINNET_DRIP_AMOUNT.clone(),
+        false => crate::faucet::calibnet::CALIBNET_DRIP_AMOUNT.clone(),
     };
     if msg.value > amount_limit {
         return Err(ServerFnError::ServerError(
@@ -51,9 +50,9 @@ pub async fn sign_with_secret_key(
         let network = if is_mainnet { "mainnet" } else { "calibnet" };
         let may_sign = rate_limiter_disabled || query_rate_limiter(network).await?;
         let rate_limit_seconds = if is_mainnet {
-            crate::constants::MAINNET_RATE_LIMIT_SECONDS
+            crate::faucet::mainnet::MAINNET_RATE_LIMIT_SECONDS
         } else {
-            crate::constants::CALIBNET_RATE_LIMIT_SECONDS
+            crate::faucet::calibnet::CALIBNET_RATE_LIMIT_SECONDS
         };
         if !may_sign {
             return Err(ServerFnError::ServerError(format!(
@@ -85,7 +84,7 @@ pub async fn sign_with_secret_key(
 
 #[cfg(feature = "ssr")]
 pub async fn secret_key(network: Network) -> Result<Key, ServerFnError> {
-    use crate::key::KeyInfo;
+    use crate::utils::key::KeyInfo;
     use axum::Extension;
     use leptos::server_fn::error;
     use leptos_axum::extract;
@@ -124,77 +123,4 @@ pub async fn query_rate_limiter(network: &str) -> Result<bool, ServerFnError> {
         .await?
         .json::<bool>()
         .await?)
-}
-
-/// Formats FIL balance to a human-readable string with two decimal places and a unit.
-pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
-    format!(
-        "{:.2} {unit}",
-        balance.to_string().parse::<f32>().unwrap_or_default(),
-    )
-}
-
-/// Types of search paths in Filecoin explorer.
-#[derive(Copy, Clone)]
-pub enum SearchPath {
-    Transaction,
-    Address,
-}
-
-impl SearchPath {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            SearchPath::Transaction => "txs/",
-            SearchPath::Address => "address/",
-        }
-    }
-}
-
-/// Constructs a URL combining base URL, search path, and an identifier.
-pub fn format_url(base_url: &Url, path: SearchPath, identifier: &str) -> Result<Url> {
-    base_url
-        .join(path.as_str())?
-        .join(identifier)
-        .map_err(|e| anyhow!("Failed to join URL: {}", e))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use fvm_shared::econ::TokenAmount;
-
-    #[test]
-    fn test_format_balance() {
-        let cases = [
-            (TokenAmount::from_whole(1), "1.00 FIL"),
-            (TokenAmount::from_whole(0), "0.00 FIL"),
-            (TokenAmount::from_nano(10e6 as i64), "0.01 FIL"),
-            (TokenAmount::from_nano(999_999_999), "1.00 FIL"),
-        ];
-        for (balance, expected) in cases.iter() {
-            assert_eq!(format_balance(balance, "FIL"), *expected);
-        }
-    }
-
-    #[test]
-    fn test_format_url() {
-        let base = Url::parse("https://test.com/").unwrap();
-        let cases = [
-            (
-                SearchPath::Transaction,
-                "0xdef456",
-                "https://test.com/txs/0xdef456",
-            ),
-            (
-                SearchPath::Address,
-                "0xabc123",
-                "https://test.com/address/0xabc123",
-            ),
-        ];
-
-        for (path, query, expected) in cases.iter() {
-            let result = format_url(&base, *path, query).unwrap();
-            assert_eq!(result.as_str(), *expected);
-        }
-    }
 }

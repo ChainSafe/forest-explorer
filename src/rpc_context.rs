@@ -7,8 +7,7 @@ use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
 
-use crate::lotus_json::{HasLotusJson, LotusJson};
-use crate::message::SignedMessage;
+use crate::lotus_json::{signed_message::SignedMessage, HasLotusJson, LotusJson};
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 

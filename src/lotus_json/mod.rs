@@ -169,10 +169,11 @@ mod message;
 mod opt;
 mod signature;
 mod signature_type;
-mod signed_message;
 mod token_amount;
 mod vec;
 mod vec_u8;
+
+pub mod signed_message;
 
 // mod nonempty; // can't make snapshots of generic type
 // mod opt; // can't make snapshots of generic type

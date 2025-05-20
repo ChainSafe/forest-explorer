@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0, MIT
 
 use super::*;
-
-use crate::message::Message;
 use fvm_ipld_encoding::RawBytes;
-use fvm_shared::{address::Address, econ::TokenAmount};
+use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
