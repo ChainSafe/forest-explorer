@@ -6,7 +6,7 @@ use super::*;
 use fvm_shared::bigint::BigInt;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct BigIntLotusJson(#[serde(with = "crate::lotus_json::stringify")] BigInt);
+pub struct BigIntLotusJson(#[serde(with = "crate::utils::lotus_json::stringify")] BigInt);
 
 impl HasLotusJson for BigInt {
     type LotusJson = BigIntLotusJson;

@@ -48,12 +48,12 @@ impl SignedMessage {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct SignedMessageLotusJson {
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     message: Message,
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     signature: Signature,
     #[serde(
-        with = "crate::lotus_json",
+        with = "crate::utils::lotus_json",
         rename = "CID",
         skip_serializing_if = "Option::is_none",
         default

@@ -15,7 +15,7 @@ use fvm_shared::crypto::signature::SignatureType;
 #[serde(untagged)] // try an int, then a string
 pub enum SignatureTypeLotusJson {
     Integer(SignatureType),
-    // String(#[serde(with = "crate::lotus_json::stringify")] SignatureType),
+    // String(#[serde(with = "crate::utils::lotus_json::stringify")] SignatureType),
 }
 
 impl HasLotusJson for SignatureType {

@@ -1,6 +1,6 @@
 use crate::faucet::views::{faucet::Faucets, home::Explorer, layout::Footer};
 use crate::faucet::{calibnet::views::Faucet_Calibnet, mainnet::views::Faucet_Mainnet};
-use crate::rpc_context::RpcContext;
+use crate::utils::rpc_context::RpcContext;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::*;

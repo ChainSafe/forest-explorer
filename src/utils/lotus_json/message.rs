@@ -10,24 +10,24 @@ use fvm_shared::{address::Address, econ::TokenAmount, message::Message};
 pub struct MessageLotusJson {
     #[serde(default)]
     version: u64,
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     to: Address,
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     from: Address,
     #[serde(default)]
     nonce: u64,
-    #[serde(with = "crate::lotus_json", default)]
+    #[serde(with = "crate::utils::lotus_json", default)]
     value: TokenAmount,
     #[serde(default)]
     gas_limit: u64,
-    #[serde(with = "crate::lotus_json", default)]
+    #[serde(with = "crate::utils::lotus_json", default)]
     gas_fee_cap: TokenAmount,
-    #[serde(with = "crate::lotus_json", default)]
+    #[serde(with = "crate::utils::lotus_json", default)]
     gas_premium: TokenAmount,
     #[serde(default)]
     method: u64,
     #[serde(
-        with = "crate::lotus_json",
+        with = "crate::utils::lotus_json",
         skip_serializing_if = "Option::is_none",
         default
     )]

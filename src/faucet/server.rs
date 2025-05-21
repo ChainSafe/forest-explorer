@@ -1,6 +1,6 @@
-use crate::lotus_json::{signed_message::SignedMessage, LotusJson};
 #[cfg(feature = "ssr")]
 use crate::utils::key::{sign, Key};
+use crate::utils::lotus_json::{signed_message::SignedMessage, LotusJson};
 use anyhow::Result;
 #[cfg(feature = "ssr")]
 use fvm_shared::address::Network;
@@ -23,7 +23,7 @@ pub async fn sign_with_secret_key(
     msg: LotusJson<Message>,
     is_mainnet: bool,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
-    use crate::lotus_json::signed_message::message_cid;
+    use crate::utils::lotus_json::signed_message::message_cid;
     use leptos::server_fn::error;
     use send_wrapper::SendWrapper;
     let LotusJson(msg) = msg;

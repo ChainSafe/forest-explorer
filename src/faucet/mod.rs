@@ -9,8 +9,8 @@ pub mod views;
 use calibnet::{CALIBNET_DRIP_AMOUNT, CALIBNET_RATE_LIMIT_SECONDS, FIL_CALIBNET_UNIT};
 use mainnet::{FIL_MAINNET_UNIT, MAINNET_DRIP_AMOUNT, MAINNET_RATE_LIMIT_SECONDS};
 
-use crate::lotus_json::LotusJson;
-use crate::rpc_context::Provider;
+use crate::utils::lotus_json::LotusJson;
+use crate::utils::rpc_context::Provider;
 use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
 use cid::Cid;
 use fvm_shared::{address::Network, econ::TokenAmount};

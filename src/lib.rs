@@ -3,8 +3,6 @@ mod utils;
 #[cfg(feature = "hydrate")]
 use app::App;
 mod faucet;
-mod lotus_json;
-mod rpc_context;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

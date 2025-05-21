@@ -8,7 +8,7 @@ use fvm_shared::econ::TokenAmount;
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(transparent)] // name the field for clarity
 pub struct TokenAmountLotusJson {
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     attos: BigInt,
 }
 

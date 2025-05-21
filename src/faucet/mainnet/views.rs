@@ -1,7 +1,7 @@
 use crate::faucet::mainnet::{FIL_MAINNET_UNIT, MAINNET_DRIP_AMOUNT, MAINNET_RATE_LIMIT_SECONDS};
 use crate::faucet::views::faucet::Faucet;
-use crate::rpc_context::{Provider, RpcContext};
 use crate::utils::format::format_balance;
+use crate::utils::rpc_context::{Provider, RpcContext};
 use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};

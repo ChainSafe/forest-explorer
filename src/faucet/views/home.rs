@@ -1,7 +1,7 @@
 use crate::faucet::views::icons::{CheckIcon, LightningIcon, Loader};
 use crate::faucet::views::layout::Header;
 use crate::faucet::views::nav::GotoFaucetList;
-use crate::rpc_context::{Provider, RpcContext};
+use crate::utils::rpc_context::{Provider, RpcContext};
 use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
