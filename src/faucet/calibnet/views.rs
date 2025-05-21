@@ -1,7 +1,7 @@
 use crate::faucet::calibnet::{
     CALIBNET_DRIP_AMOUNT, CALIBNET_RATE_LIMIT_SECONDS, FIL_CALIBNET_UNIT,
 };
-use crate::faucet::views::Faucet;
+use crate::faucet::views::faucet::Faucet;
 use crate::rpc_context::{Provider, RpcContext};
 use crate::utils::format::format_balance;
 use fvm_shared::address::Network;

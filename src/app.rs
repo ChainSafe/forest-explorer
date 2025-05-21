@@ -1,3 +1,5 @@
+use crate::faucet::views::{faucet::Faucets, home::Explorer, layout::Footer};
+use crate::faucet::{calibnet::views::Faucet_Calibnet, mainnet::views::Faucet_Mainnet};
 use crate::rpc_context::RpcContext;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
@@ -16,12 +18,12 @@ pub fn App() -> impl IntoView {
         <Router>
             <div class="flex flex-col min-h-screen space-y-8 py-10 px-6 min-h-screen">
                 <Routes fallback=|| "Not found.">
-                    <Route path=path!("/") view=crate::faucet::views::BlockchainExplorer />
-                    <Route path=path!("/faucet") view=crate::faucet::views::Faucets />
-                    <Route path=path!("/faucet/calibnet") view=crate::faucet::calibnet::views::Faucet_Calibnet />
-                    <Route path=path!("/faucet/mainnet") view=crate::faucet::mainnet::views::Faucet_Mainnet />
+                    <Route path=path!("/") view=Explorer />
+                    <Route path=path!("/faucet") view=Faucets />
+                    <Route path=path!("/faucet/calibnet") view=Faucet_Calibnet />
+                    <Route path=path!("/faucet/mainnet") view=Faucet_Mainnet />
                 </Routes>
-                <crate::faucet::views::Footer />
+                <Footer />
             </div>
         </Router>
     }

@@ -27,3 +27,8 @@ pub fn LightningIcon(#[prop(default = String::new())] class: String) -> impl Int
         </svg>
     }
 }
+
+#[component]
+pub fn Loader(loading: impl Fn() -> bool + 'static + Send) -> impl IntoView {
+    view! { <span class:loader=loading /> }
+}
