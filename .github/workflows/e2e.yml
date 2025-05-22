@@ -1,4 +1,4 @@
-name: k6 E2E Test
+name: E2E Test
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -65,4 +65,4 @@ jobs:
       - name: Run k6 E2E script
         uses: grafana/run-k6-action@v1
         with:
-          path: 'e2e-k6/script.js'
+          path: 'e2e/script.js'
