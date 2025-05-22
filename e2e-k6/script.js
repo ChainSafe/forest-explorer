@@ -1,15 +1,26 @@
 import { browser } from 'k6/browser';
 import { check } from 'k6';
 
+const BASE_URL = 'http://127.0.0.1:8787';
+
+async function checkPaths(page, paths) {
+  for (const path of paths) {
+    const res = await page.goto(`${BASE_URL}${path}`, { waitUntil: 'networkidle' });
+    check(res, { [`GET ${path} → 200`]: (r) => r && r.status() === 200 });
+  }
+}
+
 export const options = {
   scenarios: {
-    ui: {
+    home: {
       executor: 'shared-iterations',
-      options: {
-        browser: {
-          type: 'chromium',
-        },
-      },
+      exec: 'testHome',
+      options: { browser: { type: 'chromium' } },
+    },
+    faucet: {
+      executor: 'shared-iterations',
+      exec: 'testFaucet',
+      options: { browser: { type: 'chromium' } },
     },
   },
   thresholds: {
@@ -17,21 +28,19 @@ export const options = {
   },
 };
 
-export default async function () {
+export async function testHome() {
   const page = await browser.newPage();
-  const baseUrl = 'http://127.0.0.1:8787';
-  const paths = ['/', '/faucet', '/faucet/mainnet', '/faucet/calibnet'];
-
   try {
-    for (const path of paths) {
-      const res = await page.goto(`${baseUrl}${path}`, {
-        waitUntil: 'networkidle',
-      });
+    await checkPaths(page, ['/', '/faucet']);
+  } finally {
+    await page.close();
+  }
+}
 
-      check(res, {
-        [`GET ${path} → 200`]: (r) => r !== null && r.status() === 200,
-      });
-    }
+export async function testFaucet() {
+  const page = await browser.newPage();
+  try {
+    await checkPaths(page, ['/faucet/calibnet', '/faucet/mainnet']);
   } finally {
     await page.close();
   }
