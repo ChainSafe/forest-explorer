@@ -169,10 +169,11 @@ mod message;
 mod opt;
 mod signature;
 mod signature_type;
-mod signed_message;
 mod token_amount;
 mod vec;
 mod vec_u8;
+
+pub mod signed_message;
 
 // mod nonempty; // can't make snapshots of generic type
 // mod opt; // can't make snapshots of generic type
@@ -185,7 +186,7 @@ mod raw_bytes; // fvm_ipld_encoding::RawBytes: !quickcheck::Arbitrary
 #[serde(rename_all = "PascalCase")]
 pub struct MessageLookup {
     pub height: i64,
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     pub message: Cid,
 }
 lotus_json_with_self!(MessageLookup);
@@ -361,7 +362,7 @@ impl<T> LotusJson<T> {
 macro_rules! lotus_json_with_self {
     ($($domain_ty:ty),* $(,)?) => {
         $(
-            impl $crate::lotus_json::HasLotusJson for $domain_ty {
+            impl $crate::utils::lotus_json::HasLotusJson for $domain_ty {
                 type LotusJson = Self;
                 fn into_lotus_json(self) -> Self::LotusJson {
                     self

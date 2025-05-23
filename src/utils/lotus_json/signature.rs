@@ -7,9 +7,9 @@ use fvm_shared::crypto::signature::{Signature, SignatureType};
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct SignatureLotusJson {
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     r#type: SignatureType,
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     data: Vec<u8>,
 }
 

@@ -5,7 +5,7 @@ use super::*;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CidLotusJson {
-    #[serde(rename = "/", with = "crate::lotus_json::stringify")]
+    #[serde(rename = "/", with = "crate::utils::lotus_json::stringify")]
     slash: ::cid::Cid,
 }
 
