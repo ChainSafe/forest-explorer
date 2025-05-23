@@ -112,7 +112,7 @@ npx wrangler@latest secret put MY_SECRET --name $(git rev-parse --short HEAD)
 
 **Install Grafana k6**
 
-- **macOS**
+- **mac OS**
 
   ```bash
   brew install k6
