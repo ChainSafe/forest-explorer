@@ -115,7 +115,7 @@ const PAGES = [
   },
   {
     path: "/faucet/calibnet",
-    buttons: ["Send",  "Transaction History", "Back to faucet list"],
+    buttons: ["Send", "Transaction History", "Back to faucet list"],
   },
   {
     path: "/faucet/mainnet",
@@ -131,7 +131,8 @@ const PAGES = [
 async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
     await checkPath(page, path);
-    await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
+    await page.goto(`${BASE_URL}${path}`);
+    await page.waitForLoadState('networkidle');
     for (const btn of buttons) {
       await checkButton(page, path, btn);
     }
