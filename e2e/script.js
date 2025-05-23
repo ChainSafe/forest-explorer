@@ -29,7 +29,6 @@ async function checkPath(page, path) {
 
 // Check if the button exists, is visible, and is enabled
 async function checkButton(page, path, buttonText) {
-  await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
   const buttons = await page.$$("button");
   let btn = null;
   for (const b of buttons) {
@@ -65,7 +64,6 @@ async function checkButton(page, path, buttonText) {
 
 // Check if the link exists, is visible, and has a valid href
 async function checkLink(page, path, linkText) {
-  await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
   const links = await page.$$("a");
   let link = null;
   for (const l of links) {
@@ -133,6 +131,7 @@ const PAGES = [
 async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
     await checkPath(page, path);
+    await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
     for (const btn of buttons) {
       await checkButton(page, path, btn);
     }
