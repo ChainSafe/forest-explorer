@@ -7,8 +7,7 @@ use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
 
-use crate::lotus_json::{HasLotusJson, LotusJson};
-use crate::message::SignedMessage;
+use super::lotus_json::{signed_message::SignedMessage, HasLotusJson, LotusJson};
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 
@@ -173,7 +172,7 @@ impl Provider {
     pub async fn state_search_msg(
         &self,
         msg: Cid,
-    ) -> anyhow::Result<Option<crate::lotus_json::MessageLookup>> {
+    ) -> anyhow::Result<Option<crate::utils::lotus_json::MessageLookup>> {
         invoke_rpc_method(
             &self.url,
             "Filecoin.StateSearchMsg",

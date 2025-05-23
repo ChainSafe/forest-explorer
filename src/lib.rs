@@ -1,17 +1,8 @@
 mod app;
-mod rpc_context;
+mod utils;
 #[cfg(feature = "hydrate")]
 use app::App;
-mod address;
-mod constants;
 mod faucet;
-mod icons;
-mod key;
-mod lotus_json;
-mod message;
-#[cfg(feature = "ssr")]
-mod rate_limiter;
-mod utils;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -25,14 +16,34 @@ pub fn hydrate() {
 mod ssr_imports {
     use std::sync::Arc;
 
-    use crate::{
-        app::{shell, App},
-        faucet,
-    };
+    use crate::{app::App, faucet};
     use axum::{routing::post, Extension, Router};
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
+    use leptos_meta::*;
     use worker::{event, Context, Env, HttpRequest, Result};
+
+    fn shell(options: LeptosOptions) -> impl IntoView {
+        view! {
+            <!DOCTYPE html>
+            <html lang="en">
+                <head>
+                    <title>Filecoin Forest Explorer Faucet - Get Free tFIL and FIL</title>
+                    <meta charset="utf-8" />
+                    <meta name="robots" content="index, follow" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <meta
+                        name="description"
+                        content="Get free tFIL and FIL on the Filecoin Forest Explorer Faucet by ChainSafe. Quickly connect your wallet, request tokens, and start building or experimenting on the Filecoin testnet or mainnet with ease."
+                    />
+
+                    <AutoReload options=options.clone() />
+                    <HydrationScripts options />
+                    <MetaTags />
+                </head>
+            </html>
+        }
+    }
 
     fn router(env: Env) -> Router {
         let leptos_options = LeptosOptions::builder()
@@ -55,8 +66,8 @@ mod ssr_imports {
 
     #[event(start)]
     fn register() {
-        server_fn::axum::register_explicit::<faucet::utils::SignWithSecretKey>();
-        server_fn::axum::register_explicit::<faucet::utils::FaucetAddress>();
+        server_fn::axum::register_explicit::<faucet::server::SignWithSecretKey>();
+        server_fn::axum::register_explicit::<faucet::server::FaucetAddress>();
     }
 
     #[event(fetch)]
