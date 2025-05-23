@@ -1,4 +1,4 @@
-name: Test
+name: E2E Test
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -24,7 +24,6 @@ env:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-
     steps:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -49,9 +48,10 @@ jobs:
       - name: Install worker-build
         run: cargo install --locked worker-build
 
-      - uses: nanasess/setup-chromedriver@v2
-      - run: |
-          chromedriver --port=9515 &
+      - name: Set up k6 (with browser)
+        uses: grafana/setup-k6-action@v1
+        with:
+          browser: true
 
       - name: Run website
         run: |
@@ -62,8 +62,7 @@ jobs:
           echo "waiting"
           timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 8787
 
-      - name: E2E
-        run: |
-          cd e2e
-          cargo build
-          cargo run
+      - name: Run k6 E2E script
+        uses: grafana/run-k6-action@v1
+        with:
+          path: 'e2e/script.js'

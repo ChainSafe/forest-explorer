@@ -7,10 +7,6 @@ authors = ["Forest Team <forest@chainsafe.io>"]
 [lib]
 crate-type = ["cdylib"]
 
-[workspace]
-members = ["e2e"]
-resolver = "2"
-
 [dependencies]
 anyhow = "1"
 axum = { version = "0.8", default-features = false, optional = true }
