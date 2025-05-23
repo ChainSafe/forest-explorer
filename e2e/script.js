@@ -132,7 +132,6 @@ async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
     await checkPath(page, path);
     await page.goto(`${BASE_URL}${path}`);
-    await page.waitForLoadState('networkidle');
     for (const btn of buttons) {
       await checkButton(page, path, btn);
     }
