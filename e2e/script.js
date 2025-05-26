@@ -130,6 +130,7 @@ const PAGES = [
 // - checkFooter
 async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
+    console.log(`Starting checks on ${path}`);
     await checkPath(page, path);
     await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
     for (const btn of buttons) {
@@ -145,6 +146,7 @@ async function runChecks(page) {
 export default async function () {
   const page = await browser.newPage();
   try {
+    console.info('Starting e2e testing...');
     await runChecks(page);
   } finally {
     await page.close();
