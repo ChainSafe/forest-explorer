@@ -115,11 +115,11 @@ const PAGES = [
   },
   {
     path: "/faucet/calibnet",
-    buttons: ["Send",  "Transaction History", "Back to faucet list"],
+    buttons: ["Back to faucet list", "Transaction History", "Send"],
   },
   {
     path: "/faucet/mainnet",
-    buttons: ["Send", "Transaction History", "Back to faucet list"],
+    buttons: ["Back to faucet list", "Transaction History", "Send"],
   },
 ];
 

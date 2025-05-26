@@ -53,6 +53,14 @@ jobs:
         with:
           browser: true
 
+      - name: Set up secrets
+        shell: bash
+        run: |
+          cat > .dev.vars <<EOF
+          SECRET_WALLET="${{ secrets.TEST_CALIBNET_PRIVATE_KEY_HEX }}"
+          SECRET_MAINNET_WALLET="${{ secrets.TEST_MAINNET_PRIVATE_KEY_HEX }}"
+          EOF
+
       - name: Run website
         run: |
           corepack enable
