@@ -20,6 +20,9 @@ env:
   RUSTC_WRAPPER: sccache
   CC: sccache clang
   CXX: sccache clang++
+  FAUCET_TOPUP_REQ_URL: '${{ vars.FAUCET_TOPUP_REQ_URL }}'
+  FAUCET_TX_URL_CALIBNET: '${{ vars.FAUCET_TX_URL_CALIBNET }}'
+  FAUCET_TX_URL_MAINNET: '${{ vars.FAUCET_TX_URL_MAINNET }}'
 
 jobs:
   e2e:
