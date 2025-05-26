@@ -21,9 +21,7 @@ const BASE_URL = "http://127.0.0.1:8787";
 
 // Check if the path is reachable
 async function checkPath(page, path) {
-  const res = await page.goto(`${BASE_URL}${path}`, {
-    waitUntil: "networkidle",
-  });
+  const res = await page.goto(`${BASE_URL}${path}`);
   check(res, { [`GET ${path} → 200`]: (r) => r && r.status() === 200 });
 }
 
@@ -105,7 +103,7 @@ async function checkFooter(page, path) {
 
 const PAGES = [
   {
-    path: "/",
+    path: "",
     buttons: ["To faucet list"],
     links: ["Filecoin Slack", "documentation"],
   },
@@ -131,14 +129,18 @@ const PAGES = [
 async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
     console.log(`Starting checks on ${path}`);
+    console.log(`Checking path...`);
     await checkPath(page, path);
     await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
     for (const btn of buttons) {
+      console.log(`Checking buttons...`);
       await checkButton(page, path, btn);
     }
     for (const lnk of links) {
+      console.log(`Checking links...`);
       await checkLink(page, path, lnk);
     }
+    console.log(`Checking footer links...`);
     await checkFooter(page, path);
   }
 }
