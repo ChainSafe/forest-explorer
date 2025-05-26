@@ -128,19 +128,14 @@ const PAGES = [
 // - checkFooter
 async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
-    console.log(`Starting checks on ${path}`);
-    console.log(`Checking path...`);
     await checkPath(page, path);
     await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
     for (const btn of buttons) {
-      console.log(`Checking buttons...`);
       await checkButton(page, path, btn);
     }
     for (const lnk of links) {
-      console.log(`Checking links...`);
       await checkLink(page, path, lnk);
     }
-    console.log(`Checking footer links...`);
     await checkFooter(page, path);
   }
 }
@@ -148,7 +143,6 @@ async function runChecks(page) {
 export default async function () {
   const page = await browser.newPage();
   try {
-    console.info('Starting e2e testing...');
     await runChecks(page);
   } finally {
     await page.close();
