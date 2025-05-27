@@ -8,7 +8,7 @@ use url::Url;
 
 use crate::faucet::views::alert::ErrorMessages;
 use crate::faucet::views::balance::{FaucetBalance, TargetBalance};
-use crate::faucet::views::nav::GotoFaucetList;
+use crate::faucet::views::nav::{GotoFaucetList, GotoHome};
 use crate::faucet::views::transaction::{TransactionHistoryButton, TransactionList};
 use crate::faucet::FaucetController;
 
@@ -146,7 +146,7 @@ pub fn Faucets() -> impl IntoView {
     view! {
         <Title text="Filecoin Faucets" />
         <Meta name="description" content="Filecoin Faucet list" />
-        <div class="text-center">
+        <div class="text-center space-y-8">
             <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Faucet List</h1>
             <a class="text-blue-600" href="/faucet/calibnet">
                 Calibration Network Faucet
@@ -155,6 +155,7 @@ pub fn Faucets() -> impl IntoView {
             <a class="text-blue-600" href="/faucet/mainnet">
                 Mainnet Network Faucet
             </a>
+            <GotoHome />
         </div>
     }
 }

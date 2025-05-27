@@ -104,20 +104,21 @@ async function checkFooter(page, path) {
 const PAGES = [
   {
     path: "",
-    buttons: ["To faucet list"],
+    buttons: ["Faucet List"],
     links: ["Filecoin Slack", "documentation"],
   },
   {
     path: "/faucet",
+    buttons: ["Home"],
     links: ["Calibration Network Faucet", "Mainnet Network Faucet"],
   },
   {
     path: "/faucet/calibnet",
-    buttons: ["Back to faucet list", "Transaction History", "Send"],
+    buttons: ["Faucet List", "Transaction History", "Send"],
   },
   {
     path: "/faucet/mainnet",
-    buttons: ["Back to faucet list", "Transaction History", "Send"],
+    buttons: ["Faucet List", "Transaction History", "Send"],
   },
 ];
 
