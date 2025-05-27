@@ -1,3 +1,6 @@
+// Copyright 2019-2025 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use crate::faucet::mainnet::{FIL_MAINNET_UNIT, MAINNET_DRIP_AMOUNT, MAINNET_RATE_LIMIT_SECONDS};
 use crate::faucet::views::faucet::Faucet;
 use crate::utils::format::format_balance;

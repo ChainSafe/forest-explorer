@@ -1,3 +1,6 @@
+// Copyright 2019-2025 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use anyhow::{Context as _, Result};
 use bls_signatures::{PrivateKey as BlsPrivate, Serialize as _};
 use libsecp256k1::{PublicKey as SecpPublic, SecretKey as SecpPrivate};

@@ -1,3 +1,6 @@
+// Copyright 2019-2025 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use crate::faucet::calibnet::CALIBNET_RATE_LIMIT_SECONDS;
 use crate::faucet::mainnet::MAINNET_RATE_LIMIT_SECONDS;
 use chrono::{DateTime, Duration, Utc};

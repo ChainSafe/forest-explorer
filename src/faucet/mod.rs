@@ -1,3 +1,6 @@
+// Copyright 2019-2025 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 #[cfg(feature = "ssr")]
 mod rate_limiter;
 
@@ -5,6 +8,7 @@ pub mod calibnet;
 pub mod mainnet;
 pub mod server;
 pub mod views;
+mod model;
 
 use calibnet::{CALIBNET_DRIP_AMOUNT, CALIBNET_RATE_LIMIT_SECONDS, FIL_CALIBNET_UNIT};
 use mainnet::{FIL_MAINNET_UNIT, MAINNET_DRIP_AMOUNT, MAINNET_RATE_LIMIT_SECONDS};
@@ -12,26 +16,13 @@ use mainnet::{FIL_MAINNET_UNIT, MAINNET_DRIP_AMOUNT, MAINNET_RATE_LIMIT_SECONDS}
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
 use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
+use crate::faucet::model::FaucetModel;
 use cid::Cid;
 use fvm_shared::{address::Network, econ::TokenAmount};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use server::{faucet_address, sign_with_secret_key};
 use uuid::Uuid;
-
-#[derive(Clone)]
-pub(super) struct FaucetModel {
-    pub network: Network,
-    pub send_disabled: RwSignal<bool>,
-    pub send_limited: RwSignal<i32>,
-    pub sent_messages: RwSignal<Vec<(Cid, bool)>>,
-    pub error_messages: RwSignal<Vec<(Uuid, String)>>,
-    pub balance_trigger: Trigger,
-    pub faucet_balance: LocalResource<TokenAmount>,
-    pub target_balance: LocalResource<TokenAmount>,
-    pub sender_address: RwSignal<String>,
-    pub target_address: RwSignal<String>,
-}
 
 #[derive(Clone)]
 pub(super) struct FaucetController {

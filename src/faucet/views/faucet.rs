@@ -1,3 +1,6 @@
+// Copyright 2019-2025 ChainSafe Systems
+// SPDX-License-Identifier: Apache-2.0, MIT
+
 use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
