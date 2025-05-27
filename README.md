@@ -105,3 +105,17 @@ secrets**, so they are attached to the correct worker:
 ```bash
 npx wrangler@latest secret put MY_SECRET --name $(git rev-parse --short HEAD)
 ```
+
+## End-to-End Testing
+
+### Prerequisites
+
+- **Grafana k6:** Install k6 via the
+  [Official Grafana k6 Installation Guide](https://grafana.com/docs/k6/latest/set-up/install-k6/)
+- **Faucet:** Start the faucet at `http://localhost:8787` before running tests.
+
+### Run Tests
+
+```bash
+k6 run e2e/script.js
+```
