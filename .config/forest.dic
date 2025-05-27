@@ -63,6 +63,7 @@ FIP
 FVM
 GC
 GiB
+Grafana
 HAMT
 hasher
 healthcheck
@@ -73,6 +74,7 @@ ip
 IPLD
 JSON
 JWT
+k6
 Kademlia
 Kubernetes
 Leptos
