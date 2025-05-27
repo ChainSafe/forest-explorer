@@ -1,9 +1,9 @@
 // Copyright 2019-2025 ChainSafe Systems
 // SPDX-License-Identifier: Apache-2.0, MIT
 
+use anyhow::ensure;
 use fvm_shared::address::{Address, Network};
 use fvm_shared::ActorID;
-use anyhow::ensure;
 
 // '0x' + 20bytes
 const ETH_ADDRESS_LENGTH: usize = 42;
