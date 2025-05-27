@@ -54,9 +54,8 @@ async function checkButton(page, path, buttonText) {
 
   // Check if the button is enabled
   // Note: In some cases, the button might be visible but not enabled
-  const isEnabled = await btn.isEnabled();
-  check(isEnabled, {
-    [`Button "${buttonText}" on "${path}" is enabled`]: () => isEnabled,
+  check(btn, {
+    [`Button "${buttonText}" on "${path}" is enabled`]: () => btn.isEnabled(),
   });
 }
 
@@ -129,7 +128,6 @@ const PAGES = [
 async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
     await checkPath(page, path);
-    await page.goto(`${BASE_URL}${path}`, { waitUntil: "networkidle" });
     for (const btn of buttons) {
       await checkButton(page, path, btn);
     }
