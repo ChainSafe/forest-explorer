@@ -20,9 +20,9 @@ pub fn Faucet_Mainnet() -> impl IntoView {
         <Title text="Filecoin Faucet - Mainnet" />
         <Meta name="description" content="Filecoin Mainnet Faucet dispensing tokens for testing purposes." />
         <div>
-            <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Mainnet Faucet</h1>
+            <h1 class="header">Filecoin Mainnet Faucet</h1>
             <Faucet target_network=Network::Mainnet />
-            <div class="text-center mt-4">
+            <div class="description">
                 "This faucet distributes " {format_balance(&MAINNET_DRIP_AMOUNT, FIL_MAINNET_UNIT)}
                 " per request. It is rate-limited to 1 request per " {MAINNET_RATE_LIMIT_SECONDS}
                 " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans or service termination. Faucet funds are limited and may run out. They are replenished periodically."

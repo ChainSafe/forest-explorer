@@ -25,10 +25,10 @@ pub fn Faucet_Calibnet() -> impl IntoView {
             content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes."
         />
         <div>
-            <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Calibnet Faucet</h1>
+            <h1 class="header">Filecoin Calibnet Faucet</h1>
             <Faucet target_network=Network::Testnet />
         </div>
-        <div class="text-center mt-4">
+        <div class="description">
             "This faucet distributes " {format_balance(&CALIBNET_DRIP_AMOUNT, FIL_CALIBNET_UNIT)}
             " per request. It is rate-limited to 1 request per " {CALIBNET_RATE_LIMIT_SECONDS}
             " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."

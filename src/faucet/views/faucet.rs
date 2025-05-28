@@ -18,7 +18,7 @@ use crate::faucet::FaucetController;
 #[component]
 fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
     view! {
-        <div class="my-4 flex">
+        <div class="input-container">
             <input
                 type="text"
                 placeholder="Enter target address (Filecoin or Ethereum style)"
@@ -31,12 +31,12 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
                         faucet.get().drip();
                     }
                 }
-                class="flex-grow border border-gray-300 p-2 rounded-l"
+                class="input"
             />
             {move || {
                 if faucet.get().is_send_disabled() {
                     view! {
-                        <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                        <button class="btn-disabled" disabled=true>
                             "Sending..."
                         </button>
                     }
@@ -44,14 +44,14 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
                 } else if faucet.get().get_send_rate_limit_remaining() > 0 {
                     let duration = faucet.get().get_send_rate_limit_remaining();
                     view! {
-                        <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                        <button class="btn-disabled" disabled=true>
                             {format!("Rate-limited! {duration}s")}
                         </button>
                     }
                         .into_any()
                 } else if faucet.get().is_low_balance() {
                     view! {
-                        <button class="bg-gray-400 text-white font-bold py-2 px-4 rounded-r" disabled=true>
+                        <button class="btn-disabled" disabled=true>
                             "Send"
                         </button>
                     }
@@ -59,7 +59,7 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
                 } else {
                     view! {
                         <button
-                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r"
+                            class="btn-enabled"
                             on:click=move |_| {
                                 faucet.get().drip();
                             }
@@ -121,13 +121,13 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 ().into_any()
             }
         }}
-        <div class="max-w-2xl mx-auto">
+        <div class="faucet-container">
             <FaucetInput faucet=faucet />
-            <div class="flex justify-between my-4">
+            <div class="balance-container">
                 <FaucetBalance faucet=faucet />
                 <TargetBalance faucet=faucet />
             </div>
-            <hr class="my-4 border-t border-gray-300" />
+            <hr class="separator" />
             {move || {
                 let messages = faucet.get().get_sent_messages();
                 if !messages.is_empty() {
@@ -137,7 +137,7 @@ pub fn Faucet(target_network: Network) -> impl IntoView {
                 }
             }}
         </div>
-        <div class="flex justify-center space-x-4">
+        <div class="nav-container">
             <TransactionHistoryButton faucet=faucet faucet_tx_base_url=faucet_tx_base_url />
             <GotoFaucetList />
         </div>
@@ -149,13 +149,13 @@ pub fn Faucets() -> impl IntoView {
     view! {
         <Title text="Filecoin Faucets" />
         <Meta name="description" content="Filecoin Faucet list" />
-        <div class="text-center space-y-8">
-            <h1 class="text-4xl font-bold mb-6 text-center">Filecoin Faucet List</h1>
-            <a class="text-blue-600" href="/faucet/calibnet">
+        <div class="faucet-list-container">
+            <h1 class="header">Filecoin Faucet List</h1>
+            <a class="link-text-hover" href="/faucet/calibnet">
                 Calibration Network Faucet
             </a>
             <br />
-            <a class="text-blue-600" href="/faucet/mainnet">
+            <a class="link-text-hover" href="/faucet/mainnet">
                 Mainnet Network Faucet
             </a>
             <GotoHome />

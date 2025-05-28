@@ -8,9 +8,7 @@ use leptos::{component, view, IntoView};
 pub fn Header() -> impl IntoView {
     view! {
         <header class="space-y-6 flex flex-col items-center">
-            <h1 class="text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl">
-                Filecoin Forest Explorer Faucet
-            </h1>
+            <h1 class="header-large">Filecoin Forest Explorer Faucet</h1>
             <p class="max-w-2xl text-center">
                 The Filecoin Forest Explorer Faucet provides developers and users with free calibnet(tFil) and mainnet(FIL) to support their exploration, testing and development on the Filecoin network.
             </p>
@@ -21,7 +19,7 @@ pub fn Header() -> impl IntoView {
 #[component]
 pub fn Footer() -> impl IntoView {
     view! {
-        <footer class="py-4 text-center">
+        <footer class="footer">
             <a
                 class="text-green-600"
                 target="_blank"

@@ -11,7 +11,7 @@ use crate::utils::format::format_balance;
 pub fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
     view! {
         <div>
-            <h3 class="text-lg font-semibold">Faucet Balance:</h3>
+            <h3 class="title">Faucet Balance:</h3>
             <Transition fallback=move || {
                 view! { <p>Loading faucet balance...</p> }
             }>
@@ -19,19 +19,14 @@ pub fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
                     if faucet.get().is_low_balance() {
                         let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
                         view! {
-                            <a
-                                class="bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm py-1 px-2 rounded"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                href=topup_req_url
-                            >
+                            <a class="btn-topup" target="_blank" rel="noopener noreferrer" href=topup_req_url>
                                 "Request Faucet Top-up"
                             </a>
                         }
                             .into_any()
                     } else {
                         view! {
-                            <p class="text-xl">
+                            <p class="balance">
                                 {format_balance(&faucet.get().get_faucet_balance(), &faucet.get().get_fil_unit())}
                             </p>
                         }
@@ -47,9 +42,9 @@ pub fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
 pub fn TargetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
     view! {
         <div>
-            <h3 class="text-lg font-semibold">Target Balance:</h3>
+            <h3 class="title">Target Balance:</h3>
             <Transition fallback=move || view! { <p>Loading target balance...</p> }>
-                <p class="text-xl">
+                <p class="balance">
                     {move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit())}
                 </p>
             </Transition>

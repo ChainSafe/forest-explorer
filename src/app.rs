@@ -19,7 +19,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet href="/style.css" />
         <Link rel="icon" type_="image/x-icon" href="/favicon.ico" />
         <Router>
-            <div class="flex flex-col min-h-screen space-y-8 py-10 px-6 min-h-screen">
+            <div class="app-container">
                 <Routes fallback=|| "Not found.">
                     <Route path=path!("/") view=Explorer />
                     <Route path=path!("/faucet") view=Faucets />

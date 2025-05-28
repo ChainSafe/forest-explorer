@@ -19,7 +19,7 @@ pub fn ErrorMessages(
 ) -> impl IntoView {
     let (fading_messages, set_fading_messages) = signal(HashSet::new());
     view! {
-        <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+        <div class="error-alert-container">
             {errors
                 .into_iter()
                 .map(|(id, error)| {
@@ -48,18 +48,14 @@ pub fn ErrorMessages(
                     view! {
                         <div
                             class=move || {
-                                if fading_messages.get().contains(&id) {
-                                    "opacity-0 transition-opacity bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
-                                } else {
-                                    "bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96"
-                                }
+                                if fading_messages.get().contains(&id) { "error-alert--faded" } else { "error-alert" }
                             }
                             role="alert"
                         >
                             <span class="block sm:inline">{error}</span>
                             <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
                                 <svg
-                                    class="fill-current h-6 w-6 text-red-500"
+                                    class="error-icon"
                                     role="button"
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 20 20"

@@ -15,9 +15,9 @@ pub fn TransactionList(
     faucet_tx_base_url: RwSignal<Option<Url>>,
 ) -> impl IntoView {
     view! {
-        <div class="mt-4 space-y-2">
-            <h3 class="text-lg font-semibold">Transactions:</h3>
-            <ul class="list-disc pl-5">
+        <div class="transaction-container">
+            <h3 class="title">Transactions:</h3>
+            <ul class="bullet-list">
                 {messages
                     .into_iter()
                     .map(|(msg, sent)| {
@@ -30,11 +30,7 @@ pub fn TransactionList(
                                 })
                                 .map(|tx_url| {
                                     view! {
-                                        <a
-                                            href=tx_url.to_string()
-                                            target="_blank"
-                                            class="text-blue-600 hover:underline"
-                                        >
+                                        <a href=tx_url.to_string() target="_blank" class="link-text-hover">
                                             {msg.to_string()}
                                         </a>
                                     }
@@ -66,7 +62,7 @@ pub fn TransactionHistoryButton(
                     match format_url(base_url, SearchPath::Address, &faucet.get().get_sender_address()) {
                         Ok(addr_url) => {
                             view! {
-                                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+                                <button class="btn">
                                     <a href=addr_url.to_string() target="_blank" rel="noopener noreferrer">
                                         "Transaction History"
                                     </a>

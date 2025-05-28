@@ -8,7 +8,7 @@ use leptos::{component, view, IntoView};
 pub fn GotoFaucetList() -> impl IntoView {
     view! {
         <div class="text-center">
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+            <button class="btn">
                 <a href="/faucet">Faucet List</a>
             </button>
         </div>
@@ -19,7 +19,7 @@ pub fn GotoFaucetList() -> impl IntoView {
 pub fn GotoHome() -> impl IntoView {
     view! {
         <div class="text-center">
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
+            <button class="btn">
                 <a href="/">Home</a>
             </button>
         </div>
