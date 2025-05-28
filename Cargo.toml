@@ -3,6 +3,9 @@ name = "forest-explorer"
 version = "0.1.0"
 edition = "2021"
 authors = ["Forest Team <forest@chainsafe.io>"]
+description = "Serverless Filecoin Explorer with faucet capabilities"
+repository = "https://github.com/ChainSafe/forest-explorer"
+license = "Apache-2.0 OR MIT"
 
 [lib]
 crate-type = ["cdylib"]
@@ -37,6 +40,7 @@ send_wrapper = "0.6"
 serde = "1"
 serde_json = "1"
 serde_tuple = "1"
+strum = { version = "0.27.1", features = ["derive"] }
 tower = { version = "0.5", optional = true }
 tower-service = "0.3"
 url = { version = "2" }

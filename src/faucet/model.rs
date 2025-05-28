@@ -1,11 +1,10 @@
 use cid::Cid;
-use fvm_shared::{address::Network, econ::TokenAmount};
+use fvm_shared::econ::TokenAmount;
 use leptos::prelude::*;
 use uuid::Uuid;
 
 #[derive(Clone)]
 pub(super) struct FaucetModel {
-    pub network: Network,
     pub send_disabled: RwSignal<bool>,
     pub send_limited: RwSignal<i32>,
     pub sent_messages: RwSignal<Vec<(Cid, bool)>>,

@@ -7,6 +7,7 @@ use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView}
 use leptos_meta::{Meta, Title};
 use url::Url;
 
+use crate::faucet::constants::FaucetInfo;
 use crate::faucet::controller::FaucetController;
 use crate::faucet::views::components::alert::ErrorMessages;
 use crate::faucet::views::components::balance::{FaucetBalance, TargetBalance};
@@ -107,13 +108,15 @@ fn use_faucet_polling(faucet: RwSignal<FaucetController>) {
 }
 
 #[component]
-pub fn Faucet(target_network: Network) -> impl IntoView {
-    let faucet = RwSignal::new(FaucetController::new(target_network));
+pub fn Faucet(faucet_info: FaucetInfo) -> impl IntoView {
+    let faucet = RwSignal::new(FaucetController::new(faucet_info));
 
     #[cfg(feature = "hydrate")]
     {
         use_faucet_polling(faucet);
     }
+
+    let target_network = faucet_info.network();
 
     let faucet_tx_base_url = match target_network {
         Network::Mainnet => {

@@ -1,13 +1,11 @@
-use super::constants::{CALIBNET_DRIP_AMOUNT, CALIBNET_RATE_LIMIT_SECONDS, FIL_CALIBNET_UNIT};
-use super::constants::{FIL_MAINNET_UNIT, MAINNET_DRIP_AMOUNT, MAINNET_RATE_LIMIT_SECONDS};
-
+use super::constants::FaucetInfo;
 use super::server::{faucet_address, sign_with_secret_key};
 use crate::faucet::model::FaucetModel;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
 use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
 use cid::Cid;
-use fvm_shared::{address::Network, econ::TokenAmount};
+use fvm_shared::econ::TokenAmount;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use uuid::Uuid;
@@ -15,11 +13,13 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct FaucetController {
     faucet: FaucetModel,
+    /// Constant information describing a particular faucet type.
+    info: FaucetInfo,
 }
 
 impl FaucetController {
-    pub fn new(network: Network) -> Self {
-        let is_mainnet = network == Network::Mainnet;
+    pub fn new(faucet_info: FaucetInfo) -> Self {
+        let network = faucet_info.network();
         let balance_trigger = Trigger::new();
         let sender_address = RwSignal::new(String::new());
         let target_address = RwSignal::new(String::new());
@@ -39,7 +39,7 @@ impl FaucetController {
             }
         });
         let faucet_address = LocalResource::new(move || async move {
-            faucet_address(is_mainnet)
+            faucet_address(faucet_info)
                 .await
                 .map(|LotusJson(addr)| addr)
                 .ok()
@@ -60,7 +60,6 @@ impl FaucetController {
             }
         });
         let faucet = FaucetModel {
-            network,
             send_disabled: RwSignal::new(false),
             send_limited: RwSignal::new(0),
             sent_messages: RwSignal::new(Vec::new()),
@@ -71,7 +70,10 @@ impl FaucetController {
             sender_address,
             target_address,
         };
-        Self { faucet }
+        Self {
+            faucet,
+            info: faucet_info,
+        }
     }
 
     #[allow(dead_code)]
@@ -88,7 +90,7 @@ impl FaucetController {
             .filter_map(|(cid, sent)| if !sent { Some(cid) } else { None })
             .collect::<Vec<_>>();
 
-        let network = self.faucet.network;
+        let network = self.info.network();
         let messages = self.faucet.sent_messages;
         spawn_local(catch_all(self.faucet.error_messages, async move {
             for cid in pending {
@@ -121,11 +123,7 @@ impl FaucetController {
     }
 
     pub fn get_fil_unit(&self) -> String {
-        match self.faucet.network {
-            Network::Mainnet => FIL_MAINNET_UNIT,
-            _ => FIL_CALIBNET_UNIT,
-        }
-        .to_string()
+        self.info.unit().to_string()
     }
 
     pub fn set_target_address(&self, address: String) {
@@ -170,11 +168,7 @@ impl FaucetController {
     }
 
     fn get_drip_amount(&self) -> TokenAmount {
-        if self.faucet.network == Network::Mainnet {
-            MAINNET_DRIP_AMOUNT.clone()
-        } else {
-            CALIBNET_DRIP_AMOUNT.clone()
-        }
+        self.info.drip_amount().clone()
     }
 
     pub fn is_low_balance(&self) -> bool {
@@ -184,30 +178,23 @@ impl FaucetController {
     }
 
     pub fn drip(&self) {
-        let is_mainnet = self.faucet.network == Network::Mainnet;
         let faucet = self.faucet.clone();
-        match parse_address(&self.faucet.target_address.get(), self.faucet.network) {
+        let network = self.info.network();
+        let info = self.info;
+        match parse_address(&self.faucet.target_address.get(), network) {
             Ok(addr) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
-                        let rpc = Provider::from_network(faucet.network);
-                        let LotusJson(from) = faucet_address(is_mainnet)
+                        let rpc = Provider::from_network(network);
+                        let LotusJson(from) = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
                         faucet.send_disabled.set(true);
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let mut msg = message_transfer(
-                            from,
-                            addr,
-                            if is_mainnet {
-                                MAINNET_DRIP_AMOUNT.clone()
-                            } else {
-                                CALIBNET_DRIP_AMOUNT.clone()
-                            },
-                        );
+                        let mut msg = message_transfer(from, addr, info.drip_amount().clone());
                         msg.sequence = nonce;
                         let msg = rpc.estimate_gas(msg).await?;
-                        match sign_with_secret_key(LotusJson(msg.clone()), is_mainnet).await {
+                        match sign_with_secret_key(LotusJson(msg.clone()), info).await {
                             Ok(LotusJson(smsg)) => {
                                 let cid = rpc.mpool_push(smsg).await?;
                                 faucet.sent_messages.update(|messages| {
@@ -217,11 +204,7 @@ impl FaucetController {
                             }
                             Err(e) => {
                                 log::error!("Failed to sign message: {}", e);
-                                let rate_limit_seconds = if is_mainnet {
-                                    MAINNET_RATE_LIMIT_SECONDS
-                                } else {
-                                    CALIBNET_RATE_LIMIT_SECONDS
-                                };
+                                let rate_limit_seconds = info.rate_limit_seconds();
                                 faucet.send_limited.set(rate_limit_seconds as i32);
                             }
                         }
