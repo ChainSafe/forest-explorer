@@ -1,6 +1,3 @@
-// Copyright 2019-2024 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use super::*;
 use fvm_shared::bigint::BigInt;
 use fvm_shared::econ::TokenAmount;
@@ -8,7 +5,7 @@ use fvm_shared::econ::TokenAmount;
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(transparent)] // name the field for clarity
 pub struct TokenAmountLotusJson {
-    #[serde(with = "crate::lotus_json")]
+    #[serde(with = "crate::utils::lotus_json")]
     attos: BigInt,
 }
 

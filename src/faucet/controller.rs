@@ -1,23 +1,19 @@
-use super::{model::FaucetModel, utils::sign_with_secret_key};
+use super::constants::{CALIBNET_DRIP_AMOUNT, CALIBNET_RATE_LIMIT_SECONDS, FIL_CALIBNET_UNIT};
+use super::constants::{FIL_MAINNET_UNIT, MAINNET_DRIP_AMOUNT, MAINNET_RATE_LIMIT_SECONDS};
+
+use super::server::{faucet_address, sign_with_secret_key};
+use crate::faucet::model::FaucetModel;
+use crate::utils::lotus_json::LotusJson;
+use crate::utils::rpc_context::Provider;
+use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
 use cid::Cid;
 use fvm_shared::{address::Network, econ::TokenAmount};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use uuid::Uuid;
 
-use crate::{
-    address::parse_address,
-    constants::{CALIBNET_RATE_LIMIT_SECONDS, MAINNET_RATE_LIMIT_SECONDS},
-    lotus_json::LotusJson,
-    message::message_transfer,
-    rpc_context::Provider,
-    utils::catch_all,
-};
-
-use super::utils::faucet_address;
-
 #[derive(Clone)]
-pub(super) struct FaucetController {
+pub struct FaucetController {
     faucet: FaucetModel,
 }
 
@@ -126,8 +122,8 @@ impl FaucetController {
 
     pub fn get_fil_unit(&self) -> String {
         match self.faucet.network {
-            Network::Mainnet => crate::constants::FIL_MAINNET_UNIT,
-            _ => crate::constants::FIL_CALIBNET_UNIT,
+            Network::Mainnet => FIL_MAINNET_UNIT,
+            _ => FIL_CALIBNET_UNIT,
         }
         .to_string()
     }
@@ -175,9 +171,9 @@ impl FaucetController {
 
     fn get_drip_amount(&self) -> TokenAmount {
         if self.faucet.network == Network::Mainnet {
-            crate::constants::MAINNET_DRIP_AMOUNT.clone()
+            MAINNET_DRIP_AMOUNT.clone()
         } else {
-            crate::constants::CALIBNET_DRIP_AMOUNT.clone()
+            CALIBNET_DRIP_AMOUNT.clone()
         }
     }
 
@@ -204,9 +200,9 @@ impl FaucetController {
                             from,
                             addr,
                             if is_mainnet {
-                                crate::constants::MAINNET_DRIP_AMOUNT.clone()
+                                MAINNET_DRIP_AMOUNT.clone()
                             } else {
-                                crate::constants::CALIBNET_DRIP_AMOUNT.clone()
+                                CALIBNET_DRIP_AMOUNT.clone()
                             },
                         );
                         msg.sequence = nonce;

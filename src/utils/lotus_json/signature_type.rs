@@ -1,6 +1,3 @@
-// Copyright 2019-2024 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use super::*;
 use fvm_shared::crypto::signature::SignatureType;
 
@@ -15,7 +12,7 @@ use fvm_shared::crypto::signature::SignatureType;
 #[serde(untagged)] // try an int, then a string
 pub enum SignatureTypeLotusJson {
     Integer(SignatureType),
-    // String(#[serde(with = "crate::lotus_json::stringify")] SignatureType),
+    // String(#[serde(with = "crate::utils::lotus_json::stringify")] SignatureType),
 }
 
 impl HasLotusJson for SignatureType {

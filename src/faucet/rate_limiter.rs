@@ -1,4 +1,4 @@
-use crate::constants::{CALIBNET_RATE_LIMIT_SECONDS, MAINNET_RATE_LIMIT_SECONDS};
+use crate::faucet::constants::{CALIBNET_RATE_LIMIT_SECONDS, MAINNET_RATE_LIMIT_SECONDS};
 use chrono::{DateTime, Duration, Utc};
 use worker::*;
 

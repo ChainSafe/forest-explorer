@@ -1,6 +1,3 @@
-// Copyright 2019-2024 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use super::{vec_u8::VecU8LotusJson, *};
 use fvm_ipld_encoding::RawBytes;
 
