@@ -1,6 +1,3 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use fvm_ipld_encoding::RawBytes;
 use fvm_shared::message::Message;
 use fvm_shared::{address::Address, econ::TokenAmount, METHOD_SEND};

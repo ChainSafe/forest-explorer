@@ -1,6 +1,3 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 //! In the Filecoin ecosystem, there are TWO different ways to present a domain object:
 //! - CBOR (defined in [`fvm_ipld_encoding`]).
 //!   This is the wire format.

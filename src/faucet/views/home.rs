@@ -1,9 +1,6 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
-use crate::faucet::views::icons::{CheckIcon, LightningIcon, Loader};
-use crate::faucet::views::layout::Header;
-use crate::faucet::views::nav::GotoFaucetList;
+use crate::faucet::views::components::icons::{CheckIcon, LightningIcon, Loader};
+use crate::faucet::views::components::layout::Header;
+use crate::faucet::views::components::nav::GotoFaucetList;
 use crate::utils::rpc_context::{Provider, RpcContext};
 use fvm_shared::address::Network;
 use leptos::prelude::*;

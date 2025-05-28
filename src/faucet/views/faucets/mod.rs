@@ -1,5 +1,5 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
+pub mod calibnet;
+pub mod mainnet;
 
 use fvm_shared::address::Network;
 use leptos::prelude::*;
@@ -10,10 +10,10 @@ use leptos_use::use_interval_fn;
 use url::Url;
 
 use crate::faucet::controller::FaucetController;
-use crate::faucet::views::alert::ErrorMessages;
-use crate::faucet::views::balance::{FaucetBalance, TargetBalance};
-use crate::faucet::views::nav::{GotoFaucetList, GotoHome};
-use crate::faucet::views::transaction::{TransactionHistoryButton, TransactionList};
+use crate::faucet::views::components::alert::ErrorMessages;
+use crate::faucet::views::components::balance::{FaucetBalance, TargetBalance};
+use crate::faucet::views::components::nav::{GotoFaucetList, GotoHome};
+use crate::faucet::views::components::transaction::{TransactionHistoryButton, TransactionList};
 
 #[component]
 fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {

@@ -1,6 +1,3 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 use cid::Cid;
 use fvm_shared::address::{set_current_network, Address, Network};
 use fvm_shared::econ::TokenAmount;

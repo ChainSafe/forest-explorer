@@ -1,10 +1,7 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
-use crate::faucet::calibnet::{
+use super::Faucet;
+use crate::faucet::constants::{
     CALIBNET_DRIP_AMOUNT, CALIBNET_RATE_LIMIT_SECONDS, FIL_CALIBNET_UNIT,
 };
-use crate::faucet::views::faucet::Faucet;
 use crate::utils::format::format_balance;
 use crate::utils::rpc_context::{Provider, RpcContext};
 use fvm_shared::address::Network;

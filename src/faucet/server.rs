@@ -1,6 +1,3 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
 #[cfg(feature = "ssr")]
 use crate::utils::key::{sign, Key};
 use crate::utils::lotus_json::{signed_message::SignedMessage, LotusJson};
@@ -32,8 +29,8 @@ pub async fn sign_with_secret_key(
     let LotusJson(msg) = msg;
     let cid = message_cid(&msg);
     let amount_limit = match is_mainnet {
-        true => crate::faucet::mainnet::MAINNET_DRIP_AMOUNT.clone(),
-        false => crate::faucet::calibnet::CALIBNET_DRIP_AMOUNT.clone(),
+        true => crate::faucet::constants::MAINNET_DRIP_AMOUNT.clone(),
+        false => crate::faucet::constants::CALIBNET_DRIP_AMOUNT.clone(),
     };
     if msg.value > amount_limit {
         return Err(ServerFnError::ServerError(
@@ -53,9 +50,9 @@ pub async fn sign_with_secret_key(
         let network = if is_mainnet { "mainnet" } else { "calibnet" };
         let may_sign = rate_limiter_disabled || query_rate_limiter(network).await?;
         let rate_limit_seconds = if is_mainnet {
-            crate::faucet::mainnet::MAINNET_RATE_LIMIT_SECONDS
+            crate::faucet::constants::MAINNET_RATE_LIMIT_SECONDS
         } else {
-            crate::faucet::calibnet::CALIBNET_RATE_LIMIT_SECONDS
+            crate::faucet::constants::CALIBNET_RATE_LIMIT_SECONDS
         };
         if !may_sign {
             return Err(ServerFnError::ServerError(format!(

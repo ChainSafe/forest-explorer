@@ -1,11 +1,3 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
-pub mod alert;
-pub mod balance;
-pub mod faucet;
+pub mod components;
+pub mod faucets;
 pub mod home;
-pub mod icons;
-pub mod layout;
-pub mod nav;
-pub mod transaction;

@@ -1,8 +1,5 @@
-// Copyright 2019-2025 ChainSafe Systems
-// SPDX-License-Identifier: Apache-2.0, MIT
-
-use crate::faucet::views::{faucet::Faucets, home::Explorer, layout::Footer};
-use crate::faucet::{calibnet::views::Faucet_Calibnet, mainnet::views::Faucet_Mainnet};
+use crate::faucet::views::faucets::{calibnet::Faucet_Calibnet, mainnet::Faucet_Mainnet, Faucets};
+use crate::faucet::views::{components::layout::Footer, home::Explorer};
 use crate::utils::rpc_context::RpcContext;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};

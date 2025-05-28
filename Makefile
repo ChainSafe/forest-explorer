@@ -10,7 +10,7 @@ install-lint-tools-ci:
 	cp cargo-binstall ~/.cargo/bin/cargo-binstall
 	cargo +stable binstall --no-confirm cargo-spellcheck taplo-cli cargo-deny leptosfmt
 
-lint-all: deny spellcheck fmt-lints cargo-clippy license
+lint-all: deny spellcheck fmt-lints cargo-clippy
 
 fmt:
 	cargo fmt --all
@@ -41,7 +41,3 @@ deny:
 
 spellcheck:
 	cargo spellcheck --code 1 || (echo "See .config/spellcheck.toml"; false)
-
-# Checks if all headers are present and adds if not
-license:
-	./scripts/add_license.sh
