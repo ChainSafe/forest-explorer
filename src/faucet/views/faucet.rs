@@ -9,11 +9,11 @@ use leptos_meta::{Meta, Title};
 use leptos_use::use_interval_fn;
 use url::Url;
 
+use crate::faucet::controller::FaucetController;
 use crate::faucet::views::alert::ErrorMessages;
 use crate::faucet::views::balance::{FaucetBalance, TargetBalance};
 use crate::faucet::views::nav::{GotoFaucetList, GotoHome};
 use crate::faucet::views::transaction::{TransactionHistoryButton, TransactionList};
-use crate::faucet::FaucetController;
 
 #[component]
 fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {

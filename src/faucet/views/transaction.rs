@@ -7,7 +7,7 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use url::Url;
 
-use crate::faucet::FaucetController;
+use crate::faucet::controller::FaucetController;
 
 #[component]
 pub fn TransactionList(

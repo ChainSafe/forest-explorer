@@ -14,6 +14,7 @@ graph TD
         end
         subgraph faucet["Faucet"]
             model["Faucet Model<br/>model.rs"]
+            model["Faucet Controller<br/>controller.rs"]
             rate_limiter["Rate Limiter<br/>rate_limiter.rs"]
             calibnet["Calibnet Faucet Specific<br/>/faucet/calibnet/"]
             mainnet["Mainnet Faucet Specific<br/>/faucet/mainnet/"]

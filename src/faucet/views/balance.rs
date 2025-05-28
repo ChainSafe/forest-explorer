@@ -4,7 +4,7 @@
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 
-use crate::faucet::FaucetController;
+use crate::faucet::controller::FaucetController;
 use crate::utils::format::format_balance;
 
 #[component]
