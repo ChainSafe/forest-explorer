@@ -1,4 +1,7 @@
-use crate::faucet::views::faucets::{calibnet::Faucet_Calibnet, mainnet::Faucet_Mainnet, Faucets};
+use crate::faucet::views::faucets::{
+    calibnet::Faucet_Calibnet, calibnet_usdfc::Faucet_Calibnet_USDFC, mainnet::Faucet_Mainnet,
+    Faucets,
+};
 use crate::faucet::views::{components::layout::Footer, home::Explorer};
 use crate::utils::rpc_context::RpcContext;
 use leptos::prelude::*;
@@ -22,6 +25,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/faucet") view=Faucets />
                     <Route path=path!("/faucet/calibnet") view=Faucet_Calibnet />
                     <Route path=path!("/faucet/mainnet") view=Faucet_Mainnet />
+                    <Route path=path!("/faucet/calibnet_usdfc") view=Faucet_Calibnet_USDFC />
                 </Routes>
                 <Footer />
             </div>
