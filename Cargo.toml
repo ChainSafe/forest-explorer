@@ -11,6 +11,7 @@ license = "Apache-2.0 OR MIT"
 crate-type = ["cdylib"]
 
 [dependencies]
+alloy = "1.0.9"
 anyhow = "1"
 axum = { version = "0.8", default-features = false, optional = true }
 base64 = "0.22"

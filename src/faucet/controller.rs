@@ -23,13 +23,15 @@ impl FaucetController {
         let balance_trigger = Trigger::new();
         let sender_address = RwSignal::new(String::new());
         let target_address = RwSignal::new(String::new());
+        let token_type = faucet_info.token_type();
         let target_balance = LocalResource::new(move || {
             let target_address = target_address.get();
             balance_trigger.track();
+            let token_type = token_type.clone();
             async move {
                 if let Ok(address) = parse_address(&target_address, network) {
                     Provider::from_network(network)
-                        .wallet_balance(address)
+                        .wallet_balance(address, &token_type)
                         .await
                         .ok()
                         .unwrap_or(TokenAmount::from_atto(0))
@@ -44,13 +46,15 @@ impl FaucetController {
                 .map(|LotusJson(addr)| addr)
                 .ok()
         });
+        let token_type = faucet_info.token_type();
         let faucet_balance = LocalResource::new(move || {
             balance_trigger.track();
+            let token_type = token_type.clone();
             async move {
                 if let Some(addr) = faucet_address.await {
                     sender_address.set(addr.to_string());
                     Provider::from_network(network)
-                        .wallet_balance(addr)
+                        .wallet_balance(addr, &token_type)
                         .await
                         .ok()
                         .unwrap_or(TokenAmount::from_atto(0))

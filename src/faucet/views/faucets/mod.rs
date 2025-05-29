@@ -72,6 +72,67 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
     }
 }
 
+// TODO: This is a temporary solution to support both Filecoin and ERC-20 faucets. I might
+// deduplicate the code later.
+#[component]
+fn FaucetInputErc20(faucet: RwSignal<FaucetController>) -> impl IntoView {
+    view! {
+        <div class="input-container">
+            <input
+                type="text"
+                placeholder="Enter target address (Ethereum style)"
+                prop:value=faucet.get().get_target_address()
+                on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
+                on:keydown=move |ev| {
+                    if ev.key() == "Enter" && !faucet.get().is_send_disabled()
+                        && faucet.get().get_send_rate_limit_remaining() <= 0
+                    {
+                        faucet.get().drip();
+                    }
+                }
+                class="input"
+            />
+            {move || {
+                if faucet.get().is_send_disabled() {
+                    view! {
+                        <button class="btn-disabled" disabled=true>
+                            "Sending..."
+                        </button>
+                    }
+                        .into_any()
+                } else if faucet.get().get_send_rate_limit_remaining() > 0 {
+                    let duration = faucet.get().get_send_rate_limit_remaining();
+                    view! {
+                        <button class="btn-disabled" disabled=true>
+                            {format!("Rate-limited! {duration}s")}
+                        </button>
+                    }
+                        .into_any()
+                } else if faucet.get().is_low_balance() {
+                    view! {
+                        <button class="btn-disabled" disabled=true>
+                            "Send"
+                        </button>
+                    }
+                        .into_any()
+                } else {
+                    view! {
+                        <button
+                            class="btn-enabled"
+                            on:click=move |_| {
+                                faucet.get().drip();
+                            }
+                        >
+                            Send
+                        </button>
+                    }
+                        .into_any()
+                }
+            }}
+        </div>
+    }
+}
+
 #[cfg(feature = "hydrate")]
 fn use_faucet_polling(faucet: RwSignal<FaucetController>) {
     use leptos_use::use_interval_fn;
