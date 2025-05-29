@@ -1,4 +1,6 @@
-use crate::faucet::constants::{CALIBNET_RATE_LIMIT_SECONDS, MAINNET_RATE_LIMIT_SECONDS};
+use std::str::FromStr as _;
+
+use crate::faucet::constants::FaucetInfo;
 use chrono::{DateTime, Duration, Utc};
 use worker::*;
 
@@ -16,11 +18,8 @@ impl DurableObject for RateLimiter {
     async fn fetch(&mut self, req: Request) -> Result<Response> {
         let now = Utc::now();
         let path = req.path();
-        let (network, rate_limit_seconds) = if path.contains("mainnet") {
-            ("mainnet", MAINNET_RATE_LIMIT_SECONDS)
-        } else {
-            ("calibnet", CALIBNET_RATE_LIMIT_SECONDS)
-        };
+        let faucet_info = FaucetInfo::from_str(path.split('/').last().unwrap_or_default())
+            .map_err(|e| worker::Error::RustError(e.to_string()))?;
 
         let block_until = self
             .state
@@ -34,29 +33,21 @@ impl DurableObject for RateLimiter {
 
         if is_allowed {
             // This Durable Object will be deleted after the alarm is triggered
-            let next_block = now + Duration::seconds(rate_limit_seconds);
+            let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
             self.state
                 .storage()
                 .put("block_until", next_block.timestamp())
                 .await?;
-            console_log!(
-                "Rate limiter for {} set: block_until={:?}",
-                network,
-                next_block
-            );
+            console_log!("Rate limiter for {faucet_info} set: block_until={next_block:?}");
             self.state
                 .storage()
                 .set_alarm(std::time::Duration::from_secs(
-                    rate_limit_seconds as u64 + 1,
+                    faucet_info.rate_limit_seconds() as u64 + 1,
                 ))
                 .await?;
         } else {
             console_log!(
-                "Rate limiter for {} invoked: now={:?}, block_until={:?}, may_sign={:?}",
-                network,
-                now,
-                block_until,
-                is_allowed
+                "Rate limiter for {faucet_info} invoked: now={now:?}, block_until={block_until:?}, may_sign={is_allowed:?}"
             );
         }
         Response::from_json(&is_allowed)
