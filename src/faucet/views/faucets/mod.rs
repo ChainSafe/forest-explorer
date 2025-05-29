@@ -5,8 +5,6 @@ use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 use leptos_meta::{Meta, Title};
-#[cfg(feature = "hydrate")]
-use leptos_use::use_interval_fn;
 use url::Url;
 
 use crate::faucet::controller::FaucetController;
@@ -76,7 +74,13 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
 
 #[cfg(feature = "hydrate")]
 fn use_faucet_polling(faucet: RwSignal<FaucetController>) {
-    let _ = use_interval_fn(
+    use leptos_use::use_interval_fn;
+    use leptos_use::utils::Pausable;
+
+    let Pausable {
+        pause: pause_rate_limiter,
+        ..
+    } = use_interval_fn(
         move || {
             let duration = faucet.get().get_send_rate_limit_remaining();
             if duration > 0 {
@@ -86,12 +90,20 @@ fn use_faucet_polling(faucet: RwSignal<FaucetController>) {
         1000,
     );
 
-    let _ = use_interval_fn(
+    let Pausable {
+        pause: pause_refetch_balances,
+        ..
+    } = use_interval_fn(
         move || {
             faucet.get().refetch_balances();
         },
         5000,
     );
+
+    on_cleanup(move || {
+        pause_rate_limiter();
+        pause_refetch_balances();
+    });
 }
 
 #[component]
