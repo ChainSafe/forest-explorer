@@ -2,7 +2,6 @@ use super::Faucet;
 use crate::faucet::constants::FaucetInfo;
 use crate::utils::format::format_balance;
 use crate::utils::rpc_context::{Provider, RpcContext};
-use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::{Meta, Title};
@@ -14,7 +13,7 @@ pub fn Faucet_Mainnet() -> impl IntoView {
     let rate_limit_seconds = FaucetInfo::MainnetFIL.rate_limit_seconds();
     let rpc_context = RpcContext::use_context();
     // Set rpc context to mainnet url
-    rpc_context.set(Provider::get_network_url(Network::Mainnet));
+    rpc_context.set(Provider::get_network_url(FaucetInfo::MainnetFIL.network()));
 
     view! {
         <Title text="Filecoin Faucet - Mainnet" />

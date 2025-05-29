@@ -7,23 +7,24 @@ use leptos::{component, view, IntoView};
 use leptos_meta::{Meta, Title};
 
 #[component]
-pub fn Faucet_Calibnet() -> impl IntoView {
-    let drip_amount = FaucetInfo::CalibnetFIL.drip_amount();
-    let token_unit = FaucetInfo::CalibnetFIL.unit();
-    let rate_limit_seconds = FaucetInfo::CalibnetFIL.rate_limit_seconds();
+pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
+    let drip_amount = FaucetInfo::CalibnetUSDFC.drip_amount();
+    let token_unit = FaucetInfo::CalibnetUSDFC.unit();
+    let rate_limit_seconds = FaucetInfo::CalibnetUSDFC.rate_limit_seconds();
     let rpc_context = RpcContext::use_context();
-    // Set rpc context to calibnet url
-    rpc_context.set(Provider::get_network_url(FaucetInfo::CalibnetFIL.network()));
+    rpc_context.set(Provider::get_network_url(
+        FaucetInfo::CalibnetUSDFC.network(),
+    ));
 
     view! {
-        <Title text="Filecoin Faucet - Calibration Network" />
+        <Title text="Filecoin USDFC Faucet - Calibration Network" />
         <Meta
             name="description"
-            content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes."
+            content="Filecoin USDFC Calibration Network Faucet dispensing USDFC tokens for testing purposes."
         />
         <div>
-            <h1 class="header">Filecoin Calibnet Faucet</h1>
-            <Faucet faucet_info=FaucetInfo::CalibnetFIL />
+            <h1 class="header">Filecoin Calibnet USDFC Faucet</h1>
+            <Faucet faucet_info=FaucetInfo::CalibnetUSDFC />
         </div>
         <div class="description">
             "This faucet distributes " {format_balance(drip_amount, token_unit)}
