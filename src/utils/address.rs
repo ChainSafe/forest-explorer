@@ -1,5 +1,5 @@
-use anyhow::ensure;
-use fvm_shared::address::{Address, Network};
+use anyhow::{bail, ensure};
+use fvm_shared::address::{Address, DelegatedAddress, Network, Protocol};
 use fvm_shared::ActorID;
 
 // '0x' + 20bytes
@@ -39,6 +39,56 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
         Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
     } else {
         Ok(n.parse_address(&s)?)
+    }
+}
+
+/// Extensions around [`fvm_shared::address::Address`] to convert it into an
+/// Ethereum address, usable by the `alloy` crate.
+pub trait AddressAlloyExt {
+    /// Converts the FVM address into an `alloy`-compatible Ethereum address. This is possible only
+    /// for ID and Delegated addresses.
+    fn into_eth_address(self) -> anyhow::Result<alloy::primitives::Address>;
+    /// Converts an ActorID into an `alloy`-compatible Ethereum address. The implementation is
+    fn from_actor_id(id: ActorID) -> anyhow::Result<alloy::primitives::Address>;
+}
+
+// Implementation is mostly taken from Forest. See
+// [here](https://github.com/ChainSafe/forest/blob/ddcdfbfd93dc21fa61544f80222c2ede6f1ee21a/src/rpc/methods/eth/types.rs).
+// TODO: migrate tests if any
+impl AddressAlloyExt for Address {
+    fn into_eth_address(self) -> anyhow::Result<alloy::primitives::Address> {
+        match self.protocol() {
+            Protocol::ID => Self::from_actor_id(self.id()?),
+            Protocol::Delegated => {
+                let payload = self.payload();
+                let result: Result<DelegatedAddress, _> = payload.try_into();
+                if let Ok(f4_addr) = result {
+                    let namespace = f4_addr.namespace();
+                    ensure!(
+                        namespace == EAM_NAMESPACE,
+                        "Invalid address namespace {namespace} != {EAM_NAMESPACE}"
+                    );
+                    return Ok(alloy::primitives::Address::from_slice(f4_addr.subaddress()));
+                }
+                bail!("invalid delegated address namespace in: {self}")
+            }
+            _ => {
+                bail!("invalid address {self}");
+            }
+        }
+    }
+
+    fn from_actor_id(id: ActorID) -> anyhow::Result<alloy::primitives::Address> {
+        static MASKED_ID_PREFIX: [u8; 12] = [0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let pfx = MASKED_ID_PREFIX;
+        let arr = id.to_be_bytes();
+        let payload = [
+            pfx[0], pfx[1], pfx[2], pfx[3], pfx[4], pfx[5], pfx[6], pfx[7], //
+            pfx[8], pfx[9], pfx[10], pfx[11], //
+            arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7],
+        ];
+
+        Ok(alloy::primitives::Address::from_slice(&payload))
     }
 }
 

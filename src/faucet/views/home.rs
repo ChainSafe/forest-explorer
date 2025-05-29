@@ -76,9 +76,9 @@ fn NetworkSelection(
     view! {
         <div class="network-selector">
             <div class="dropdown">
-                <select on:change=move |ev| { rpc_context.set(event_target_value(&ev)) } class="dropdown-items">
-                    <option value=Provider::get_network_url(Network::Testnet)>Glif.io Calibnet</option>
-                    <option value=Provider::get_network_url(Network::Mainnet)>Glif.io Mainnet</option>
+                <select on:change=move |ev| { rpc_context.set(event_target_value(&ev).parse().expect("predefined values, must succeed")) } class="dropdown-items">
+                    <option value=Provider::get_network_url(Network::Testnet).to_string() >Glif.io Calibnet</option>
+                    <option value=Provider::get_network_url(Network::Mainnet).to_string() >Glif.io Mainnet</option>
                 </select>
                 <div class="dropdown-icon">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

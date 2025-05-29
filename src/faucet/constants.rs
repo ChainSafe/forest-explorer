@@ -1,6 +1,7 @@
+use alloy::{hex::FromHex as _, primitives::address};
 use fvm_shared::{address::Network, econ::TokenAmount};
 use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
+use std::{str::FromStr as _, sync::LazyLock};
 use strum::EnumString;
 
 /// The amount of mainnet FIL to be dripped to the user. This corresponds to 1 tFIL.
@@ -13,6 +14,16 @@ static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
 /// The amount of calibnet `USDFC` to be dripped to the user. This corresponds to 1 `tUSDFC`.
 static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(1));
+
+pub type ContractAddress = alloy::primitives::Address;
+
+#[derive(Clone, Debug)]
+pub enum TokenType {
+    /// Filecoin native token
+    Native,
+    /// ERC-20 token, e.g., `USDFC`
+    Erc20(ContractAddress),
+}
 
 #[derive(strum::Display, EnumString, Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum FaucetInfo {
@@ -80,8 +91,22 @@ impl FaucetInfo {
                 option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| url::Url::parse(url).ok())
             }
             FaucetInfo::CalibnetUSDFC => {
-                None // USDFC does not have a transaction base URL for now - to investigate later.
+                option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| url::Url::parse(url).ok())
+                //None // USDFC does not have a transaction base URL for now - to investigate later.
             }
+        }
+    }
+
+    /// Returns the type of token for the given faucet. This is used to determine how the token
+    /// is represented in the UI and how it is handled in the backend.
+    pub fn token_type(&self) -> TokenType {
+        match self {
+            FaucetInfo::MainnetFIL | FaucetInfo::CalibnetFIL => TokenType::Native,
+            FaucetInfo::CalibnetUSDFC => TokenType::Erc20(
+                option_env!("CALIBNET_USDFC_CONTRACT_ADDRESS")
+                    .and_then(|addr| alloy::primitives::Address::from_str(addr).ok())
+                    .unwrap_or_else(|| address!("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")),
+            ),
         }
     }
 }

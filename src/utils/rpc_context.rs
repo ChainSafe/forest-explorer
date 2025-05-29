@@ -1,18 +1,35 @@
+use alloy::providers::{Provider as AlloyProvider, ProviderBuilder as AlloyProviderBuilder};
+use alloy::{sol, sol_types::SolCall};
 use cid::Cid;
 use fvm_shared::address::{set_current_network, Address, Network};
+use fvm_shared::bigint::BigInt;
 use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
+use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
+use num_traits::Zero;
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::sync::LazyLock;
+use url::Url;
+
+use crate::faucet::constants::TokenType;
+use crate::utils::address::AddressAlloyExt as _;
 
 use super::lotus_json::{signed_message::SignedMessage, HasLotusJson, LotusJson};
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 
-const GLIF_CALIBNET: &str = "https://api.calibration.node.glif.io";
-const GLIF_MAINNET: &str = "https://api.node.glif.io";
+static GLIF_CALIBNET: LazyLock<Url> = LazyLock::new(|| {
+    "https://api.calibration.node.glif.io"
+        .parse()
+        .expect("Invalid URL for Filecoin calibration network")
+});
+static GLIF_MAINNET: LazyLock<Url> = LazyLock::new(|| {
+    "https://api.node.glif.io"
+        .parse()
+        .expect("Invalid URL for Filecoin mainnet")
+});
 
 #[derive(Clone, Copy)]
 pub struct RpcContext {
@@ -23,7 +40,7 @@ pub struct RpcContext {
 
 impl RpcContext {
     pub fn new() -> Self {
-        let provider = RwSignal::new(Provider::new(GLIF_CALIBNET.to_string()));
+        let provider = RwSignal::new(Provider::new(GLIF_CALIBNET.clone()));
         let network = LocalResource::new(move || {
             let provider = provider.get();
             async move {
@@ -53,23 +70,23 @@ impl RpcContext {
         self.provider.get()
     }
 
-    pub fn set(&self, provider: String) {
+    pub fn set(&self, provider: Url) {
         self.provider.set(Provider::new(provider));
     }
 }
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Provider {
-    url: String,
+    url: Url,
 }
 
 async fn invoke_rpc_method<T: HasLotusJson + Clone>(
-    url: &str,
+    url: &Url,
     method: &str,
     params: &[Value],
 ) -> anyhow::Result<T> {
     let res = CLIENT
-        .post(url)
+        .post(url.as_ref())
         .json(&json! {
             {
                 "jsonrpc": "2.0",
@@ -91,26 +108,26 @@ async fn invoke_rpc_method<T: HasLotusJson + Clone>(
 }
 
 impl Provider {
-    pub fn new(url: String) -> Self {
+    pub fn new(url: Url) -> Self {
         Self { url }
     }
 
-    pub fn get_network_url(network: Network) -> String {
+    pub fn get_network_url(network: Network) -> Url {
         match network {
-            Network::Testnet => GLIF_CALIBNET.to_string(),
-            Network::Mainnet => GLIF_MAINNET.to_string(),
+            Network::Testnet => GLIF_CALIBNET.to_owned(),
+            Network::Mainnet => GLIF_MAINNET.to_owned(),
         }
     }
 
     pub fn calibnet() -> Self {
         Self {
-            url: GLIF_CALIBNET.to_string(),
+            url: GLIF_CALIBNET.to_owned(),
         }
     }
 
     pub fn mainnet() -> Self {
         Self {
-            url: GLIF_MAINNET.to_string(),
+            url: GLIF_MAINNET.to_owned(),
         }
     }
 
@@ -129,13 +146,52 @@ impl Provider {
         invoke_rpc_method(&self.url, "Filecoin.StateNetworkVersion", &[Value::Null]).await
     }
 
-    pub async fn wallet_balance(&self, address: Address) -> anyhow::Result<TokenAmount> {
-        invoke_rpc_method(
-            &self.url,
-            "Filecoin.WalletBalance",
-            &[serde_json::to_value(LotusJson(address))?],
-        )
-        .await
+    pub async fn wallet_balance(
+        &self,
+        wallet_address: Address,
+        token_type: &TokenType,
+    ) -> anyhow::Result<TokenAmount> {
+        match token_type {
+            TokenType::Native => {
+                invoke_rpc_method(
+                    &self.url,
+                    "Filecoin.WalletBalance",
+                    &[serde_json::to_value(LotusJson(wallet_address))?],
+                )
+                .await
+            }
+            TokenType::Erc20(contract_address) => {
+                //// TODO: hide it
+                sol! {
+                   #[sol(rpc)]
+                   contract ERC20 {
+                        function balanceOf(address owner) public view returns (uint256);
+                   }
+                }
+
+                let eth_address = wallet_address.into_eth_address()?;
+
+                let url = Url::parse("https://api.calibration.node.glif.io/rpc/v1")
+                    .expect("Invalid URL for Filecoin calibration network");
+                let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
+                let erc20 = ERC20::new(*contract_address, provider);
+
+                let balance = erc20.balanceOf(eth_address).call().await?;
+                // Warning! The assumption here is that the decimals are the same for both Filecoin
+                // and given ERC20 token. This holds true for USDFC, but may not hold for other
+                // tokens.
+                let token_amount = TokenAmount::from_atto(BigInt::from_bytes_be(
+                    fvm_shared::bigint::Sign::Plus,
+                    &balance.to_be_bytes_trimmed_vec(),
+                ));
+
+                console_log(&format!(
+                    "Balance of {eth_address} in contract {contract_address}: {token_amount}"
+                ));
+
+                Ok(token_amount)
+            }
+        }
     }
 
     pub async fn estimate_gas(&self, msg: Message) -> anyhow::Result<Message> {
