@@ -1,6 +1,7 @@
 use anyhow::{bail, ensure};
 use fvm_shared::address::{Address, DelegatedAddress, Network, Protocol};
 use fvm_shared::ActorID;
+use leptos::logging::error;
 
 // '0x' + 20bytes
 const ETH_ADDRESS_LENGTH: usize = 42;
@@ -73,6 +74,7 @@ impl AddressAlloyExt for Address {
                 bail!("invalid delegated address namespace in: {self}")
             }
             _ => {
+                error!("Cannot convert address {self} to Ethereum address. Only ID and Delegated addresses are supported.");
                 bail!("invalid address {self}");
             }
         }

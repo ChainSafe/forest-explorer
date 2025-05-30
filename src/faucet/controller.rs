@@ -1,11 +1,19 @@
-use super::constants::FaucetInfo;
-use super::server::{faucet_address, sign_with_secret_key};
+use super::constants::{FaucetInfo, TokenType};
+use super::server::{
+    faucet_address, faucet_address_str, faucet_eth_address, sign_with_eth_secret_key,
+    sign_with_secret_key,
+};
 use crate::faucet::model::FaucetModel;
+use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
 use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
+use alloy::providers::{Provider as AlloyProvider, ProviderBuilder as AlloyProviderBuilder};
+use alloy::rpc::types::TransactionRequest;
+use alloy::{sol, sol_types::SolCall};
 use cid::Cid;
 use fvm_shared::econ::TokenAmount;
+use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use uuid::Uuid;
@@ -41,10 +49,10 @@ impl FaucetController {
             }
         });
         let faucet_address = LocalResource::new(move || async move {
-            faucet_address(faucet_info)
+            faucet_address_str(faucet_info)
                 .await
-                .map(|LotusJson(addr)| addr)
                 .ok()
+                .and_then(|s| parse_address(&s, network).ok())
         });
         let token_type = faucet_info.token_type();
         let faucet_balance = LocalResource::new(move || {
@@ -182,6 +190,13 @@ impl FaucetController {
     }
 
     pub fn drip(&self) {
+        match self.info.token_type() {
+            TokenType::Native => self.drip_native_token(),
+            TokenType::Erc20(_) => self.drip_erc20_token(),
+        }
+    }
+
+    fn drip_native_token(&self) {
         let faucet = self.faucet.clone();
         let network = self.info.network();
         let info = self.info;
@@ -225,6 +240,65 @@ impl FaucetController {
                     &self.faucet.target_address.get(),
                     err
                 );
+            }
+        }
+    }
+
+    fn drip_erc20_token(&self) {
+        let faucet = self.faucet.clone();
+        let network = self.info.network();
+        let info = self.info;
+        match parse_address(&self.faucet.target_address.get(), network) {
+            Ok(addr) => {
+                spawn_local(async move {
+                    catch_all(faucet.error_messages, async move {
+                        let filecoin_rpc = Provider::from_network(network);
+                        let faucet_address = faucet_address_str(info)
+                            .await
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
+
+                        let owner_fil_address = parse_address(&faucet_address, info.network())?;
+
+                        faucet.send_disabled.set(true);
+                        let unsigned_tx = filecoin_rpc
+                            .erc20_transfer_transaction(owner_fil_address, addr, info)
+                            .await?;
+
+                        match sign_with_eth_secret_key(unsigned_tx, info).await {
+                            Ok(signed) => {
+                                filecoin_rpc.send_eth_transaction_signed(&signed).await?;
+                                console_log("Transaction sent successfully");
+                            }
+                            Err(e) => {
+                                console_log(&format!("Failed to sign transaction: {e}"));
+                            }
+                        }
+                        //match sign_with_secret_key(LotusJson(msg.clone()), info).await {
+                        //    Ok(LotusJson(smsg)) => {
+                        //        let cid = rpc.mpool_push(smsg).await?;
+                        //        faucet.sent_messages.update(|messages| {
+                        //            messages.push((cid, false));
+                        //        });
+                        //        log::info!("Sent message: {:?}", cid);
+                        //    }
+                        //    Err(e) => {
+                        //        log::error!("Failed to sign message: {}", e);
+                        //        let rate_limit_seconds = info.rate_limit_seconds();
+                        //        faucet.send_limited.set(rate_limit_seconds as i32);
+                        //    }
+                        //}
+                        Ok(())
+                    })
+                    .await;
+                    faucet.send_disabled.set(false);
+                });
+            }
+            Err(e) => {
+                self.add_error_message(format!(
+                    "Invalid address: {}",
+                    &self.faucet.target_address.get()
+                ));
+                log::error!("Error parsing address: {}", e);
             }
         }
     }
