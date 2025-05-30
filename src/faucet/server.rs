@@ -1,9 +1,13 @@
 #[cfg(feature = "ssr")]
 use crate::utils::key::{sign, Key};
-use crate::utils::lotus_json::{signed_message::SignedMessage, LotusJson};
+use crate::{
+    faucet::constants::TokenType,
+    utils::lotus_json::{signed_message::SignedMessage, LotusJson},
+};
+use alloy::{network::TransactionBuilder, rpc::types::TransactionRequest};
 use anyhow::Result;
 use fvm_shared::{address::Address, message::Message};
-use leptos::{prelude::ServerFnError, server};
+use leptos::{leptos_dom::logging::console_log, prelude::ServerFnError, server};
 
 use super::constants::FaucetInfo;
 
@@ -11,6 +15,69 @@ use super::constants::FaucetInfo;
 pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<LotusJson<Address>, ServerFnError> {
     let key = secret_key(faucet_info).await?;
     Ok(LotusJson(key.address))
+}
+
+/// Returns the faucet address as a string, deriving it from the faucet information, and in turn,
+/// from the secret key stored in the backend.
+///
+/// For native token faucets, it will return a Filecoin address, while for ERC-20 token faucets,
+/// it will return an Ethereum address.
+#[server]
+pub async fn faucet_address_str(faucet_info: FaucetInfo) -> Result<String, ServerFnError> {
+    use fvm_shared::address;
+    match faucet_info.token_type() {
+        TokenType::Native => {
+            match faucet_info.network() {
+                address::Network::Mainnet => {
+                    address::set_current_network(address::Network::Mainnet);
+                }
+                address::Network::Testnet => {
+                    address::set_current_network(address::Network::Testnet);
+                }
+            }
+            let LotusJson(addr) = faucet_address(faucet_info).await?;
+            Ok(addr.to_string())
+        }
+        TokenType::Erc20(_) => {
+            let address = faucet_eth_address(faucet_info).await?;
+            Ok(address.to_string())
+        }
+    }
+}
+
+#[server]
+pub async fn faucet_eth_address(
+    faucet_info: FaucetInfo,
+) -> Result<alloy::primitives::Address, ServerFnError> {
+    use alloy::signers::local::PrivateKeySigner;
+    let key = read_faucet_secret(faucet_info).await?;
+    let pk_signer: PrivateKeySigner = std::str::FromStr::from_str(&key)?;
+    let pk_addr = pk_signer.address();
+    Ok(pk_addr)
+}
+
+#[cfg(feature = "ssr")]
+pub async fn read_faucet_secret(faucet_info: FaucetInfo) -> Result<String, ServerFnError> {
+    use axum::Extension;
+    use leptos::server_fn::error;
+    use leptos_axum::extract;
+    use std::{str::FromStr as _, sync::Arc};
+    use worker::Env;
+
+    let Extension(env): Extension<Arc<Env>> = extract().await?;
+    #[allow(deprecated)]
+    env.secret(faucet_info.secret_key_name())
+        .map(|s| s.to_string())
+        .map_err(|e| ServerFnError::<error::NoCustomError>::ServerError(e.to_string()))
+        .and_then(|s| {
+            if s.is_empty() {
+                Err(ServerFnError::ServerError(
+                    "Faucet secret key is empty".to_string(),
+                ))
+            } else {
+                Ok(s)
+            }
+        })
 }
 
 #[server]
@@ -77,6 +144,63 @@ pub async fn secret_key(faucet_info: FaucetInfo) -> Result<Key, ServerFnError> {
     let key_info = KeyInfo::from_str(&env.secret(faucet_info.secret_key_name())?.to_string())
         .map_err(|e| ServerFnError::<error::NoCustomError>::ServerError(e.to_string()))?;
     Key::try_from(key_info).map_err(|e| ServerFnError::ServerError(e.to_string()))
+}
+
+#[server]
+pub async fn sign_with_eth_secret_key(
+    tx_request: TransactionRequest,
+    faucet_info: FaucetInfo,
+) -> Result<Vec<u8>, ServerFnError> {
+    use leptos::server_fn::error;
+    use send_wrapper::SendWrapper;
+    //if tx_request.value.is_some() {
+    //    return Err(ServerFnError::ServerError(
+    //        "Native token must not be sent in ERC-20 faucet".to_string(),
+    //    ));
+    //}
+    console_log("Signing transaction request");
+
+    // TODO check the value of the transaction request?
+    SendWrapper::new(async move {
+        use axum::Extension;
+        use leptos_axum::extract;
+        use std::sync::Arc;
+        use worker::Env;
+        let Extension(env): Extension<Arc<Env>> = extract().await?;
+        console_log(&format!("Signing transaction request: {tx_request:?}"));
+        let rate_limiter_disabled = env
+            .secret("RATE_LIMITER_DISABLED")
+            .map(|v| v.to_string().to_lowercase() == "true")
+            .unwrap_or(false);
+        let may_sign = rate_limiter_disabled || query_rate_limiter(faucet_info).await?;
+        let rate_limit_seconds = faucet_info.rate_limit_seconds();
+        if !may_sign {
+            return Err(ServerFnError::ServerError(format!(
+                "Rate limit exceeded - wait {rate_limit_seconds} seconds"
+            )));
+        }
+
+        use alloy::signers::local::PrivateKeySigner;
+        console_log(&format!("Reading faucet secret key for {faucet_info}"));
+        let key = read_faucet_secret(faucet_info).await?;
+        console_log(&format!("Faucet secret key read successfully: {key}"));
+        let pk_signer: PrivateKeySigner = std::str::FromStr::from_str(&key)?;
+        console_log("private key signer created");
+        let wallet = alloy::network::EthereumWallet::new(pk_signer);
+        let tx_envolope = tx_request.build(&wallet).await;
+        if tx_envolope.is_err() {
+            return Err(ServerFnError::ServerError(format!(
+                "Failed to build transaction envelope: {:?}",
+                tx_envolope.err()
+            )));
+        }
+        console_log(&format!("Transaction envelope: {tx_envolope:?}"));
+        let tx_envolope = tx_envolope.unwrap();
+
+        let rlp = alloy::eips::Encodable2718::encoded_2718(&tx_envolope);
+        Ok(rlp)
+    })
+    .await
 }
 
 #[cfg(feature = "ssr")]

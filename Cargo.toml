@@ -11,6 +11,7 @@ license = "Apache-2.0 OR MIT"
 crate-type = ["cdylib"]
 
 [dependencies]
+alloy = "1.0.9"
 anyhow = "1"
 axum = { version = "0.8", default-features = false, optional = true }
 base64 = "0.22"
@@ -33,7 +34,7 @@ leptos_meta = "0.8"
 leptos_router = "0.8"
 libsecp256k1 = "0.7"
 log = "0.4"
-multihash-codetable = { version = "0.1" }
+multihash-codetable = "0.1.4"
 num-traits = "0.2"
 reqwest = { version = "0.12", features = ["json"] }
 send_wrapper = "0.6"

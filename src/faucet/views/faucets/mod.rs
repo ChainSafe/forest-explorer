@@ -1,11 +1,10 @@
 pub mod calibnet;
+pub mod calibnet_usdfc;
 pub mod mainnet;
 
-use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
 use leptos_meta::{Meta, Title};
-use url::Url;
 
 use crate::faucet::constants::FaucetInfo;
 use crate::faucet::controller::FaucetController;
@@ -21,6 +20,67 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
             <input
                 type="text"
                 placeholder="Enter target address (Filecoin or Ethereum style)"
+                prop:value=faucet.get().get_target_address()
+                on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
+                on:keydown=move |ev| {
+                    if ev.key() == "Enter" && !faucet.get().is_send_disabled()
+                        && faucet.get().get_send_rate_limit_remaining() <= 0
+                    {
+                        faucet.get().drip();
+                    }
+                }
+                class="input"
+            />
+            {move || {
+                if faucet.get().is_send_disabled() {
+                    view! {
+                        <button class="btn-disabled" disabled=true>
+                            "Sending..."
+                        </button>
+                    }
+                        .into_any()
+                } else if faucet.get().get_send_rate_limit_remaining() > 0 {
+                    let duration = faucet.get().get_send_rate_limit_remaining();
+                    view! {
+                        <button class="btn-disabled" disabled=true>
+                            {format!("Rate-limited! {duration}s")}
+                        </button>
+                    }
+                        .into_any()
+                } else if faucet.get().is_low_balance() {
+                    view! {
+                        <button class="btn-disabled" disabled=true>
+                            "Send"
+                        </button>
+                    }
+                        .into_any()
+                } else {
+                    view! {
+                        <button
+                            class="btn-enabled"
+                            on:click=move |_| {
+                                faucet.get().drip();
+                            }
+                        >
+                            Send
+                        </button>
+                    }
+                        .into_any()
+                }
+            }}
+        </div>
+    }
+}
+
+// TODO: This is a temporary solution to support both Filecoin and ERC-20 faucets. I might
+// deduplicate the code later.
+#[component]
+fn FaucetInputErc20(faucet: RwSignal<FaucetController>) -> impl IntoView {
+    view! {
+        <div class="input-container">
+            <input
+                type="text"
+                placeholder="Enter target address (Ethereum style)"
                 prop:value=faucet.get().get_target_address()
                 on:input=move |ev| { faucet.get().set_target_address(event_target_value(&ev)) }
                 on:keydown=move |ev| {
@@ -116,16 +176,7 @@ pub fn Faucet(faucet_info: FaucetInfo) -> impl IntoView {
         use_faucet_polling(faucet);
     }
 
-    let target_network = faucet_info.network();
-
-    let faucet_tx_base_url = match target_network {
-        Network::Mainnet => {
-            RwSignal::new(option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| Url::parse(url).ok()))
-        }
-        Network::Testnet => RwSignal::new(
-            option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| Url::parse(url).ok()),
-        ),
-    };
+    let faucet_tx_base_url = RwSignal::new(faucet_info.transaction_base_url());
 
     view! {
         {move || {
@@ -166,13 +217,21 @@ pub fn Faucets() -> impl IntoView {
         <Meta name="description" content="Filecoin Faucet list" />
         <div class="faucet-list-container">
             <h1 class="header">Filecoin Faucet List</h1>
-            <a class="link-text-hover" href="/faucet/calibnet">
-                Calibration Network Faucet
-            </a>
-            <br />
-            <a class="link-text-hover" href="/faucet/mainnet">
-                Mainnet Network Faucet
-            </a>
+            <div>
+                <a class="link-text-hover" href="/faucet/calibnet_usdfc">
+                    "💰 Calibration Network USDFC Faucet"
+                </a>
+            </div>
+            <div>
+                <a class="link-text-hover" href="/faucet/calibnet">
+                    "🧪 Calibration Network Faucet"
+                </a>
+            </div>
+            <div>
+                <a class="link-text-hover" href="/faucet/mainnet">
+                    "🌐 Mainnet Network Faucet"
+                </a>
+            </div>
             <GotoHome />
         </div>
     }
