@@ -105,18 +105,38 @@ impl FaucetController {
         let network = self.info.network();
         let messages = self.faucet.sent_messages;
         spawn_local(catch_all(self.faucet.error_messages, async move {
-            for cid in pending {
-                if let Some(lookup) = Provider::from_network(network)
-                    .state_search_msg(cid)
-                    .await?
-                {
-                    messages.update(|messages| {
-                        for (cid, sent) in messages {
-                            if cid == &lookup.message {
-                                *sent = true;
+            // for each pending message, check if it has been confirmed
+            // TODO: handle eth transactions
+            for id in pending {
+                if let Ok(cid) = Cid::try_from(id.clone()) {
+                    if let Some(lookup) = Provider::from_network(network)
+                        .state_search_msg(cid)
+                        .await?
+                    {
+                        messages.update(|messages| {
+                            for (cid, sent) in messages {
+                                if cid == &lookup.message.to_string() {
+                                    *sent = true;
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+                    // TODO: use enum or Either
+                    // right now assume eth hash if not a valid Cid
+                } else {
+                    let eth_hash = id;
+                    if let Ok(true) = Provider::from_network(network)
+                        .check_eth_transaction_confirmed(&eth_hash)
+                        .await
+                    {
+                        messages.update(|messages| {
+                            for (id, sent) in messages {
+                                if *id == eth_hash {
+                                    *sent = true;
+                                }
+                            }
+                        });
+                    }
                 }
             }
             Ok(())
@@ -162,7 +182,7 @@ impl FaucetController {
         });
     }
 
-    pub fn get_sent_messages(&self) -> Vec<(Cid, bool)> {
+    pub fn get_sent_messages(&self) -> Vec<(String, bool)> {
         self.faucet.sent_messages.get().clone()
     }
 
@@ -217,7 +237,7 @@ impl FaucetController {
                             Ok(LotusJson(smsg)) => {
                                 let cid = rpc.mpool_push(smsg).await?;
                                 faucet.sent_messages.update(|messages| {
-                                    messages.push((cid, false));
+                                    messages.push((cid.to_string(), false));
                                 });
                                 log::info!("Sent message: {:?}", cid);
                             }
@@ -252,41 +272,33 @@ impl FaucetController {
             Ok(addr) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
+                        faucet.send_disabled.set(true);
                         let filecoin_rpc = Provider::from_network(network);
                         let faucet_address = faucet_address_str(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
-
                         let owner_fil_address = parse_address(&faucet_address, info.network())?;
 
-                        faucet.send_disabled.set(true);
                         let unsigned_tx = filecoin_rpc
                             .erc20_transfer_transaction(owner_fil_address, addr, info)
                             .await?;
 
                         match sign_with_eth_secret_key(unsigned_tx, info).await {
                             Ok(signed) => {
-                                filecoin_rpc.send_eth_transaction_signed(&signed).await?;
-                                console_log("Transaction sent successfully");
+                                let hash =
+                                    filecoin_rpc.send_eth_transaction_signed(&signed).await?;
+                                // let cid = eth_hash_to_cid(&hash)?;
+                                faucet.sent_messages.update(|messages| {
+                                    messages.push((hash.clone(), false));
+                                });
+                                console_log(&format!("Transaction sent successfully: {hash}"));
                             }
                             Err(e) => {
                                 console_log(&format!("Failed to sign transaction: {e}"));
+                                let rate_limit_seconds = info.rate_limit_seconds();
+                                faucet.send_limited.set(rate_limit_seconds as i32);
                             }
                         }
-                        //match sign_with_secret_key(LotusJson(msg.clone()), info).await {
-                        //    Ok(LotusJson(smsg)) => {
-                        //        let cid = rpc.mpool_push(smsg).await?;
-                        //        faucet.sent_messages.update(|messages| {
-                        //            messages.push((cid, false));
-                        //        });
-                        //        log::info!("Sent message: {:?}", cid);
-                        //    }
-                        //    Err(e) => {
-                        //        log::error!("Failed to sign message: {}", e);
-                        //        let rate_limit_seconds = info.rate_limit_seconds();
-                        //        faucet.send_limited.set(rate_limit_seconds as i32);
-                        //    }
-                        //}
                         Ok(())
                     })
                     .await;
