@@ -1,5 +1,5 @@
 use alloy::network::TransactionBuilder as _;
-use alloy::primitives::Uint;
+use alloy::primitives::{TxHash, Uint};
 use alloy::providers::{Provider as AlloyProvider, ProviderBuilder as AlloyProviderBuilder};
 use alloy::rpc::types::TransactionRequest;
 use alloy::signers::k256::sha2::digest::typenum::UInt;
@@ -14,6 +14,7 @@ use leptos::prelude::*;
 use num_traits::Zero;
 use reqwest::Client;
 use serde_json::{json, Value};
+use std::str::FromStr;
 use std::sync::LazyLock;
 use url::Url;
 
@@ -232,8 +233,8 @@ impl Provider {
         let chain_id = provider.get_chain_id().await?;
         // let gas_limit = gas_estimate + 10_000;
         let gas_limit = 50_000_000; // Set a reasonable gas limit for the transaction
-        let gas_price = provider.get_gas_price().await? + 10_000_000; // Add a buffer to the gas
-                                                                      // price
+        let gas_price = provider.get_gas_price().await?; // Add a buffer to the gas
+                                                         // price
 
         let calldata = ERC20::transferCall::new((eth_to, amount)).abi_encode();
 
@@ -252,7 +253,7 @@ impl Provider {
     pub async fn send_eth_transaction_signed(&self, signed_tx: &[u8]) -> anyhow::Result<String> {
         let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
         let tx = provider.send_raw_transaction(signed_tx).await?;
-        Ok("success".to_string())
+        Ok(tx.tx_hash().to_string())
     }
 
     pub async fn estimate_gas(&self, msg: Message) -> anyhow::Result<Message> {
@@ -301,5 +302,15 @@ impl Provider {
             ],
         )
         .await
+    }
+
+    pub async fn check_eth_transaction_confirmed(&self, eth_hash: &str) -> anyhow::Result<bool> {
+        let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
+        // TODO: strongly type this
+        let tx_hash = TxHash::from_str(eth_hash)?;
+        match provider.get_transaction_receipt(tx_hash).await? {
+            Some(receipt) => Ok(receipt.block_number.is_some()),
+            None => Ok(false),
+        }
     }
 }

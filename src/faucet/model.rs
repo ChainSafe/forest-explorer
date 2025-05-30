@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub(super) struct FaucetModel {
     pub send_disabled: RwSignal<bool>,
     pub send_limited: RwSignal<i32>,
-    pub sent_messages: RwSignal<Vec<(Cid, bool)>>,
+    pub sent_messages: RwSignal<Vec<(String, bool)>>,
     pub error_messages: RwSignal<Vec<(Uuid, String)>>,
     pub balance_trigger: Trigger,
     pub faucet_balance: LocalResource<TokenAmount>,

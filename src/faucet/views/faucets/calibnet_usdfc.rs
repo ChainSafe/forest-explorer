@@ -17,13 +17,13 @@ pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
     ));
 
     view! {
-        <Title text="Filecoin USDFC Faucet - Calibration Network" />
+        <Title text="💰 Filecoin USDFC Faucet - Calibration Network" />
         <Meta
             name="description"
             content="Filecoin USDFC Calibration Network Faucet dispensing USDFC tokens for testing purposes."
         />
         <div>
-            <h1 class="header">Filecoin Calibnet USDFC Faucet</h1>
+            <h1 class="header">"💰 Filecoin Calibnet USDFC Faucet"</h1>
             <Faucet faucet_info=FaucetInfo::CalibnetUSDFC />
         </div>
         <div class="description">

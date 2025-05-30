@@ -8,7 +8,7 @@ use crate::faucet::controller::FaucetController;
 
 #[component]
 pub fn TransactionList(
-    messages: Vec<(Cid, bool)>,
+    messages: Vec<(String, bool)>,
     faucet_tx_base_url: RwSignal<Option<Url>>,
 ) -> impl IntoView {
     view! {
@@ -39,7 +39,7 @@ pub fn TransactionList(
                             let cid = view! { {msg.to_string()} }.into_any();
                             (cid, "(pending)")
                         };
-                        view! { <li>"CID:" {cid} {status}</li> }
+                        view! { <li>"Tx:" {cid} {status}</li> }
                     })
                     .collect::<Vec<_>>()}
             </ul>

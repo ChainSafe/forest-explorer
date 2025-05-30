@@ -16,10 +16,10 @@ pub fn Faucet_Mainnet() -> impl IntoView {
     rpc_context.set(Provider::get_network_url(FaucetInfo::MainnetFIL.network()));
 
     view! {
-        <Title text="Filecoin Faucet - Mainnet" />
+        <Title text="🌐 Filecoin Faucet - Mainnet" />
         <Meta name="description" content="Filecoin Mainnet Faucet dispensing tokens for testing purposes." />
         <div>
-            <h1 class="header">Filecoin Mainnet Faucet</h1>
+            <h1 class="header">"🌐 Filecoin Mainnet Faucet"</h1>
             <Faucet faucet_info=FaucetInfo::MainnetFIL />
             <div class="description">
                 "This faucet distributes " {format_balance(drip_amount, token_unit)}

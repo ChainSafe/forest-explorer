@@ -16,13 +16,13 @@ pub fn Faucet_Calibnet() -> impl IntoView {
     rpc_context.set(Provider::get_network_url(FaucetInfo::CalibnetFIL.network()));
 
     view! {
-        <Title text="Filecoin Faucet - Calibration Network" />
+        <Title text="🧪 Filecoin Faucet - Calibration Network" />
         <Meta
             name="description"
             content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes."
         />
         <div>
-            <h1 class="header">Filecoin Calibnet Faucet</h1>
+            <h1 class="header">"🧪 Filecoin Calibnet Faucet"</h1>
             <Faucet faucet_info=FaucetInfo::CalibnetFIL />
         </div>
         <div class="description">
