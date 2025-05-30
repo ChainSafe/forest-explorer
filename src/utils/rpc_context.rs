@@ -1,4 +1,8 @@
+use alloy::network::TransactionBuilder as _;
+use alloy::primitives::Uint;
 use alloy::providers::{Provider as AlloyProvider, ProviderBuilder as AlloyProviderBuilder};
+use alloy::rpc::types::TransactionRequest;
+use alloy::signers::k256::sha2::digest::typenum::UInt;
 use alloy::{sol, sol_types::SolCall};
 use cid::Cid;
 use fvm_shared::address::{set_current_network, Address, Network};
@@ -13,7 +17,7 @@ use serde_json::{json, Value};
 use std::sync::LazyLock;
 use url::Url;
 
-use crate::faucet::constants::TokenType;
+use crate::faucet::constants::{ContractAddress, FaucetInfo, TokenType};
 use crate::utils::address::AddressAlloyExt as _;
 
 use super::lotus_json::{signed_message::SignedMessage, HasLotusJson, LotusJson};
@@ -77,7 +81,7 @@ impl RpcContext {
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct Provider {
-    url: Url,
+    pub url: Url,
 }
 
 async fn invoke_rpc_method<T: HasLotusJson + Clone>(
@@ -170,9 +174,6 @@ impl Provider {
                 }
 
                 let eth_address = wallet_address.into_eth_address()?;
-
-                let url = Url::parse("https://api.calibration.node.glif.io/rpc/v1")
-                    .expect("Invalid URL for Filecoin calibration network");
                 let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
                 let erc20 = ERC20::new(*contract_address, provider);
 
@@ -192,6 +193,66 @@ impl Provider {
                 Ok(token_amount)
             }
         }
+    }
+
+    pub async fn erc20_transfer_transaction(
+        &self,
+        from: Address,
+        to: Address,
+        faucet_info: FaucetInfo,
+    ) -> anyhow::Result<TransactionRequest> {
+        let contract_address = match faucet_info.token_type() {
+            TokenType::Erc20(addr) => addr,
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "Cannot create ERC20 transfer transaction for non-ERC20 token"
+                ))
+            }
+        };
+        let amount = faucet_info.drip_amount();
+        sol! {
+            #[sol(rpc)]
+            contract ERC20 {
+                function transfer(address to, uint256 amount) public returns (bool);
+            }
+        }
+
+        // let eth_from = from.into_eth_address()?;
+        let eth_to = to.into_eth_address()?;
+        let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
+        //let erc20 = ERC20::new(contract_address, provider.clone());
+
+        let amount = Uint::from_be_slice(&amount.atto().to_signed_bytes_be());
+
+        //let transfer_call = erc20.transfer(eth_to, amount).into_transaction_request();
+
+        //let gas_estimate = provider.estimate_gas(transfer_call).await?;
+        // let nonce = provider.get_transaction_count(eth_from).await?;
+        let nonce = self.mpool_get_nonce(from).await?;
+        let chain_id = provider.get_chain_id().await?;
+        // let gas_limit = gas_estimate + 10_000;
+        let gas_limit = 50_000_000; // Set a reasonable gas limit for the transaction
+        let gas_price = provider.get_gas_price().await? + 10_000_000; // Add a buffer to the gas
+                                                                      // price
+
+        let calldata = ERC20::transferCall::new((eth_to, amount)).abi_encode();
+
+        // === Build EIP-1559 Transaction ===
+        let tx = alloy::rpc::types::TransactionRequest::default()
+            .with_to(contract_address)
+            .with_chain_id(chain_id)
+            .with_nonce(nonce)
+            .with_gas_limit(gas_limit)
+            .with_gas_price(gas_price)
+            .with_input(calldata);
+
+        Ok(tx)
+    }
+
+    pub async fn send_eth_transaction_signed(&self, signed_tx: &[u8]) -> anyhow::Result<String> {
+        let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
+        let tx = provider.send_raw_transaction(signed_tx).await?;
+        Ok("success".to_string())
     }
 
     pub async fn estimate_gas(&self, msg: Message) -> anyhow::Result<Message> {
