@@ -2,9 +2,17 @@
 use crate::utils::key::{sign, Key};
 use crate::{
     faucet::constants::TokenType,
-    utils::lotus_json::{signed_message::SignedMessage, LotusJson},
+    utils::{
+        address::AddressAlloyExt as _,
+        lotus_json::{signed_message::SignedMessage, LotusJson},
+    },
 };
-use alloy::{network::TransactionBuilder, rpc::types::TransactionRequest};
+use alloy::{
+    network::TransactionBuilder,
+    primitives::{Uint, U128},
+    rpc::types::TransactionRequest,
+};
+use alloy::{sol, sol_types::SolCall};
 use anyhow::Result;
 use fvm_shared::{address::Address, message::Message};
 use leptos::{leptos_dom::logging::console_log, prelude::ServerFnError, server};
@@ -146,7 +154,7 @@ pub async fn secret_key(faucet_info: FaucetInfo) -> Result<Key, ServerFnError> {
     Key::try_from(key_info).map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 
-#[server]
+#[cfg(feature = "ssr")]
 pub async fn sign_with_eth_secret_key(
     tx_request: TransactionRequest,
     faucet_info: FaucetInfo,
@@ -223,4 +231,46 @@ pub async fn query_rate_limiter(faucet_info: FaucetInfo) -> Result<bool, ServerF
         .await?
         .json::<bool>()
         .await?)
+}
+
+#[server]
+pub async fn signed_erc20_transfer(
+    recipient: alloy::primitives::Address,
+    nonce: u64,
+    gas_price: u64,
+    faucet_info: FaucetInfo,
+) -> Result<Vec<u8>, ServerFnError> {
+    console_log("Signing ERC-20 transfer transaction");
+    let gas_price = 100_000_000_000u64; // 100 Gwei, this is a placeholder, should be replaced with
+                                        // actual gas price logic
+    let contract_address = match faucet_info.token_type() {
+        TokenType::Erc20(addr) => addr,
+        _ => {
+            return Err(ServerFnError::ServerError(
+                "This function is only for ERC-20 token transfers".to_string(),
+            ));
+        }
+    };
+    let amount = faucet_info.drip_amount();
+    sol! {
+        #[sol(rpc)]
+        contract ERC20 {
+            function transfer(address to, uint256 amount) public returns (bool);
+        }
+    }
+
+    let amount = Uint::from_be_slice(&amount.atto().to_signed_bytes_be());
+
+    let gas_limit = 30_000_000; // the actual gas usage should be ~ 20M, but we add some buffer
+    let calldata = ERC20::transferCall::new((recipient, amount)).abi_encode();
+
+    let tx = alloy::rpc::types::TransactionRequest::default()
+        .with_to(contract_address)
+        .with_chain_id(faucet_info.chain_id())
+        .with_nonce(nonce)
+        .with_gas_limit(gas_limit)
+        .with_gas_price(gas_price.into())
+        .with_input(calldata);
+
+    sign_with_eth_secret_key(tx.clone(), faucet_info).await
 }

@@ -1,7 +1,7 @@
 use super::constants::{FaucetInfo, TokenType};
 use super::server::{
-    faucet_address, faucet_address_str, faucet_eth_address, sign_with_eth_secret_key,
-    sign_with_secret_key,
+    faucet_address, faucet_address_str, faucet_eth_address, sign_with_secret_key,
+    signed_erc20_transfer,
 };
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
@@ -273,17 +273,18 @@ impl FaucetController {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
+                        // TODO move this logic to a separate function
                         let filecoin_rpc = Provider::from_network(network);
                         let faucet_address = faucet_address_str(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
                         let owner_fil_address = parse_address(&faucet_address, info.network())?;
 
-                        let unsigned_tx = filecoin_rpc
-                            .erc20_transfer_transaction(owner_fil_address, addr, info)
-                            .await?;
+                        let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
+                        let gas_price = filecoin_rpc.gas_price().await?;
+                        let eth_to = addr.into_eth_address()?;
 
-                        match sign_with_eth_secret_key(unsigned_tx, info).await {
+                        match signed_erc20_transfer(eth_to, nonce, gas_price, info).await {
                             Ok(signed) => {
                                 let hash =
                                     filecoin_rpc.send_eth_transaction_signed(&signed).await?;

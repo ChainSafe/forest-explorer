@@ -105,8 +105,19 @@ impl FaucetInfo {
             FaucetInfo::CalibnetUSDFC => TokenType::Erc20(
                 option_env!("CALIBNET_USDFC_CONTRACT_ADDRESS")
                     .and_then(|addr| alloy::primitives::Address::from_str(addr).ok())
+                    // Default, as present in: https://stg.usdfc.net/#/
                     .unwrap_or_else(|| address!("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")),
             ),
+        }
+    }
+
+    /// Returns the Ethereum chain ID for the given network. We could query the provider for this,
+    /// but since we know the chain ID for the networks we support, we can just return it directly
+    /// and avoid the overhead of a network request.
+    pub fn chain_id(&self) -> u64 {
+        match self.network() {
+            Network::Mainnet => 314,    // https://chainlist.org/chain/314
+            Network::Testnet => 314159, // chainlist.org/chain/314159
         }
     }
 }
