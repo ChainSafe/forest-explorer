@@ -138,6 +138,8 @@ mod tests {
         assert_eq!(mainnet_faucet.network(), Network::Mainnet);
         assert_eq!(mainnet_faucet.secret_key_name(), "SECRET_MAINNET_WALLET");
         assert!(mainnet_faucet.transaction_base_url().is_none());
+        assert_eq!(mainnet_faucet.token_type(), TokenType::Native);
+        assert_eq!(mainnet_faucet.chain_id(), 314);
 
         let calibnet_fil_faucet = FaucetInfo::CalibnetFIL;
         assert_eq!(calibnet_fil_faucet.drip_amount(), &*CALIBNET_DRIP_AMOUNT);
@@ -146,6 +148,8 @@ mod tests {
         assert_eq!(calibnet_fil_faucet.network(), Network::Testnet);
         assert_eq!(calibnet_fil_faucet.secret_key_name(), "SECRET_WALLET");
         assert!(calibnet_fil_faucet.transaction_base_url().is_none());
+        assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
+        assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
 
         let calibnet_usdfc_faucet = FaucetInfo::CalibnetUSDFC;
         assert_eq!(
@@ -160,5 +164,13 @@ mod tests {
             "SECRET_CALIBNET_USDFC_WALLET"
         );
         assert!(calibnet_usdfc_faucet.transaction_base_url().is_none());
+        assert_eq!(
+            calibnet_usdfc_faucet.token_type(),
+            TokenType::Erc20(
+                alloy::primitives::Address::from_str("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")
+                    .unwrap()
+            )
+        );
+        assert_eq!(calibnet_usdfc_faucet.chain_id(), 314159);
     }
 }

@@ -109,7 +109,11 @@ const PAGES = [
   {
     path: "/faucet",
     buttons: ["Home"],
-    links: ["Calibration Network Faucet", "Mainnet Network Faucet"],
+    links: ["💰 Calibration Network USDFC Faucet", "🧪 Calibration Network Faucet", "🌐 Mainnet Network Faucet"],
+  },
+  {
+    path: "/faucet/calibnet_usdfc",
+    buttons: ["Faucet List", "Transaction History", "Send"],
   },
   {
     path: "/faucet/calibnet",

@@ -55,7 +55,6 @@ pub trait AddressAlloyExt {
 
 // Implementation is mostly taken from Forest. See
 // [here](https://github.com/ChainSafe/forest/blob/ddcdfbfd93dc21fa61544f80222c2ede6f1ee21a/src/rpc/methods/eth/types.rs).
-// TODO: migrate tests if any
 impl AddressAlloyExt for Address {
     fn into_eth_address(self) -> anyhow::Result<alloy::primitives::Address> {
         match self.protocol() {
@@ -220,5 +219,47 @@ mod tests {
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
         assert_eq!(e.to_string(), "Invalid characters in address");
+    }
+
+    #[test]
+    fn test_id_address_conversion_to_eth() {
+        let address = Address::new_id(163506);
+        let eth_addr = address.into_eth_address().unwrap();
+        assert_eq!(
+            "0xff00000000000000000000000000000000027eb2",
+            eth_addr.to_string().to_lowercase()
+        );
+    }
+
+    #[test]
+    fn test_f4_address_conversion_to_eth() {
+        let address = parse_address(
+            "t410fggjqgebonr6mqgdbose4leqwmhs5wozmggllcua",
+            Network::Testnet,
+        )
+        .unwrap();
+
+        let eth_addr = address.into_eth_address().unwrap();
+        assert_eq!(
+            "0x319303102e6c7cc818617489c5921661e5db3b2c",
+            eth_addr.to_string().to_lowercase()
+        );
+    }
+
+    #[test]
+    fn test_invalid_address_conversion_to_eth() {
+        let faulty_addresses = [
+            "f1czwwxtss2edebp2t6um372cb5cnr6r6cn2ogsky",
+            "f3ribx3rtderwikhtvnkfoe34kqp5trkte7rcjwcovhd2ocygpojzsfz34hekw57g75r4uwte7mw4h2gp5g5pa",
+        ].map(|addr| {
+            parse_address(addr, Network::Mainnet).unwrap().into_eth_address()
+        });
+
+        for addr in faulty_addresses {
+            assert!(
+                addr.is_err(),
+                "Expected error for address conversion: {addr:?}"
+            );
+        }
     }
 }

@@ -291,7 +291,7 @@ impl FaucetController {
                                 console_log(&format!("Transaction sent successfully: {hash}"));
                             }
                             Err(e) => {
-                                console_log(&format!("Failed to sign transaction: {e}"));
+                                console_log(&format!("Failed to create signed transaction: {e}"));
                                 let rate_limit_seconds = info.rate_limit_seconds();
                                 faucet.send_limited.set(rate_limit_seconds as i32);
                             }
@@ -307,7 +307,7 @@ impl FaucetController {
                     "Invalid address: {}",
                     &self.faucet.target_address.get()
                 ));
-                log::error!("Error parsing address: {}", e);
+                log::error!("Error parsing address: {e}");
             }
         }
     }

@@ -6,7 +6,6 @@ use fvm_shared::address::{set_current_network, Address, Network};
 use fvm_shared::bigint::BigInt;
 use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
-use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use reqwest::Client;
 use serde_json::{json, Value};
@@ -147,49 +146,56 @@ impl Provider {
         invoke_rpc_method(&self.url, "Filecoin.StateNetworkVersion", &[Value::Null]).await
     }
 
+    /// Returns the balance of a wallet address in the specified token type.
     pub async fn wallet_balance(
         &self,
         wallet_address: Address,
         token_type: &TokenType,
     ) -> anyhow::Result<TokenAmount> {
         match token_type {
-            TokenType::Native => {
-                invoke_rpc_method(
-                    &self.url,
-                    "Filecoin.WalletBalance",
-                    &[serde_json::to_value(LotusJson(wallet_address))?],
-                )
-                .await
-            }
+            TokenType::Native => self.wallet_balance_native(wallet_address).await,
             TokenType::Erc20(contract_address) => {
-                //// TODO: hide it
-                sol! {
-                   #[sol(rpc)]
-                   contract ERC20 {
-                        function balanceOf(address owner) public view returns (uint256);
-                   }
-                }
-
-                let eth_address = wallet_address.into_eth_address()?;
-                let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
-                let erc20 = ERC20::new(*contract_address, provider);
-
-                let balance = erc20.balanceOf(eth_address).call().await?;
-                // Warning! The assumption here is that the decimals are the same for both Filecoin
-                // and given ERC20 token. This holds true for USDFC, but may not hold for other
-                // tokens.
-                let token_amount = TokenAmount::from_atto(BigInt::from_bytes_be(
-                    fvm_shared::bigint::Sign::Plus,
-                    &balance.to_be_bytes_trimmed_vec(),
-                ));
-
-                console_log(&format!(
-                    "Balance of {eth_address} in contract {contract_address}: {token_amount}"
-                ));
-
-                Ok(token_amount)
+                self.wallet_balance_erc20(wallet_address, *contract_address)
+                    .await
             }
         }
+    }
+
+    async fn wallet_balance_native(&self, wallet_address: Address) -> anyhow::Result<TokenAmount> {
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.WalletBalance",
+            &[serde_json::to_value(LotusJson(wallet_address))?],
+        )
+        .await
+    }
+
+    async fn wallet_balance_erc20(
+        &self,
+        wallet_address: Address,
+        contract_address: alloy::primitives::Address,
+    ) -> anyhow::Result<TokenAmount> {
+        sol! {
+           #[sol(rpc)]
+           contract ERC20 {
+                function balanceOf(address owner) public view returns (uint256);
+           }
+        }
+
+        let eth_address = wallet_address.into_eth_address()?;
+        let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
+        let erc20 = ERC20::new(contract_address, provider);
+
+        let balance = erc20.balanceOf(eth_address).call().await?;
+        // Warning! The assumption here is that the decimals are the same for both Filecoin
+        // and given ERC20 token. This holds true for USDFC, but may not hold for other
+        // tokens.
+        let token_amount = TokenAmount::from_atto(BigInt::from_bytes_be(
+            fvm_shared::bigint::Sign::Plus,
+            &balance.to_be_bytes_trimmed_vec(),
+        ));
+
+        Ok(token_amount)
     }
 
     pub async fn send_eth_transaction_signed(&self, signed_tx: &[u8]) -> anyhow::Result<String> {
