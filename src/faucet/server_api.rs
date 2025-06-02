@@ -97,7 +97,7 @@ pub async fn sign_with_secret_key(
             &key.key_info.private_key,
             cid.to_bytes().as_slice(),
         )
-        .map_err(|e| ServerFnError::new(e))?;
+        .map_err(ServerFnError::new)?;
         Ok(LotusJson(SignedMessage {
             message: msg,
             signature: sig,
