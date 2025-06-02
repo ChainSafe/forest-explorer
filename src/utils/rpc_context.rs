@@ -223,7 +223,7 @@ impl Provider {
     /// Returns the current gas price in attoFIL.
     ///
     /// Internally, it prunes the result from `u128` to `u64` but it should be safe as we don't
-    /// expect the gas price to exceed 1 FIL (1e18 attoFIL) in the foreseeable future.
+    /// expect the gas price to exceed 1 FIL (`1e18` attoFIL) in the foreseeable future.
     pub async fn gas_price(&self) -> anyhow::Result<u64> {
         let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
         provider

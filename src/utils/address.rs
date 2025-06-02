@@ -49,7 +49,7 @@ pub trait AddressAlloyExt {
     /// Converts the FVM address into an `alloy`-compatible Ethereum address. This is possible only
     /// for ID and Delegated addresses.
     fn into_eth_address(self) -> anyhow::Result<alloy::primitives::Address>;
-    /// Converts an ActorID into an `alloy`-compatible Ethereum address. The implementation is
+    /// Converts an [`ActorID`] into an `alloy`-compatible Ethereum address. The implementation is
     fn from_actor_id(id: ActorID) -> anyhow::Result<alloy::primitives::Address>;
 }
 

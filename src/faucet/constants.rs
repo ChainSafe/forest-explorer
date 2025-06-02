@@ -98,7 +98,7 @@ impl FaucetInfo {
     }
 
     /// Returns the type of token for the given faucet. This is used to determine how the token
-    /// is represented in the UI and how it is handled in the backend.
+    /// is represented in the interface and how it is handled in the backend.
     pub fn token_type(&self) -> TokenType {
         match self {
             FaucetInfo::MainnetFIL | FaucetInfo::CalibnetFIL => TokenType::Native,
