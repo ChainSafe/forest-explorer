@@ -1,4 +1,5 @@
 use crate::utils::format::{format_url, SearchPath};
+use crate::utils::transaction_id::TransactionId;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use url::Url;
@@ -7,7 +8,7 @@ use crate::faucet::controller::FaucetController;
 
 #[component]
 pub fn TransactionList(
-    messages: Vec<(String, bool)>,
+    messages: Vec<(TransactionId, bool)>,
     faucet_tx_base_url: RwSignal<Option<Url>>,
 ) -> impl IntoView {
     view! {

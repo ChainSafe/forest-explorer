@@ -9,7 +9,6 @@ use fvm_shared::message::Message;
 use leptos::prelude::*;
 use reqwest::Client;
 use serde_json::{json, Value};
-use std::str::FromStr;
 use std::sync::LazyLock;
 use url::Url;
 
@@ -198,10 +197,13 @@ impl Provider {
         Ok(token_amount)
     }
 
-    pub async fn send_eth_transaction_signed(&self, signed_tx: &[u8]) -> anyhow::Result<String> {
+    pub async fn send_eth_transaction_signed(&self, signed_tx: &[u8]) -> anyhow::Result<TxHash> {
         let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
-        let tx = provider.send_raw_transaction(signed_tx).await?;
-        Ok(tx.tx_hash().to_string())
+        Ok(provider
+            .send_raw_transaction(signed_tx)
+            .await?
+            .tx_hash()
+            .to_owned())
     }
 
     pub async fn estimate_gas(&self, msg: Message) -> anyhow::Result<Message> {
@@ -265,10 +267,8 @@ impl Provider {
         .await
     }
 
-    pub async fn check_eth_transaction_confirmed(&self, eth_hash: &str) -> anyhow::Result<bool> {
+    pub async fn check_eth_transaction_confirmed(&self, tx_hash: TxHash) -> anyhow::Result<bool> {
         let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
-        // TODO: strongly type this
-        let tx_hash = TxHash::from_str(eth_hash)?;
         match provider.get_transaction_receipt(tx_hash).await? {
             Some(receipt) => Ok(receipt.block_number.is_some()),
             None => Ok(false),

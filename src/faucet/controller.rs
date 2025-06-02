@@ -6,8 +6,8 @@ use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
+use crate::utils::transaction_id::TransactionId;
 use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
-use cid::Cid;
 use fvm_shared::econ::TokenAmount;
 use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
@@ -95,43 +95,41 @@ impl FaucetController {
             .sent_messages
             .get_untracked()
             .into_iter()
-            .filter_map(|(cid, sent)| if !sent { Some(cid) } else { None })
+            .filter_map(|(tx_id, sent)| if !sent { Some(tx_id) } else { None })
             .collect::<Vec<_>>();
 
         let network = self.info.network();
         let messages = self.faucet.sent_messages;
         spawn_local(catch_all(self.faucet.error_messages, async move {
-            // for each pending message, check if it has been confirmed
-            // TODO: handle eth transactions
             for id in pending {
-                if let Ok(cid) = Cid::try_from(id.clone()) {
-                    if let Some(lookup) = Provider::from_network(network)
-                        .state_search_msg(cid)
-                        .await?
-                    {
-                        messages.update(|messages| {
-                            for (cid, sent) in messages {
-                                if cid == &lookup.message.to_string() {
-                                    *sent = true;
+                match id {
+                    TransactionId::Native(cid) => {
+                        if let Some(lookup) = Provider::from_network(network)
+                            .state_search_msg(cid)
+                            .await?
+                        {
+                            messages.update(|messages| {
+                                for (cid, sent) in messages {
+                                    if *cid == TransactionId::Native(lookup.message) {
+                                        *sent = true;
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
-                    // TODO: use enum or Either
-                    // right now assume eth hash if not a valid Cid
-                } else {
-                    let eth_hash = id;
-                    if let Ok(true) = Provider::from_network(network)
-                        .check_eth_transaction_confirmed(&eth_hash)
-                        .await
-                    {
-                        messages.update(|messages| {
-                            for (id, sent) in messages {
-                                if *id == eth_hash {
-                                    *sent = true;
+                    TransactionId::Eth(eth_hash) => {
+                        if let Ok(true) = Provider::from_network(network)
+                            .check_eth_transaction_confirmed(eth_hash)
+                            .await
+                        {
+                            messages.update(|messages| {
+                                for (id, sent) in messages {
+                                    if *id == TransactionId::Eth(eth_hash) {
+                                        *sent = true;
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 }
             }
@@ -178,7 +176,7 @@ impl FaucetController {
         });
     }
 
-    pub fn get_sent_messages(&self) -> Vec<(String, bool)> {
+    pub fn get_sent_messages(&self) -> Vec<(TransactionId, bool)> {
         self.faucet.sent_messages.get().clone()
     }
 
@@ -233,7 +231,7 @@ impl FaucetController {
                             Ok(LotusJson(smsg)) => {
                                 let cid = rpc.mpool_push(smsg).await?;
                                 faucet.sent_messages.update(|messages| {
-                                    messages.push((cid.to_string(), false));
+                                    messages.push((TransactionId::Native(cid), false));
                                 });
                                 log::info!("Sent message: {:?}", cid);
                             }
@@ -282,13 +280,12 @@ impl FaucetController {
 
                         match signed_erc20_transfer(eth_to, nonce, gas_price, info).await {
                             Ok(signed) => {
-                                let hash =
+                                let tx_id =
                                     filecoin_rpc.send_eth_transaction_signed(&signed).await?;
-                                // let cid = eth_hash_to_cid(&hash)?;
                                 faucet.sent_messages.update(|messages| {
-                                    messages.push((hash.clone(), false));
+                                    messages.push((TransactionId::Eth(tx_id), false));
                                 });
-                                console_log(&format!("Transaction sent successfully: {hash}"));
+                                console_log(&format!("Transaction sent successfully: {tx_id}"));
                             }
                             Err(e) => {
                                 console_log(&format!("Failed to create signed transaction: {e}"));
