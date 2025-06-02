@@ -1,16 +1,12 @@
 use super::constants::{FaucetInfo, TokenType};
-use super::server::{
-    faucet_address, faucet_address_str, faucet_eth_address, sign_with_secret_key,
-    signed_erc20_transfer,
+use super::server_api::{
+    faucet_address, faucet_address_str, sign_with_secret_key, signed_erc20_transfer,
 };
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
 use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
-use alloy::providers::{Provider as AlloyProvider, ProviderBuilder as AlloyProviderBuilder};
-use alloy::rpc::types::TransactionRequest;
-use alloy::{sol, sol_types::SolCall};
 use cid::Cid;
 use fvm_shared::econ::TokenAmount;
 use leptos::leptos_dom::logging::console_log;
@@ -269,11 +265,11 @@ impl FaucetController {
         let network = self.info.network();
         let info = self.info;
         match parse_address(&self.faucet.target_address.get(), network) {
-            Ok(addr) => {
+            Ok(recipient) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
-                        // TODO move this logic to a separate function
+
                         let filecoin_rpc = Provider::from_network(network);
                         let faucet_address = faucet_address_str(info)
                             .await
@@ -282,7 +278,7 @@ impl FaucetController {
 
                         let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
                         let gas_price = filecoin_rpc.gas_price().await?;
-                        let eth_to = addr.into_eth_address()?;
+                        let eth_to = recipient.into_eth_address()?;
 
                         match signed_erc20_transfer(eth_to, nonce, gas_price, info).await {
                             Ok(signed) => {

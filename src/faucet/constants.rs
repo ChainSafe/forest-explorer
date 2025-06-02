@@ -17,7 +17,7 @@ static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
 
 pub type ContractAddress = alloy::primitives::Address;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TokenType {
     /// Filecoin native token
     Native,
