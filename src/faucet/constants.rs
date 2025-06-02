@@ -1,4 +1,4 @@
-use alloy::{hex::FromHex as _, primitives::address};
+use alloy::primitives::address;
 use fvm_shared::{address::Network, econ::TokenAmount};
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr as _, sync::LazyLock};
@@ -114,6 +114,7 @@ impl FaucetInfo {
     /// Returns the Ethereum chain ID for the given network. We could query the provider for this,
     /// but since we know the chain ID for the networks we support, we can just return it directly
     /// and avoid the overhead of a network request.
+    #[cfg(any(test, feature = "ssr"))]
     pub fn chain_id(&self) -> u64 {
         match self.network() {
             Network::Mainnet => 314,    // https://chainlist.org/chain/314

@@ -1,5 +1,4 @@
 use crate::utils::format::{format_url, SearchPath};
-use ::cid::Cid;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use url::Url;

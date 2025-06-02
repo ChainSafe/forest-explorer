@@ -1,21 +1,18 @@
 //! This file contains the server-side API for the faucet functionality. More fine grained,
 //! server-side functions (that are not exposed to the client) are in the `[`super::server`] module.
 
-use crate::{
-    faucet::constants::TokenType,
-    utils::{
-        address::AddressAlloyExt as _,
-        lotus_json::{signed_message::SignedMessage, LotusJson},
-    },
-};
-use alloy::{network::TransactionBuilder as _, primitives::Uint, rpc::types::TransactionRequest};
+use crate::utils::lotus_json::{signed_message::SignedMessage, LotusJson};
+#[cfg(feature = "ssr")]
 use alloy::{sol, sol_types::SolCall};
 use anyhow::Result;
 use fvm_shared::{address::Address, message::Message};
-use leptos::{leptos_dom::logging::console_log, prelude::ServerFnError, server};
+use leptos::{prelude::ServerFnError, server};
 
 #[cfg(feature = "ssr")]
 use super::server::{check_rate_limit, read_faucet_secret, secret_key, sign_with_eth_secret_key};
+
+#[cfg(feature = "ssr")]
+use crate::faucet::constants::TokenType;
 
 use super::constants::FaucetInfo;
 /// Returns the faucet address. This assumes the faucet in place is a native token faucet.
@@ -83,7 +80,6 @@ pub async fn sign_with_secret_key(
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
     use crate::utils::key::sign;
     use crate::utils::lotus_json::signed_message::message_cid;
-    use leptos::server_fn::error;
     use send_wrapper::SendWrapper;
     let LotusJson(msg) = msg;
     let cid = message_cid(&msg);
@@ -123,7 +119,8 @@ pub async fn signed_erc20_transfer(
     gas_price: u64,
     faucet_info: FaucetInfo,
 ) -> Result<Vec<u8>, ServerFnError> {
-    console_log(&format!("Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}"));
+    use alloy::{network::TransactionBuilder as _, primitives::Uint};
+    log::info!("Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}");
     sol! {
         #[sol(rpc)]
         contract ERC20 {

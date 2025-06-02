@@ -1,3 +1,4 @@
+#![cfg(feature = "ssr")]
 use std::str::FromStr as _;
 
 use crate::faucet::constants::FaucetInfo;
