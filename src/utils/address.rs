@@ -24,7 +24,12 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
 
     if s.len() > 2 && s.starts_with("0x") {
         // Expecting an eth address, perform further validation
-        ensure!(s.len() == ETH_ADDRESS_LENGTH, "Invalid address length");
+        ensure!(
+            s.len() == ETH_ADDRESS_LENGTH,
+            "Expected address length {}, got {}",
+            ETH_ADDRESS_LENGTH,
+            s.len(),
+        );
         ensure!(
             s.chars().skip(2).all(|c| c.is_ascii_hexdigit()),
             "Invalid characters in address"

@@ -45,14 +45,14 @@ pub fn ErrorMessages(
                     view! {
                         <div
                             class=move || {
-                                if fading_messages.get().contains(&id) { "error-alert--faded" } else { "error-alert" }
+                                if fading_messages.get().contains(&id) { "error-alert-faded" } else { "error-alert" }
                             }
                             role="alert"
                         >
                             <span class="block sm:inline">{error}</span>
                             <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
                                 <svg
-                                    class="error-icon"
+                                    class="close-icon"
                                     role="button"
                                     xmlns="http://www.w3.org/2000/svg"
                                     viewBox="0 0 20 20"

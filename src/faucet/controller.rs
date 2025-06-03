@@ -214,12 +214,13 @@ impl FaucetController {
                     faucet.send_disabled.set(false);
                 });
             }
-            Err(e) => {
-                self.add_error_message(format!(
-                    "Invalid address: {}",
-                    &self.faucet.target_address.get()
-                ));
-                log::error!("Error parsing address: {}", e);
+            Err(err) => {
+                self.add_error_message(format!("Invalid address: {}", err));
+                log::error!(
+                    "Error parsing address {}: {}",
+                    &self.faucet.target_address.get(),
+                    err
+                );
             }
         }
     }
