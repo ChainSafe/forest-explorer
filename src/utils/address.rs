@@ -6,7 +6,7 @@ use fvm_shared::ActorID;
 const ETH_ADDRESS_LENGTH: usize = 42;
 const EAM_NAMESPACE: ActorID = 10;
 
-fn is_valid_prefix(s: &str, n: Network) -> bool {
+pub fn is_valid_prefix(s: &str, n: Network) -> bool {
     if s.len() < 2 {
         return false;
     }
