@@ -1,7 +1,5 @@
 use super::constants::{FaucetInfo, TokenType};
-use super::server_api::{
-    faucet_address, faucet_address_str, sign_with_secret_key, signed_erc20_transfer,
-};
+use super::server_api::{faucet_address, sign_with_secret_key, signed_erc20_transfer};
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
@@ -45,10 +43,10 @@ impl FaucetController {
             }
         });
         let faucet_address = LocalResource::new(move || async move {
-            faucet_address_str(faucet_info)
+            faucet_address(faucet_info)
                 .await
                 .ok()
-                .and_then(|s| parse_address(&s, network).ok())
+                .and_then(|s| s.to_filecoin_address(network).ok())
         });
         let token_type = faucet_info.token_type();
         let faucet_balance = LocalResource::new(move || {
@@ -219,9 +217,11 @@ impl FaucetController {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         let rpc = Provider::from_network(network);
-                        let LotusJson(from) = faucet_address(info)
+                        let from = faucet_address(info)
                             .await
-                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
+                            .to_filecoin_address(network)?;
+
                         faucet.send_disabled.set(true);
                         let nonce = rpc.mpool_get_nonce(from).await?;
                         let mut msg = message_transfer(from, addr, info.drip_amount().clone());
@@ -269,10 +269,10 @@ impl FaucetController {
                         faucet.send_disabled.set(true);
 
                         let filecoin_rpc = Provider::from_network(network);
-                        let faucet_address = faucet_address_str(info)
+                        let owner_fil_address = faucet_address(info)
                             .await
-                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
-                        let owner_fil_address = parse_address(&faucet_address, info.network())?;
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
+                            .to_filecoin_address(network)?;
 
                         let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
                         let gas_price = filecoin_rpc.gas_price().await?;

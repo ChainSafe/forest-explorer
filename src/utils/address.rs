@@ -2,6 +2,31 @@ use anyhow::{bail, ensure};
 use fvm_shared::address::{Address, DelegatedAddress, Network, Protocol};
 use fvm_shared::ActorID;
 use leptos::logging::error;
+use serde::{Deserialize, Serialize};
+
+use super::lotus_json::LotusJson;
+
+/// Represents an address that can be either a native Filecoin or Ethereum address and can be sent
+/// to/from the backend for further processing.
+///
+/// Note: the [`Address`] cannot be used directly in the frontend because it is not serializable.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AnyAddress {
+    Filecoin(LotusJson<Address>),
+    Ethereum(alloy::primitives::Address),
+}
+
+impl AnyAddress {
+    /// Converts the underlying address to an [`Address`] type.
+    ///
+    /// Note: the conversion might fail if the network is not set correctly.
+    pub fn to_filecoin_address(&self, network: Network) -> anyhow::Result<Address> {
+        match self {
+            AnyAddress::Filecoin(addr) => parse_address(&addr.0.to_string(), network),
+            AnyAddress::Ethereum(addr) => parse_address(&addr.to_string(), network),
+        }
+    }
+}
 
 // '0x' + 20bytes
 const ETH_ADDRESS_LENGTH: usize = 42;

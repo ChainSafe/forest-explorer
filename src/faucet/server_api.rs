@@ -1,7 +1,10 @@
 //! This file contains the server-side API for the faucet functionality. More fine grained,
 //! server-side functions (that are not exposed to the client) are in the `server` module.
 
-use crate::utils::lotus_json::{signed_message::SignedMessage, LotusJson};
+use crate::utils::{
+    address::AnyAddress,
+    lotus_json::{signed_message::SignedMessage, LotusJson},
+};
 use anyhow::Result;
 use fvm_shared::{address::Address, message::Message};
 use leptos::{prelude::ServerFnError, server};
@@ -18,7 +21,7 @@ use crate::faucet::constants::TokenType;
 use super::constants::FaucetInfo;
 /// Returns the faucet address. This assumes the faucet in place is a native token faucet.
 #[server]
-pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<LotusJson<Address>, ServerFnError> {
+async fn faucet_fil_address(faucet_info: FaucetInfo) -> Result<LotusJson<Address>, ServerFnError> {
     if matches!(faucet_info.token_type(), TokenType::Erc20(_)) {
         return Err(ServerFnError::ServerError(
             "This function is only for native token faucets".to_string(),
@@ -28,13 +31,13 @@ pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<LotusJson<Address
     Ok(LotusJson(key.address))
 }
 
-/// Returns the faucet address as a string, deriving it from the faucet information, and in turn,
+/// Returns the faucet address, deriving it from the faucet information, and in turn,
 /// from the secret key stored in the backend.
 ///
 /// For native token faucets, it will return a Filecoin address, while for ERC-20 token faucets,
 /// it will return an Ethereum address.
 #[server]
-pub async fn faucet_address_str(faucet_info: FaucetInfo) -> Result<String, ServerFnError> {
+pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<AnyAddress, ServerFnError> {
     use fvm_shared::address;
     match faucet_info.token_type() {
         TokenType::Native => {
@@ -46,12 +49,12 @@ pub async fn faucet_address_str(faucet_info: FaucetInfo) -> Result<String, Serve
                     address::set_current_network(address::Network::Testnet);
                 }
             }
-            let LotusJson(addr) = faucet_address(faucet_info).await?;
-            Ok(addr.to_string())
+            let addr = faucet_fil_address(faucet_info).await?;
+            Ok(AnyAddress::Filecoin(addr))
         }
         TokenType::Erc20(_) => {
             let address = faucet_eth_address(faucet_info).await?;
-            Ok(address.to_string())
+            Ok(AnyAddress::Ethereum(address))
         }
     }
 }
@@ -59,7 +62,7 @@ pub async fn faucet_address_str(faucet_info: FaucetInfo) -> Result<String, Serve
 /// Returns the faucet address as an Ethereum address, which is used for ERC-20 token faucets.
 /// This assumes that the faucet is configured to use an ERC-20 token.
 #[server]
-pub async fn faucet_eth_address(
+async fn faucet_eth_address(
     faucet_info: FaucetInfo,
 ) -> Result<alloy::primitives::Address, ServerFnError> {
     if matches!(faucet_info.token_type(), TokenType::Native) {
