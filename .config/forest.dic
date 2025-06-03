@@ -51,6 +51,7 @@ EIP155
 enum
 Enum
 EOF
+ERC20
 Ethereum
 eth
 exa
@@ -140,6 +141,7 @@ uncompress
 unrepresentable
 untrusted
 URL
+USDFC
 UUID
 validator/S
 varint

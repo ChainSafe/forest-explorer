@@ -1,12 +1,13 @@
 //! This file contains the server-side API for the faucet functionality. More fine grained,
-//! server-side functions (that are not exposed to the client) are in the `[`super::server`] module.
+//! server-side functions (that are not exposed to the client) are in the `server` module.
 
 use crate::utils::lotus_json::{signed_message::SignedMessage, LotusJson};
-#[cfg(feature = "ssr")]
-use alloy::{sol, sol_types::SolCall};
 use anyhow::Result;
 use fvm_shared::{address::Address, message::Message};
 use leptos::{prelude::ServerFnError, server};
+
+#[cfg(feature = "ssr")]
+use alloy::{sol, sol_types::SolCall};
 
 #[cfg(feature = "ssr")]
 use super::server::{check_rate_limit, read_faucet_secret, secret_key, sign_with_eth_secret_key};
@@ -119,7 +120,9 @@ pub async fn signed_erc20_transfer(
     gas_price: u64,
     faucet_info: FaucetInfo,
 ) -> Result<Vec<u8>, ServerFnError> {
-    use alloy::{network::TransactionBuilder as _, primitives::Uint};
+    use crate::utils::conversions::TokenAmountAlloyExt as _;
+    use alloy::network::TransactionBuilder as _;
+
     log::info!("Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}");
     sol! {
         #[sol(rpc)]
@@ -136,8 +139,7 @@ pub async fn signed_erc20_transfer(
             ));
         }
     };
-    let amount = faucet_info.drip_amount();
-    let amount = Uint::from_be_slice(&amount.atto().to_signed_bytes_be());
+    let amount = faucet_info.drip_amount().to_alloy_amount();
 
     let gas_limit = 30_000_000; // the actual gas usage should be ~ 20M, but we add some buffer
     let calldata = ERC20::transferCall::new((recipient, amount)).abi_encode();

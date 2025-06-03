@@ -1,4 +1,5 @@
 pub mod address;
+pub mod conversions;
 pub mod error;
 pub mod format;
 pub mod key;

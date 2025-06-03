@@ -1,9 +1,9 @@
 use alloy::primitives::TxHash;
 use alloy::providers::{Provider as AlloyProvider, ProviderBuilder as AlloyProviderBuilder};
 use alloy::sol;
+use anyhow::Context as _;
 use cid::Cid;
 use fvm_shared::address::{set_current_network, Address, Network};
-use fvm_shared::bigint::BigInt;
 use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
 use leptos::prelude::*;
@@ -14,6 +14,7 @@ use url::Url;
 
 use crate::faucet::constants::TokenType;
 use crate::utils::address::AddressAlloyExt as _;
+use crate::utils::conversions::TokenAmountAlloyExt as _;
 
 use super::lotus_json::{signed_message::SignedMessage, HasLotusJson, LotusJson};
 
@@ -160,6 +161,7 @@ impl Provider {
         }
     }
 
+    /// Returns the balance of a wallet address in native Filecoin token.
     async fn wallet_balance_native(&self, wallet_address: Address) -> anyhow::Result<TokenAmount> {
         invoke_rpc_method(
             &self.url,
@@ -169,6 +171,7 @@ impl Provider {
         .await
     }
 
+    /// Returns the balance of a wallet address in an ERC-20 token.
     async fn wallet_balance_erc20(
         &self,
         wallet_address: Address,
@@ -189,12 +192,7 @@ impl Provider {
         // Warning! The assumption here is that the decimals are the same for both Filecoin
         // and given ERC20 token. This holds true for USDFC, but may not hold for other
         // tokens.
-        let token_amount = TokenAmount::from_atto(BigInt::from_bytes_be(
-            fvm_shared::bigint::Sign::Plus,
-            &balance.to_be_bytes_trimmed_vec(),
-        ));
-
-        Ok(token_amount)
+        Ok(TokenAmount::from_alloy_amount(&balance))
     }
 
     pub async fn send_eth_transaction_signed(&self, signed_tx: &[u8]) -> anyhow::Result<TxHash> {
@@ -238,7 +236,7 @@ impl Provider {
             .get_gas_price()
             .await
             .map(|price| price as u64)
-            .map_err(|e| anyhow::anyhow!("Failed to get gas price: {e}"))
+            .context("Failed to get gas price")
     }
 
     pub async fn mpool_push(&self, smsg: SignedMessage) -> anyhow::Result<Cid> {
@@ -267,10 +265,11 @@ impl Provider {
         .await
     }
 
+    /// Checks if an Ethereum transaction is confirmed by checking if it is included in any block.
     pub async fn check_eth_transaction_confirmed(&self, tx_hash: TxHash) -> anyhow::Result<bool> {
         let provider = AlloyProviderBuilder::new().connect_http(self.url.clone());
         match provider.get_transaction_receipt(tx_hash).await? {
-            Some(receipt) => Ok(receipt.block_number.is_some()),
+            Some(receipt) => Ok(receipt.block_number.is_some() && receipt.status()),
             None => Ok(false),
         }
     }
