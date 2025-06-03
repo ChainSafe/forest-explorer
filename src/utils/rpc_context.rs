@@ -189,9 +189,6 @@ impl Provider {
         let erc20 = ERC20::new(contract_address, provider);
 
         let balance = erc20.balanceOf(eth_address).call().await?;
-        // Warning! The assumption here is that the decimals are the same for both Filecoin
-        // and given ERC20 token. This holds true for USDFC, but may not hold for other
-        // tokens.
         Ok(TokenAmount::from_alloy_amount(&balance))
     }
 
