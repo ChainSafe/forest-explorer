@@ -114,14 +114,14 @@
     .lighting-icon {
         @apply h-5 w-5 text-blue-500 mr-2 flex-shrink-0;
     }
-    .error-icon {
+    .close-icon {
         @apply fill-current h-6 w-6 text-red-500;
     }
     .error-alert {
-        @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96;
+        @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-auto pr-10;
     }
-    .error-alert--faded {
-        @apply opacity-0 transition-opacity bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-96;
+    .error-alert-faded {
+        @apply opacity-0 transition-opacity bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 w-auto pr-10;
     }
     @keyframes l20-1 {
         0% {

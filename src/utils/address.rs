@@ -24,7 +24,12 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
 
     if s.len() > 2 && s.starts_with("0x") {
         // Expecting an eth address, perform further validation
-        ensure!(s.len() == ETH_ADDRESS_LENGTH, "Invalid address length");
+        ensure!(
+            s.len() == ETH_ADDRESS_LENGTH,
+            "Expected address length {}, got {}",
+            ETH_ADDRESS_LENGTH,
+            s.len(),
+        );
         ensure!(
             s.chars().skip(2).all(|c| c.is_ascii_hexdigit()),
             "Invalid characters in address"
@@ -132,7 +137,14 @@ mod tests {
         let addr_str = "0xd3";
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
-        assert_eq!(e.to_string(), "Invalid address length");
+        assert_eq!(
+            e.to_string(),
+            format!(
+                "Expected address length {}, got {}",
+                ETH_ADDRESS_LENGTH,
+                addr_str.len()
+            )
+        );
     }
 
     #[test]
@@ -140,7 +152,14 @@ mod tests {
         let addr_str = "0xd388ab098ed3e84c0d808776440b48f68519849812";
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
-        assert_eq!(e.to_string(), "Invalid address length");
+        assert_eq!(
+            e.to_string(),
+            format!(
+                "Expected address length {}, got {}",
+                ETH_ADDRESS_LENGTH,
+                addr_str.len()
+            )
+        );
     }
 
     #[test]
