@@ -28,13 +28,13 @@ mod ssr_imports {
             <!DOCTYPE html>
             <html lang="en">
                 <head>
-                    <title>Filecoin Forest Explorer Faucet - Get Free tFIL and FIL</title>
+                    <title>Filecoin Forest Explorer Faucet - Get Free tFIL, USDFC and FIL</title>
                     <meta charset="utf-8" />
                     <meta name="robots" content="index, follow" />
                     <meta name="viewport" content="width=device-width, initial-scale=1" />
                     <meta
                         name="description"
-                        content="Get free tFIL and FIL on the Filecoin Forest Explorer Faucet by ChainSafe. Quickly connect your wallet, request tokens, and start building or experimenting on the Filecoin testnet or mainnet with ease."
+                        content="Get free tFIL, USDFC and FIL on the Filecoin Forest Explorer Faucet by ChainSafe. Quickly connect your wallet, request tokens, and start building or experimenting on the Filecoin testnet or mainnet with ease."
                     />
 
                     <AutoReload options=options.clone() />

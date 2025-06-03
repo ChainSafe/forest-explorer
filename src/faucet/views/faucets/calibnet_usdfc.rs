@@ -31,5 +31,21 @@ pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
             " per request. It is rate-limited to 1 request per " {rate_limit_seconds}
             " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
         </div>
+        <div class="description">
+            <p>
+                "You can also obtain testnet USDFC by minting it and using tFIL as collateral with the "
+                <a class="text-blue-600" rel="noopener noreferrer" href="https://app.usdfc.net/#/" target="_blank">
+                    "USDFC testnet application."
+                </a> " For more information, visit the "
+                <a
+                    class="text-blue-600"
+                    rel="noopener noreferrer"
+                    href="https://docs.secured.finance/usdfc-stablecoin/getting-started/getting-test-usdfc-on-testnet"
+                    target="_blank"
+                >
+                    "USDFC documentation"
+                </a>.
+            </p>
+        </div>
     }
 }

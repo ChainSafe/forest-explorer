@@ -13,7 +13,7 @@ static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
 
 /// The amount of calibnet `USDFC` to be dripped to the user. This corresponds to 1 `tUSDFC`.
 static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
-    LazyLock::new(|| TokenAmount::from_whole(1));
+    LazyLock::new(|| TokenAmount::from_whole(5));
 
 pub type ContractAddress = alloy::primitives::Address;
 
