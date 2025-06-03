@@ -154,9 +154,7 @@ pub fn Faucet(faucet_info: FaucetInfo) -> impl IntoView {
             }}
         </div>
         <div class="nav-container">
-            <Show
-                when=move || is_valid_prefix(&faucet.get().get_sender_address(), target_network)
-            >
+            <Show when=move || is_valid_prefix(&faucet.get().get_sender_address(), target_network)>
                 <TransactionHistoryButton faucet=faucet faucet_tx_base_url=faucet_tx_base_url />
             </Show>
             <GotoFaucetList />
