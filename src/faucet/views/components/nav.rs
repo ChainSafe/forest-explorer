@@ -5,8 +5,10 @@ use leptos::{component, view, IntoView};
 pub fn GotoFaucetList() -> impl IntoView {
     view! {
         <div class="text-center">
-            <button class="btn">
-                <a href="/faucet">Faucet List</a>
+            <button>
+                <a class="btn" href="/faucet">
+                    Faucet List
+                </a>
             </button>
         </div>
     }
@@ -16,8 +18,10 @@ pub fn GotoFaucetList() -> impl IntoView {
 pub fn GotoHome() -> impl IntoView {
     view! {
         <div class="text-center">
-            <button class="btn">
-                <a href="/">Home</a>
+            <button>
+                <a class="btn" href="/">
+                    Home
+                </a>
             </button>
         </div>
     }
