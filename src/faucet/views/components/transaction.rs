@@ -59,8 +59,8 @@ pub fn TransactionHistoryButton(
                     match format_url(base_url, SearchPath::Address, &faucet.get().get_sender_address()) {
                         Ok(addr_url) => {
                             view! {
-                                <button class="btn">
-                                    <a href=addr_url.to_string() target="_blank" rel="noopener noreferrer">
+                                <button>
+                                    <a class="btn" href=addr_url.to_string() target="_blank" rel="noopener noreferrer">
                                         "Transaction History"
                                     </a>
                                 </button>

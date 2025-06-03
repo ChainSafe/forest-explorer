@@ -88,7 +88,7 @@
         @apply py-4 text-center;
     }
     .btn {
-        @apply bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg;
+        @apply block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg;
     }
     .btn-enabled {
         @apply bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r;
@@ -97,7 +97,7 @@
         @apply bg-gray-400 text-white font-bold py-2 px-4 rounded-r;
     }
     .btn-topup {
-        @apply bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm py-1 px-2 rounded;
+        @apply block bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm py-1 px-2 rounded;
     }
     .dropdown {
         @apply relative w-64;
