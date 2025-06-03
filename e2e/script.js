@@ -19,6 +19,17 @@ export const options = {
 
 const BASE_URL = "http://127.0.0.1:8787";
 
+// Retry until truthy or timeout
+async function retry(fn, timeout = 30000, interval = 1000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const result = await fn();
+    if (result) return result;
+    await new Promise((r) => setTimeout(r, interval));
+  }
+  return null;
+}
+
 // Check if the path is reachable
 async function checkPath(page, path) {
   const res = await page.goto(`${BASE_URL}${path}`, { timeout: 60_000 });
@@ -27,15 +38,14 @@ async function checkPath(page, path) {
 
 // Check if the button exists, is visible, and is enabled
 async function checkButton(page, path, buttonText) {
-  const buttons = await page.$$("button");
-  let btn = null;
-  for (const b of buttons) {
-    const text = await b.evaluate((el) => el.textContent.trim());
-    if (text === buttonText) {
-      btn = b;
-      break;
+  const btn = await retry(async () => {
+    const buttons = await page.$$("button");
+    for (const b of buttons) {
+      const text = await b.evaluate((el) => el.textContent.trim());
+      if (text === buttonText) return b;
     }
-  }
+    return null;
+  });
 
   // Check if the button exists
   const exists = btn !== null;
