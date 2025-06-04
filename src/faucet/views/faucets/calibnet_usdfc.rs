@@ -34,7 +34,7 @@ pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
         <div class="description">
             <p>
                 "You can also obtain testnet USDFC by minting it and using tFIL as collateral with the "
-                <a class="text-blue-600" rel="noopener noreferrer" href="https://app.usdfc.net/#/" target="_blank">
+                <a class="text-blue-600" rel="noopener noreferrer" href="https://stg.usdfc.net/#/" target="_blank">
                     "USDFC testnet application."
                 </a> " For more information, visit the "
                 <a
