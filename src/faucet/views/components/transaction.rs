@@ -18,8 +18,8 @@ pub fn TransactionList(
                 {messages
                     .into_iter()
                     .map(|(msg, sent)| {
-                        let (cid, status) = if sent {
-                            let cid = faucet_tx_base_url
+                        let (tx, status) = if sent {
+                            let tx = faucet_tx_base_url
                                 .get()
                                 .as_ref()
                                 .and_then(|base_url| {
@@ -34,12 +34,12 @@ pub fn TransactionList(
                                         .into_any()
                                 })
                                 .unwrap_or_else(|| view! { {msg.to_string()} }.into_any());
-                            (cid, "(confirmed)")
+                            (tx, "(confirmed)")
                         } else {
-                            let cid = view! { {msg.to_string()} }.into_any();
-                            (cid, "(pending)")
+                            let tx = view! { {msg.to_string()} }.into_any();
+                            (tx, "(pending)")
                         };
-                        view! { <li>"Tx:" {cid} {status}</li> }
+                        view! { <li>"Tx:" {tx} {status}</li> }
                     })
                     .collect::<Vec<_>>()}
             </ul>

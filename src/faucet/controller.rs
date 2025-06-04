@@ -22,6 +22,7 @@ pub struct FaucetController {
 impl FaucetController {
     pub fn new(faucet_info: FaucetInfo) -> Self {
         let network = faucet_info.network();
+        fvm_shared::address::set_current_network(network);
         let balance_trigger = Trigger::new();
         let sender_address = RwSignal::new(String::new());
         let target_address = RwSignal::new(String::new());
