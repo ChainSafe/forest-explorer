@@ -34,4 +34,5 @@ updates:
     groups:
       patch-versions:
         update-types:
+          - "minor"
           - "patch"
