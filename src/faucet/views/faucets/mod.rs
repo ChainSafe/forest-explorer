@@ -126,7 +126,7 @@ pub fn Faucet(faucet_info: FaucetInfo) -> impl IntoView {
                 ().into_any()
             }
         }}
-        <div class="faucet-container">
+        <div>
             <FaucetInput faucet=faucet />
             <div class="balance-container">
                 <FaucetBalance faucet=faucet />
@@ -154,20 +154,16 @@ pub fn Faucets() -> impl IntoView {
     view! {
         <Title text="Filecoin Faucets" />
         <Meta name="description" content="Filecoin Faucet list" />
-        <div class="faucet-list-container">
-            <h1 class="header">Filecoin Faucet List</h1>
-            <div>
-                <a class="link-text-hover" href="/faucet/calibnet_usdfc">
+        <h1 class="header">Filecoin Faucet List</h1>
+        <div class="main-container">
+            <div class="faucet-list-items">
+                <a class="link-text" href="/faucet/calibnet_usdfc">
                     "💰 Calibration Network USDFC Faucet"
                 </a>
-            </div>
-            <div>
-                <a class="link-text-hover" href="/faucet/calibnet">
+                <a class="link-text" href="/faucet/calibnet">
                     "🧪 Calibration Network Faucet"
                 </a>
-            </div>
-            <div>
-                <a class="link-text-hover" href="/faucet/mainnet">
+                <a class="link-text" href="/faucet/mainnet">
                     "🌐 Mainnet Network Faucet"
                 </a>
             </div>

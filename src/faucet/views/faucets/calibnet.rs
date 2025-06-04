@@ -21,14 +21,14 @@ pub fn Faucet_Calibnet() -> impl IntoView {
             name="description"
             content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes."
         />
-        <div>
-            <h1 class="header">"🧪 Filecoin Calibnet Faucet"</h1>
+        <h1 class="header">"🧪 Filecoin Calibnet Faucet"</h1>
+        <div class="main-container">
             <Faucet faucet_info=FaucetInfo::CalibnetFIL />
-        </div>
-        <div class="description">
-            "This faucet distributes " {format_balance(drip_amount, token_unit)}
-            " per request. It is rate-limited to 1 request per " {rate_limit_seconds}
-            " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
+            <div class="description">
+                "This faucet distributes " {format_balance(drip_amount, token_unit)}
+                " per request. It is rate-limited to 1 request per " {rate_limit_seconds}
+                " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
+            </div>
         </div>
     }
 }
