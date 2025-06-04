@@ -1,6 +1,7 @@
+use alloy::primitives::address;
 use fvm_shared::{address::Network, econ::TokenAmount};
 use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
+use std::{str::FromStr as _, sync::LazyLock};
 use strum::EnumString;
 
 /// The amount of mainnet FIL to be dripped to the user. This corresponds to 1 tFIL.
@@ -12,7 +13,17 @@ static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
 
 /// The amount of calibnet `USDFC` to be dripped to the user. This corresponds to 1 `tUSDFC`.
 static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
-    LazyLock::new(|| TokenAmount::from_whole(1));
+    LazyLock::new(|| TokenAmount::from_whole(5));
+
+pub type ContractAddress = alloy::primitives::Address;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TokenType {
+    /// Filecoin native token
+    Native,
+    /// ERC-20 token, e.g., `USDFC`
+    Erc20(ContractAddress),
+}
 
 #[derive(strum::Display, EnumString, Clone, Copy, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum FaucetInfo {
@@ -68,6 +79,48 @@ impl FaucetInfo {
             FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => Network::Testnet,
         }
     }
+
+    /// Returns the base URL for transactions on the given faucet. This is used to link to
+    /// transaction details in the block explorer.
+    pub fn transaction_base_url(&self) -> Option<url::Url> {
+        match self {
+            FaucetInfo::MainnetFIL => {
+                option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| url::Url::parse(url).ok())
+            }
+            FaucetInfo::CalibnetFIL => {
+                option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| url::Url::parse(url).ok())
+            }
+            FaucetInfo::CalibnetUSDFC => {
+                option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| url::Url::parse(url).ok())
+                //None // USDFC does not have a transaction base URL for now - to investigate later.
+            }
+        }
+    }
+
+    /// Returns the type of token for the given faucet. This is used to determine how the token
+    /// is represented in the interface and how it is handled in the backend.
+    pub fn token_type(&self) -> TokenType {
+        match self {
+            FaucetInfo::MainnetFIL | FaucetInfo::CalibnetFIL => TokenType::Native,
+            FaucetInfo::CalibnetUSDFC => TokenType::Erc20(
+                option_env!("CALIBNET_USDFC_CONTRACT_ADDRESS")
+                    .and_then(|addr| alloy::primitives::Address::from_str(addr).ok())
+                    // Default, as present in: https://stg.usdfc.net/#/
+                    .unwrap_or_else(|| address!("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")),
+            ),
+        }
+    }
+
+    /// Returns the Ethereum chain ID for the given network. We could query the provider for this,
+    /// but since we know the chain ID for the networks we support, we can just return it directly
+    /// and avoid the overhead of a network request.
+    #[cfg(any(test, feature = "ssr"))]
+    pub fn chain_id(&self) -> u64 {
+        match self.network() {
+            Network::Mainnet => 314,    // https://chainlist.org/chain/314
+            Network::Testnet => 314159, // chainlist.org/chain/314159
+        }
+    }
 }
 
 #[cfg(test)]
@@ -84,6 +137,9 @@ mod tests {
         assert_eq!(mainnet_faucet.unit(), "FIL");
         assert_eq!(mainnet_faucet.network(), Network::Mainnet);
         assert_eq!(mainnet_faucet.secret_key_name(), "SECRET_MAINNET_WALLET");
+        assert!(mainnet_faucet.transaction_base_url().is_none());
+        assert_eq!(mainnet_faucet.token_type(), TokenType::Native);
+        assert_eq!(mainnet_faucet.chain_id(), 314);
 
         let calibnet_fil_faucet = FaucetInfo::CalibnetFIL;
         assert_eq!(calibnet_fil_faucet.drip_amount(), &*CALIBNET_DRIP_AMOUNT);
@@ -91,6 +147,9 @@ mod tests {
         assert_eq!(calibnet_fil_faucet.unit(), "tFIL");
         assert_eq!(calibnet_fil_faucet.network(), Network::Testnet);
         assert_eq!(calibnet_fil_faucet.secret_key_name(), "SECRET_WALLET");
+        assert!(calibnet_fil_faucet.transaction_base_url().is_none());
+        assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
+        assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
 
         let calibnet_usdfc_faucet = FaucetInfo::CalibnetUSDFC;
         assert_eq!(
@@ -104,5 +163,14 @@ mod tests {
             calibnet_usdfc_faucet.secret_key_name(),
             "SECRET_CALIBNET_USDFC_WALLET"
         );
+        assert!(calibnet_usdfc_faucet.transaction_base_url().is_none());
+        assert_eq!(
+            calibnet_usdfc_faucet.token_type(),
+            TokenType::Erc20(
+                alloy::primitives::Address::from_str("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")
+                    .unwrap()
+            )
+        );
+        assert_eq!(calibnet_usdfc_faucet.chain_id(), 314159);
     }
 }

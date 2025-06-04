@@ -1,6 +1,32 @@
-use anyhow::ensure;
-use fvm_shared::address::{Address, Network};
+use anyhow::{bail, ensure};
+use fvm_shared::address::{Address, DelegatedAddress, Network, Protocol};
 use fvm_shared::ActorID;
+use leptos::logging::error;
+use serde::{Deserialize, Serialize};
+
+use super::lotus_json::LotusJson;
+
+/// Represents an address that can be either a native Filecoin or Ethereum address and can be sent
+/// to/from the backend for further processing.
+///
+/// Note: the [`Address`] cannot be used directly in the frontend because it is not serializable.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AnyAddress {
+    Filecoin(LotusJson<Address>),
+    Ethereum(alloy::primitives::Address),
+}
+
+impl AnyAddress {
+    /// Converts the underlying address to an [`Address`] type.
+    ///
+    /// Note: the conversion might fail if the network is not set correctly.
+    pub fn to_filecoin_address(&self, network: Network) -> anyhow::Result<Address> {
+        match self {
+            AnyAddress::Filecoin(addr) => parse_address(&addr.0.to_string(), network),
+            AnyAddress::Ethereum(addr) => parse_address(&addr.to_string(), network),
+        }
+    }
+}
 
 // '0x' + 20bytes
 const ETH_ADDRESS_LENGTH: usize = 42;
@@ -39,6 +65,56 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
         Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
     } else {
         Ok(n.parse_address(&s)?)
+    }
+}
+
+/// Extensions around [`fvm_shared::address::Address`] to convert it into an
+/// Ethereum address, usable by the `alloy` crate.
+pub trait AddressAlloyExt {
+    /// Converts the FVM address into an `alloy`-compatible Ethereum address. This is possible only
+    /// for ID and Delegated addresses.
+    fn into_eth_address(self) -> anyhow::Result<alloy::primitives::Address>;
+    /// Converts an [`ActorID`] into an `alloy`-compatible Ethereum address. The implementation is
+    fn from_actor_id(id: ActorID) -> anyhow::Result<alloy::primitives::Address>;
+}
+
+// Implementation is mostly taken from Forest. See
+// [here](https://github.com/ChainSafe/forest/blob/ddcdfbfd93dc21fa61544f80222c2ede6f1ee21a/src/rpc/methods/eth/types.rs).
+impl AddressAlloyExt for Address {
+    fn into_eth_address(self) -> anyhow::Result<alloy::primitives::Address> {
+        match self.protocol() {
+            Protocol::ID => Self::from_actor_id(self.id()?),
+            Protocol::Delegated => {
+                let payload = self.payload();
+                let result: Result<DelegatedAddress, _> = payload.try_into();
+                if let Ok(f4_addr) = result {
+                    let namespace = f4_addr.namespace();
+                    ensure!(
+                        namespace == EAM_NAMESPACE,
+                        "Invalid address namespace {namespace} != {EAM_NAMESPACE}"
+                    );
+                    return Ok(alloy::primitives::Address::from_slice(f4_addr.subaddress()));
+                }
+                bail!("invalid delegated address namespace in: {self}")
+            }
+            _ => {
+                error!("Cannot convert address {self} to Ethereum address. Only ID and Delegated addresses are supported.");
+                bail!("invalid address {self}");
+            }
+        }
+    }
+
+    fn from_actor_id(id: ActorID) -> anyhow::Result<alloy::primitives::Address> {
+        static MASKED_ID_PREFIX: [u8; 12] = [0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let pfx = MASKED_ID_PREFIX;
+        let arr = id.to_be_bytes();
+        let payload = [
+            pfx[0], pfx[1], pfx[2], pfx[3], pfx[4], pfx[5], pfx[6], pfx[7], //
+            pfx[8], pfx[9], pfx[10], pfx[11], //
+            arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[7],
+        ];
+
+        Ok(alloy::primitives::Address::from_slice(&payload))
     }
 }
 
@@ -168,5 +244,47 @@ mod tests {
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
         assert_eq!(e.to_string(), "Invalid characters in address");
+    }
+
+    #[test]
+    fn test_id_address_conversion_to_eth() {
+        let address = Address::new_id(163506);
+        let eth_addr = address.into_eth_address().unwrap();
+        assert_eq!(
+            "0xff00000000000000000000000000000000027eb2",
+            eth_addr.to_string().to_lowercase()
+        );
+    }
+
+    #[test]
+    fn test_f4_address_conversion_to_eth() {
+        let address = parse_address(
+            "t410fggjqgebonr6mqgdbose4leqwmhs5wozmggllcua",
+            Network::Testnet,
+        )
+        .unwrap();
+
+        let eth_addr = address.into_eth_address().unwrap();
+        assert_eq!(
+            "0x319303102e6c7cc818617489c5921661e5db3b2c",
+            eth_addr.to_string().to_lowercase()
+        );
+    }
+
+    #[test]
+    fn test_invalid_address_conversion_to_eth() {
+        let faulty_addresses = [
+            "f1czwwxtss2edebp2t6um372cb5cnr6r6cn2ogsky",
+            "f3ribx3rtderwikhtvnkfoe34kqp5trkte7rcjwcovhd2ocygpojzsfz34hekw57g75r4uwte7mw4h2gp5g5pa",
+        ].map(|addr| {
+            parse_address(addr, Network::Mainnet).unwrap().into_eth_address()
+        });
+
+        for addr in faulty_addresses {
+            assert!(
+                addr.is_err(),
+                "Expected error for address conversion: {addr:?}"
+            );
+        }
     }
 }

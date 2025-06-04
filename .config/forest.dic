@@ -8,6 +8,7 @@ arities
 arity
 async
 attoFIL
+backend
 benchmark/GD
 bitfield
 bitswap
@@ -50,10 +51,12 @@ EIP155
 enum
 Enum
 EOF
+ERC20
 Ethereum
 eth
 exa
 EVM
+frontend
 F3
 FFI
 FIL
@@ -139,6 +142,7 @@ uncompress
 unrepresentable
 untrusted
 URL
+USDFC
 UUID
 validator/S
 varint

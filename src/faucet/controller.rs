@@ -1,11 +1,13 @@
-use super::constants::FaucetInfo;
-use super::server::{faucet_address, sign_with_secret_key};
+use super::constants::{FaucetInfo, TokenType};
+use super::server_api::{faucet_address, sign_with_secret_key, signed_erc20_transfer};
 use crate::faucet::model::FaucetModel;
+use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
+use crate::utils::transaction_id::TransactionId;
 use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
-use cid::Cid;
 use fvm_shared::econ::TokenAmount;
+use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use uuid::Uuid;
@@ -20,16 +22,19 @@ pub struct FaucetController {
 impl FaucetController {
     pub fn new(faucet_info: FaucetInfo) -> Self {
         let network = faucet_info.network();
+        fvm_shared::address::set_current_network(network);
         let balance_trigger = Trigger::new();
         let sender_address = RwSignal::new(String::new());
         let target_address = RwSignal::new(String::new());
+        let token_type = faucet_info.token_type();
         let target_balance = LocalResource::new(move || {
             let target_address = target_address.get();
             balance_trigger.track();
+            let token_type = token_type.clone();
             async move {
                 if let Ok(address) = parse_address(&target_address, network) {
                     Provider::from_network(network)
-                        .wallet_balance(address)
+                        .wallet_balance(address, &token_type)
                         .await
                         .ok()
                         .unwrap_or(TokenAmount::from_atto(0))
@@ -41,16 +46,18 @@ impl FaucetController {
         let faucet_address = LocalResource::new(move || async move {
             faucet_address(faucet_info)
                 .await
-                .map(|LotusJson(addr)| addr)
                 .ok()
+                .and_then(|s| s.to_filecoin_address(network).ok())
         });
+        let token_type = faucet_info.token_type();
         let faucet_balance = LocalResource::new(move || {
             balance_trigger.track();
+            let token_type = token_type.clone();
             async move {
                 if let Some(addr) = faucet_address.await {
                     sender_address.set(addr.to_string());
                     Provider::from_network(network)
-                        .wallet_balance(addr)
+                        .wallet_balance(addr, &token_type)
                         .await
                         .ok()
                         .unwrap_or(TokenAmount::from_atto(0))
@@ -87,24 +94,42 @@ impl FaucetController {
             .sent_messages
             .get_untracked()
             .into_iter()
-            .filter_map(|(cid, sent)| if !sent { Some(cid) } else { None })
+            .filter_map(|(tx_id, sent)| if !sent { Some(tx_id) } else { None })
             .collect::<Vec<_>>();
 
         let network = self.info.network();
         let messages = self.faucet.sent_messages;
         spawn_local(catch_all(self.faucet.error_messages, async move {
-            for cid in pending {
-                if let Some(lookup) = Provider::from_network(network)
-                    .state_search_msg(cid)
-                    .await?
-                {
-                    messages.update(|messages| {
-                        for (cid, sent) in messages {
-                            if cid == &lookup.message {
-                                *sent = true;
-                            }
+            for id in pending {
+                match id {
+                    TransactionId::Native(cid) => {
+                        if let Some(lookup) = Provider::from_network(network)
+                            .state_search_msg(cid)
+                            .await?
+                        {
+                            messages.update(|messages| {
+                                for (cid, sent) in messages {
+                                    if *cid == TransactionId::Native(lookup.message) {
+                                        *sent = true;
+                                    }
+                                }
+                            });
                         }
-                    });
+                    }
+                    TransactionId::Eth(eth_hash) => {
+                        if let Ok(true) = Provider::from_network(network)
+                            .check_eth_transaction_confirmed(eth_hash)
+                            .await
+                        {
+                            messages.update(|messages| {
+                                for (id, sent) in messages {
+                                    if *id == TransactionId::Eth(eth_hash) {
+                                        *sent = true;
+                                    }
+                                }
+                            });
+                        }
+                    }
                 }
             }
             Ok(())
@@ -150,7 +175,7 @@ impl FaucetController {
         });
     }
 
-    pub fn get_sent_messages(&self) -> Vec<(Cid, bool)> {
+    pub fn get_sent_messages(&self) -> Vec<(TransactionId, bool)> {
         self.faucet.sent_messages.get().clone()
     }
 
@@ -178,6 +203,13 @@ impl FaucetController {
     }
 
     pub fn drip(&self) {
+        match self.info.token_type() {
+            TokenType::Native => self.drip_native_token(),
+            TokenType::Erc20(_) => self.drip_erc20_token(),
+        }
+    }
+
+    fn drip_native_token(&self) {
         let faucet = self.faucet.clone();
         let network = self.info.network();
         let info = self.info;
@@ -186,9 +218,11 @@ impl FaucetController {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         let rpc = Provider::from_network(network);
-                        let LotusJson(from) = faucet_address(info)
+                        let from = faucet_address(info)
                             .await
-                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?;
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
+                            .to_filecoin_address(network)?;
+
                         faucet.send_disabled.set(true);
                         let nonce = rpc.mpool_get_nonce(from).await?;
                         let mut msg = message_transfer(from, addr, info.drip_amount().clone());
@@ -198,7 +232,7 @@ impl FaucetController {
                             Ok(LotusJson(smsg)) => {
                                 let cid = rpc.mpool_push(smsg).await?;
                                 faucet.sent_messages.update(|messages| {
-                                    messages.push((cid, false));
+                                    messages.push((TransactionId::Native(cid), false));
                                 });
                                 log::info!("Sent message: {:?}", cid);
                             }
@@ -221,6 +255,57 @@ impl FaucetController {
                     &self.faucet.target_address.get(),
                     err
                 );
+            }
+        }
+    }
+
+    fn drip_erc20_token(&self) {
+        let faucet = self.faucet.clone();
+        let network = self.info.network();
+        let info = self.info;
+        match parse_address(&self.faucet.target_address.get(), network) {
+            Ok(recipient) => {
+                spawn_local(async move {
+                    catch_all(faucet.error_messages, async move {
+                        faucet.send_disabled.set(true);
+
+                        let filecoin_rpc = Provider::from_network(network);
+                        let owner_fil_address = faucet_address(info)
+                            .await
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
+                            .to_filecoin_address(network)?;
+
+                        let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
+                        let gas_price = filecoin_rpc.gas_price().await?;
+                        let eth_to = recipient.into_eth_address()?;
+
+                        match signed_erc20_transfer(eth_to, nonce, gas_price, info).await {
+                            Ok(signed) => {
+                                let tx_id =
+                                    filecoin_rpc.send_eth_transaction_signed(&signed).await?;
+                                faucet.sent_messages.update(|messages| {
+                                    messages.push((TransactionId::Eth(tx_id), false));
+                                });
+                                console_log(&format!("Transaction sent successfully: {tx_id}"));
+                            }
+                            Err(e) => {
+                                console_log(&format!("Failed to create signed transaction: {e}"));
+                                let rate_limit_seconds = info.rate_limit_seconds();
+                                faucet.send_limited.set(rate_limit_seconds as i32);
+                            }
+                        }
+                        Ok(())
+                    })
+                    .await;
+                    faucet.send_disabled.set(false);
+                });
+            }
+            Err(e) => {
+                self.add_error_message(format!(
+                    "Invalid address: {}",
+                    &self.faucet.target_address.get()
+                ));
+                log::error!("Error parsing address: {e}");
             }
         }
     }

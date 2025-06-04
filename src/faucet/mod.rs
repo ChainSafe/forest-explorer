@@ -1,8 +1,7 @@
+pub mod constants;
 mod controller;
 mod model;
-#[cfg(feature = "ssr")]
 mod rate_limiter;
-
-pub mod constants;
-pub mod server;
+mod server;
+pub mod server_api;
 pub mod views;

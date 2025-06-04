@@ -2,7 +2,6 @@ use super::Faucet;
 use crate::faucet::constants::FaucetInfo;
 use crate::utils::format::format_balance;
 use crate::utils::rpc_context::{Provider, RpcContext};
-use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::{Meta, Title};
@@ -14,16 +13,16 @@ pub fn Faucet_Calibnet() -> impl IntoView {
     let rate_limit_seconds = FaucetInfo::CalibnetFIL.rate_limit_seconds();
     let rpc_context = RpcContext::use_context();
     // Set rpc context to calibnet url
-    rpc_context.set(Provider::get_network_url(Network::Testnet));
+    rpc_context.set(Provider::get_network_url(FaucetInfo::CalibnetFIL.network()));
 
     view! {
-        <Title text="Filecoin Faucet - Calibration Network" />
+        <Title text="🧪 Filecoin Faucet - Calibration Network" />
         <Meta
             name="description"
             content="Filecoin Calibration Network Faucet dispensing tokens for testing purposes."
         />
         <div>
-            <h1 class="header">Filecoin Calibnet Faucet</h1>
+            <h1 class="header">"🧪 Filecoin Calibnet Faucet"</h1>
             <Faucet faucet_info=FaucetInfo::CalibnetFIL />
         </div>
         <div class="description">
