@@ -22,7 +22,12 @@ pub fn Footer() -> impl IntoView {
                     <h3 class="footer-title">Learn More</h3>
                     <ul class="footer-links">
                         <li>
-                            <a href="https://docs.filecoin.io/networks/calibration/" target="_blank" rel="noopener noreferrer" class="link-text">
+                            <a
+                                href="https://docs.filecoin.io/networks/calibration/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
                                 Calibration Network Documentation
                             </a>
                         </li>
@@ -34,17 +39,32 @@ pub fn Footer() -> impl IntoView {
                     <h3 class="footer-title">Feedback & Support</h3>
                     <ul class="footer-links">
                         <li>
-                            <a href="https://github.com/ChainSafe/forest-explorer/issues" target="_blank" rel="noopener noreferrer" class="link-text">
+                            <a
+                                href="https://github.com/ChainSafe/forest-explorer/issues"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
                                 Report Issues on GitHub
                             </a>
                         </li>
                         <li>
-                            <a href="https://github.com/ChainSafe/forest-explorer/discussions" target="_blank" rel="noopener noreferrer" class="link-text">
+                            <a
+                                href="https://github.com/ChainSafe/forest-explorer/discussions"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
                                 Suggest Improvements
                             </a>
                         </li>
                         <li>
-                            <a href="https://github.com/ChainSafe/forest-explorer" target="_blank" rel="noopener noreferrer" class="link-text">
+                            <a
+                                href="https://github.com/ChainSafe/forest-explorer"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
                                 Contribute to the Project
                             </a>
                         </li>
