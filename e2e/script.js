@@ -21,7 +21,7 @@ const BASE_URL = "http://127.0.0.1:8787";
 
 // Check if the path is reachable
 async function checkPath(page, path) {
-  const res = await page.goto(`${BASE_URL}${path}`, { timeout: 60_000 });
+  const res = await page.goto(`${BASE_URL}${path}`, { timeout: 60_000, waitUntil: "networkidle" });
   check(res, { [`GET ${path} → 200`]: (r) => r && r.status() === 200 });
 }
 
