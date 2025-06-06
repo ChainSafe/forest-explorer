@@ -20,10 +20,6 @@ env:
   RUSTC_WRAPPER: sccache
   CC: sccache clang
   CXX: sccache clang++
-  FAUCET_TOPUP_REQ_URL: '${{ vars.FAUCET_TOPUP_REQ_URL }}'
-  FAUCET_TX_URL_CALIBNET: '${{ vars.FAUCET_TX_URL_CALIBNET }}'
-  FAUCET_TX_URL_MAINNET: '${{ vars.FAUCET_TX_URL_MAINNET }}'
-
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -64,6 +60,14 @@ jobs:
 
       - name: Run website
         run: |
+          # These might or might not be the same as used for deployment. They are used strictly for testing purposes.
+          # Note: those can't be put directly as environment variables in GH Actions (without a default value) due to
+          # the way GH Actions handles secrets and variables; forks would not be able to access them and in turn
+          # would not be able to run the E2E tests.
+          export FAUCET_TOPUP_REQ_URL="https://github.com/ChainSafe/forest-explorer/discussions/134"
+          export FAUCET_TX_URL_CALIBNET="https://beryx.io/fil/calibration/"
+          export FAUCET_TX_URL_MAINNET="https://beryx.io/fil/mainnet/"
+
           corepack enable
           yarn --immutable
           yarn build
