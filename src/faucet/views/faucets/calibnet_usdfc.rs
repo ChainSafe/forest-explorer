@@ -22,30 +22,30 @@ pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
             name="description"
             content="Filecoin USDFC Calibration Network Faucet dispensing USDFC tokens for testing purposes."
         />
-        <div>
-            <h1 class="header">"💰 Filecoin Calibnet USDFC Faucet"</h1>
+        <h1 class="header">"💰 Filecoin Calibnet USDFC Faucet"</h1>
+        <div class="main-container">
             <Faucet faucet_info=FaucetInfo::CalibnetUSDFC />
-        </div>
-        <div class="description">
-            "This faucet distributes " {format_balance(drip_amount, token_unit)}
-            " per request. It is rate-limited to 1 request per " {rate_limit_seconds}
-            " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
-        </div>
-        <div class="description">
-            <p>
-                "You can also obtain testnet USDFC by minting it and using tFIL as collateral with the "
-                <a class="text-blue-600" rel="noopener noreferrer" href="https://stg.usdfc.net/#/" target="_blank">
-                    "USDFC testnet application."
-                </a> " For more information, visit the "
-                <a
-                    class="text-blue-600"
-                    rel="noopener noreferrer"
-                    href="https://docs.secured.finance/usdfc-stablecoin/getting-started/getting-test-usdfc-on-testnet"
-                    target="_blank"
-                >
-                    "USDFC documentation"
-                </a>.
-            </p>
+            <div class="description">
+                "This faucet distributes " {format_balance(drip_amount, token_unit)}
+                " per request. It is rate-limited to 1 request per " {rate_limit_seconds}
+                " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
+            </div>
+            <div class="description">
+                <p>
+                    "You can also obtain testnet USDFC by minting it and using tFIL as collateral with the "
+                    <a class="text-blue-600" rel="noopener noreferrer" href="https://stg.usdfc.net/#/" target="_blank">
+                        "USDFC testnet application."
+                    </a> " For more information, visit the "
+                    <a
+                        class="text-blue-600"
+                        rel="noopener noreferrer"
+                        href="https://docs.secured.finance/usdfc-stablecoin/getting-started/getting-test-usdfc-on-testnet"
+                        target="_blank"
+                    >
+                        "USDFC documentation"
+                    </a>.
+                </p>
+            </div>
         </div>
     }
 }

@@ -17,18 +17,77 @@ pub fn Header() -> impl IntoView {
 pub fn Footer() -> impl IntoView {
     view! {
         <footer class="footer">
-            <a
-                class="text-green-600"
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://github.com/ChainSafe/forest-explorer"
-            >
-                Forest Explorer
-            </a>
-            ", built with ❤️ by "
-            <a class="text-blue-600" target="_blank" rel="noopener noreferrer" href="https://chainsafe.io">
-                ChainSafe Systems
-            </a>
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">Learn More</h3>
+                    <ul class="footer-links">
+                        <li>
+                            <a
+                                href="https://docs.filecoin.io/networks/calibration/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
+                                Calibration Network Documentation
+                            </a>
+                        </li>
+
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h3 class="footer-title">Feedback & Support</h3>
+                    <ul class="footer-links">
+                        <li>
+                            <a
+                                href="https://github.com/ChainSafe/forest-explorer/issues"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
+                                Report Issues on GitHub
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                href="https://github.com/ChainSafe/forest-explorer/discussions"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
+                                Suggest Improvements
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                href="https://github.com/ChainSafe/forest-explorer"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
+                                Contribute to the Project
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <span>
+                    <a
+                        class="text-green-600"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://github.com/ChainSafe/forest-explorer"
+                    >
+                        Forest Explorer
+                    </a>
+                    ", built with ❤️ by "
+                    <a class="text-blue-600" target="_blank" rel="noopener noreferrer" href="https://chainsafe.io">
+                        ChainSafe Systems
+                    </a>
+                </span>
+            </div>
         </footer>
     }
 }

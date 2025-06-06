@@ -4,19 +4,19 @@
 
 @layer components {
     .app-container {
-        @apply flex flex-col min-h-screen space-y-8 py-10 px-6 min-h-screen;
+        @apply flex flex-col min-h-screen py-10;
     }
     .main-container {
-        @apply min-h-screen flex flex-col flex-grow space-y-8;
+        @apply flex flex-1 flex-col space-y-10 py-10 px-6 max-w-4xl mx-auto;
     }
     .overview-container {
-        @apply grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full m-auto;
+        @apply grid grid-cols-1 md:grid-cols-2 gap-6 w-full;
     }
     .faucet-list-container {
-        @apply text-center space-y-8;
+        @apply flex-1 flex flex-col items-center justify-center text-center space-y-8;
     }
-    .faucet-container {
-        @apply max-w-2xl mx-auto;
+    .faucet-list-items {
+        @apply grid grid-cols-1 gap-6 text-center;
     }
     .input-container {
         @apply my-4 flex;
@@ -34,7 +34,7 @@
         @apply fixed top-4 left-1/2 transform -translate-x-1/2 z-50;
     }
     .network-info {
-        @apply flex items-center w-[300px] justify-between;
+        @apply flex items-center w-64 justify-between;
     }
     .network-selector {
         @apply space-y-6 flex flex-col items-center;
@@ -43,7 +43,7 @@
         @apply my-4 border-t border-gray-300;
     }
     .card {
-        @apply bg-white p-6 rounded-lg border border-gray-100;
+        @apply bg-white p-6 rounded-lg border border-gray-300;
     }
     .card-title {
         @apply text-lg font-semibold text-gray-900 mb-4;
@@ -67,9 +67,6 @@
         @apply text-gray-600;
     }
     .link-text {
-        @apply text-blue-500;
-    }
-    .link-text-hover {
         @apply text-blue-500 hover:text-blue-600;
     }
     .description {
@@ -82,10 +79,28 @@
         @apply text-4xl font-bold mb-6 text-center;
     }
     .header-large {
-        @apply text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl;
+        @apply text-4xl font-extrabold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl text-center;
     }
     .footer {
-        @apply py-4 text-center;
+        @apply grid gap-8 text-center pt-6 border-t border-gray-200 max-h-80;
+    }
+    .footer-content {
+        @apply grid grid-cols-1 md:grid-cols-2 gap-6 w-4/5 mx-auto;
+    }
+    .footer-section {
+        @apply space-y-4;
+    }
+    .footer-title {
+        @apply text-lg font-semibold;
+    }
+    .footer-links {
+        @apply space-y-4;
+    }
+    .footer-links:hover {
+        @apply text-blue-600;
+    }
+    .footer-bottom {
+        @apply flex justify-center items-center;
     }
     .btn {
         @apply block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg;
