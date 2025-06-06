@@ -12,6 +12,7 @@ use crate::faucet::views::components::alert::ErrorMessages;
 use crate::faucet::views::components::balance::{FaucetBalance, TargetBalance};
 use crate::faucet::views::components::nav::{GotoFaucetList, GotoHome};
 use crate::faucet::views::components::transaction::{TransactionHistoryButton, TransactionList};
+use crate::utils::address::is_valid_prefix;
 
 #[component]
 fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
@@ -143,7 +144,9 @@ pub fn Faucet(faucet_info: FaucetInfo) -> impl IntoView {
             }}
         </div>
         <div class="nav-container">
-            <TransactionHistoryButton faucet=faucet faucet_tx_base_url=faucet_tx_base_url />
+            <Show when=move || is_valid_prefix(&faucet.get().get_sender_address(), target_network)>
+                <TransactionHistoryButton faucet=faucet faucet_tx_base_url=faucet_tx_base_url />
+            </Show>
             <GotoFaucetList />
         </div>
     }
