@@ -18,8 +18,9 @@ pub fn Faucet_Mainnet() -> impl IntoView {
     view! {
         <Title text="🌐 Filecoin Faucet - Mainnet" />
         <Meta name="description" content="Filecoin Mainnet Faucet dispensing tokens for testing purposes." />
-        <div>
-            <h1 class="header">"🌐 Filecoin Mainnet Faucet"</h1>
+
+        <h1 class="header">"🌐 Filecoin Mainnet Faucet"</h1>
+        <div class="main-container">
             <Faucet faucet_info=FaucetInfo::MainnetFIL />
             <div class="description">
                 "This faucet distributes " {format_balance(drip_amount, token_unit)}
