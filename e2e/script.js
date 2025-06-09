@@ -113,15 +113,15 @@ const PAGES = [
   },
   {
     path: "/faucet/calibnet_usdfc",
-    buttons: ["Faucet List", "Transaction History", "Send"],
+    buttons: ["Faucet List", "Transaction History", "Claim tUSDFC"],
   },
   {
     path: "/faucet/calibnet",
-    buttons: ["Faucet List", "Transaction History", "Send"],
+    buttons: ["Faucet List", "Transaction History", "Claim tFIL"],
   },
   {
     path: "/faucet/mainnet",
-    buttons: ["Faucet List", "Transaction History", "Send"],
+    buttons: ["Faucet List", "Transaction History", "Claim FIL"],
   },
 ];
 
