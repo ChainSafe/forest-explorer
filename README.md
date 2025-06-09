@@ -37,6 +37,7 @@ is ignored by git.
 ```
 SECRET_WALLET=
 SECRET_MAINNET_WALLET=
+SECRET_CALIBNET_USDFC_WALLET=
 RATE_LIMITER_DISABLED=true
 ```
 
@@ -77,6 +78,10 @@ service to abuse.
 Set `SECRET_WALLET` (calibnet) and/or `SECRET_MAINNET_WALLET` (mainnet) using
 `npx wrangler@latest secret put` (values are exported private keys, see
 `forest-wallet export`).
+
+For USDFC, you can create a wallet using Metamask and then export the private
+key. Set the private key as `SECRET_CALIBNET_USDFC_WALLET` using the same
+commands as above.
 
 ### Deployment
 
