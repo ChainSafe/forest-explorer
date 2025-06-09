@@ -35,7 +35,7 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
                 if faucet.get().is_send_disabled() {
                     view! {
                         <button class="btn-disabled" disabled=true>
-                            "Sending..."
+                            "Claiming..."
                         </button>
                     }
                         .into_any()
@@ -47,25 +47,30 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
                         </button>
                     }
                         .into_any()
-                } else if faucet.get().is_low_balance() {
-                    view! {
-                        <button class="btn-disabled" disabled=true>
-                            "Send"
-                        </button>
-                    }
-                        .into_any()
                 } else {
-                    view! {
-                        <button
-                            class="btn-enabled"
-                            on:click=move |_| {
-                                faucet.get().drip();
-                            }
-                        >
-                            Send
-                        </button>
+                    let unit = faucet.get().get_fil_unit();
+                    let disabled = faucet.get().is_low_balance();
+                    let btn_class = if disabled { "btn-disabled" } else { "btn-enabled" };
+                    if disabled {
+                        view! {
+                            <button class=btn_class disabled=true>
+                                {format!("Claim {unit}")}
+                            </button>
+                        }
+                            .into_any()
+                    } else {
+                        view! {
+                            <button
+                                class=btn_class
+                                on:click=move |_| {
+                                    faucet.get().drip();
+                                }
+                            >
+                                {format!("Claim {unit}")}
+                            </button>
+                        }
+                            .into_any()
                     }
-                        .into_any()
                 }
             }}
         </div>
