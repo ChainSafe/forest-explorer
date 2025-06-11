@@ -131,7 +131,7 @@ pub fn Faucet(faucet_info: FaucetInfo) -> impl IntoView {
                 ().into_any()
             }
         }}
-        <div>
+        <div class="faucet-section">
             <FaucetInput faucet=faucet />
             <div class="balance-container">
                 <FaucetBalance faucet=faucet />
