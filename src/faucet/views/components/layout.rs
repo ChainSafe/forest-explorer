@@ -19,7 +19,7 @@ pub fn Footer() -> impl IntoView {
         <footer class="footer">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3 class="footer-title">Learn More</h3>
+                    <strong class="footer-title">Learn More</strong>
                     <ul class="footer-links">
                         <li>
                             <a
@@ -36,7 +36,7 @@ pub fn Footer() -> impl IntoView {
                 </div>
 
                 <div class="footer-section">
-                    <h3 class="footer-title">Feedback & Support</h3>
+                    <strong class="footer-title">Feedback & Support</strong>
                     <ul class="footer-links">
                         <li>
                             <a
@@ -75,7 +75,7 @@ pub fn Footer() -> impl IntoView {
             <div class="footer-bottom">
                 <span>
                     <a
-                        class="text-green-600"
+                        class="text-green-700"
                         target="_blank"
                         rel="noopener noreferrer"
                         href="https://github.com/ChainSafe/forest-explorer"

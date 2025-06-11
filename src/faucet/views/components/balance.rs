@@ -7,8 +7,8 @@ use crate::utils::format::format_balance;
 #[component]
 pub fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
     view! {
-        <div>
-            <h3 class="title">Faucet Balance:</h3>
+        <div class="balance-content">
+            <strong class="title">Faucet Balance:</strong>
             <Transition fallback=move || {
                 view! { <p>Loading faucet balance...</p> }
             }>
@@ -38,8 +38,8 @@ pub fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
 #[component]
 pub fn TargetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
     view! {
-        <div>
-            <h3 class="title">Target Balance:</h3>
+        <div class="balance-content">
+            <strong class="title">Target Balance:</strong>
             <Transition fallback=move || view! { <p>Loading target balance...</p> }>
                 <p class="balance">
                     {move || format_balance(&faucet.get().get_target_balance(), &faucet.get().get_fil_unit())}

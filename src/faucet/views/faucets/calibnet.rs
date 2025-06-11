@@ -1,6 +1,6 @@
 use super::Faucet;
 use crate::faucet::constants::FaucetInfo;
-use crate::utils::format::format_balance;
+use crate::faucet::views::components::faucet_description::FaucetDescription;
 use crate::utils::rpc_context::{Provider, RpcContext};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
@@ -24,11 +24,11 @@ pub fn Faucet_Calibnet() -> impl IntoView {
         <h1 class="header">"🧪 Filecoin Calibnet Faucet"</h1>
         <div class="main-container">
             <Faucet faucet_info=FaucetInfo::CalibnetFIL />
-            <div class="description">
-                "This faucet distributes " {format_balance(drip_amount, token_unit)}
-                " per request. It is rate-limited to 1 request per " {rate_limit_seconds}
-                " seconds. Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."
-            </div>
+            <FaucetDescription
+                drip_amount=drip_amount.clone()
+                token_unit=token_unit.to_string()
+                rate_limit_seconds=rate_limit_seconds
+            />
         </div>
     }
 }

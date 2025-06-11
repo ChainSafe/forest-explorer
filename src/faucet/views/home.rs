@@ -5,6 +5,7 @@ use crate::utils::rpc_context::{Provider, RpcContext};
 use fvm_shared::address::Network;
 use leptos::prelude::*;
 use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
+use leptos_meta::Title;
 
 #[component]
 fn FaucetOverview() -> impl IntoView {
@@ -76,7 +77,11 @@ fn NetworkSelection(
     view! {
         <div class="network-selector">
             <div class="dropdown">
+                <label for="network-select" class="sr-only">
+                    Select Network
+                </label>
                 <select
+                    id="network-select"
                     on:change=move |ev| {
                         rpc_context.set(event_target_value(&ev).parse().expect("predefined values, must succeed"))
                     }
@@ -130,6 +135,7 @@ pub fn Explorer() -> impl IntoView {
 
     view! {
         <main class="main-container">
+            <Title text="Filecoin Forest Explorer Faucet" />
             <Header />
             <FaucetOverview />
             <NetworkSelection rpc_context=rpc_context network_name=network_name network_version=network_version />
