@@ -6,6 +6,7 @@ authors = ["Forest Team <forest@chainsafe.io>"]
 description = "Serverless Filecoin Explorer with faucet capabilities"
 repository = "https://github.com/ChainSafe/forest-explorer"
 license = "Apache-2.0 OR MIT"
+resolver = "3"
 
 [lib]
 crate-type = ["cdylib"]
@@ -23,12 +24,12 @@ console_error_panic_hook = { version = "0.1" }
 console_log = "1"
 derive_more = { version = "2", features = ["from", "into"] }
 fvm_ipld_encoding = "0.5"
-fvm_shared = { version = "~4.7" }
+fvm_shared = { version = "=4.7.1" }
 getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
 http = { version = "1", optional = true }
 leptos = "0.8"
-leptos-use = "0.15"
+leptos-use = "0.16"
 leptos_axum = { version = "0.8", default-features = false, optional = true }
 leptos_meta = "0.8"
 leptos_router = "0.8"
