@@ -19,7 +19,7 @@ impl DurableObject for RateLimiter {
     async fn fetch(&mut self, req: Request) -> Result<Response> {
         let now = Utc::now();
         let path = req.path();
-        let faucet_info = FaucetInfo::from_str(path.split('/').last().unwrap_or_default())
+        let faucet_info = FaucetInfo::from_str(path.split('/').next_back().unwrap_or_default())
             .map_err(|e| worker::Error::RustError(e.to_string()))?;
 
         let block_until = self
