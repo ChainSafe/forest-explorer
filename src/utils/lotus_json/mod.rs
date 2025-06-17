@@ -120,7 +120,7 @@
 
 use ::cid::Cid;
 use derive_more::From;
-use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwned};
 use std::{fmt::Display, str::FromStr};
 
 pub trait HasLotusJson: Sized {
@@ -175,7 +175,7 @@ pub mod signed_message;
 // mod nonempty; // can't make snapshots of generic type
 // mod opt; // can't make snapshots of generic type
 mod raw_bytes; // fvm_ipld_encoding::RawBytes: !quickcheck::Arbitrary
-               // mod vec; // can't make snapshots of generic type
+// mod vec; // can't make snapshots of generic type
 
 // pub use vec::*;
 
@@ -305,7 +305,7 @@ pub mod stringify {
 pub mod base64_standard {
     use super::*;
 
-    use base64::engine::{general_purpose::STANDARD, Engine as _};
+    use base64::engine::{Engine as _, general_purpose::STANDARD};
 
     pub fn serialize<S>(value: &[u8], serializer: S) -> Result<S::Ok, S::Error>
     where

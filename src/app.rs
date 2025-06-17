@@ -1,11 +1,11 @@
 use crate::faucet::views::faucets::{
-    calibnet::Faucet_Calibnet, calibnet_usdfc::Faucet_Calibnet_USDFC, mainnet::Faucet_Mainnet,
-    Faucets,
+    Faucets, calibnet::Faucet_Calibnet, calibnet_usdfc::Faucet_Calibnet_USDFC,
+    mainnet::Faucet_Mainnet,
 };
 use crate::faucet::views::{components::layout::Footer, home::Explorer};
 use crate::utils::rpc_context::RpcContext;
 use leptos::prelude::*;
-use leptos::{component, view, IntoView};
+use leptos::{IntoView, component, view};
 use leptos_meta::*;
 use leptos_router::components::*;
 use leptos_router::path;

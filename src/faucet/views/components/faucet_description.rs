@@ -1,7 +1,7 @@
 use crate::utils::format::format_balance;
 use fvm_shared::econ::TokenAmount;
 use leptos::prelude::*;
-use leptos::{component, view, IntoView};
+use leptos::{IntoView, component, view};
 
 #[component]
 pub fn FaucetDescription(

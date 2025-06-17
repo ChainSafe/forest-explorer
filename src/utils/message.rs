@@ -1,6 +1,6 @@
 use fvm_ipld_encoding::RawBytes;
 use fvm_shared::message::Message;
-use fvm_shared::{address::Address, econ::TokenAmount, METHOD_SEND};
+use fvm_shared::{METHOD_SEND, address::Address, econ::TokenAmount};
 
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
     Message {
