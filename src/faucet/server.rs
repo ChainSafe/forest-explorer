@@ -1,12 +1,18 @@
 #![cfg(feature = "ssr")]
 
-use crate::utils::key::Key;
 use crate::utils::key::KeyInfo;
+use crate::utils::key::{sign, Key};
+use crate::utils::lotus_json::{
+    signed_message::{message_cid, SignedMessage},
+    LotusJson,
+};
 use alloy::{network::TransactionBuilder, rpc::types::TransactionRequest};
 use anyhow::Result;
 use axum::Extension;
+use fvm_shared::message::Message;
 use leptos::prelude::ServerFnError;
 use leptos_axum::extract;
+use send_wrapper::SendWrapper;
 use std::str::FromStr as _;
 use std::sync::Arc;
 use worker::Env;
@@ -38,6 +44,28 @@ pub async fn secret_key(faucet_info: FaucetInfo) -> Result<Key, ServerFnError> {
     Key::try_from(key_info).map_err(ServerFnError::new)
 }
 
+pub async fn sign_with_secret_key(
+    msg: Message,
+    faucet_info: FaucetInfo,
+) -> Result<LotusJson<SignedMessage>, ServerFnError> {
+    SendWrapper::new(async move {
+        check_rate_limit(faucet_info).await?;
+        let cid = message_cid(&msg);
+        let key = secret_key(faucet_info).await?;
+        let sig = sign(
+            key.key_info.r#type,
+            &key.key_info.private_key,
+            cid.to_bytes().as_slice(),
+        )
+        .map_err(ServerFnError::new)?;
+        Ok(LotusJson(SignedMessage {
+            message: msg,
+            signature: sig,
+        }))
+    })
+    .await
+}
+
 /// Signs a transaction request using the faucet's secret key.
 ///
 /// Note: it is important to ensure that the `TransactionRequest` is fully controlled by the server
@@ -47,7 +75,7 @@ pub async fn sign_with_eth_secret_key(
     tx_request: TransactionRequest,
     faucet_info: FaucetInfo,
 ) -> Result<Vec<u8>, ServerFnError> {
-    send_wrapper::SendWrapper::new(async move {
+    SendWrapper::new(async move {
         check_rate_limit(faucet_info).await?;
         let key = read_faucet_secret(faucet_info).await?;
         let pk_signer: alloy::signers::local::PrivateKeySigner = std::str::FromStr::from_str(&key)?;
@@ -78,7 +106,7 @@ async fn query_rate_limiter(faucet_info: FaucetInfo) -> Result<bool, ServerFnErr
 }
 
 /// Checks if the request can proceed based on the rate limit for the given faucet.
-pub async fn check_rate_limit(faucet_info: FaucetInfo) -> Result<(), ServerFnError> {
+async fn check_rate_limit(faucet_info: FaucetInfo) -> Result<(), ServerFnError> {
     let axum::Extension(env): axum::Extension<std::sync::Arc<worker::Env>> =
         leptos_axum::extract().await?;
     let rate_limiter_disabled = env
