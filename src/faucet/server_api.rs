@@ -13,7 +13,9 @@ use leptos::{prelude::ServerFnError, server};
 use alloy::{sol, sol_types::SolCall};
 
 #[cfg(feature = "ssr")]
-use super::server::{check_rate_limit, read_faucet_secret, secret_key, sign_with_eth_secret_key};
+use super::server::{
+    read_faucet_secret, secret_key, sign_with_eth_secret_key, sign_with_secret_key,
+};
 
 #[cfg(feature = "ssr")]
 use crate::faucet::constants::TokenType;
@@ -78,36 +80,19 @@ async fn faucet_eth_address(
 }
 
 #[server]
-pub async fn sign_with_secret_key(
+pub async fn signed_fil_transfer(
     msg: LotusJson<Message>,
+    nonce: u64,
     faucet_info: FaucetInfo,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
-    use crate::utils::key::sign;
-    use crate::utils::lotus_json::signed_message::message_cid;
-    use send_wrapper::SendWrapper;
-    let LotusJson(msg) = msg;
-    let cid = message_cid(&msg);
-    let amount_limit = faucet_info.drip_amount();
-    if &msg.value > amount_limit {
+    let LotusJson(mut unsigned_msg) = msg;
+    unsigned_msg.sequence = nonce;
+    if &unsigned_msg.value > faucet_info.drip_amount() {
         return Err(ServerFnError::ServerError(
             "Amount limit exceeded".to_string(),
         ));
     }
-    SendWrapper::new(async move {
-        check_rate_limit(faucet_info).await?;
-        let key = secret_key(faucet_info).await?;
-        let sig = sign(
-            key.key_info.r#type,
-            &key.key_info.private_key,
-            cid.to_bytes().as_slice(),
-        )
-        .map_err(ServerFnError::new)?;
-        Ok(LotusJson(SignedMessage {
-            message: msg,
-            signature: sig,
-        }))
-    })
-    .await
+    sign_with_secret_key(unsigned_msg, faucet_info).await
 }
 
 /// Signs an ERC-20 transfer transaction to the specified recipient with the given nonce and gas
