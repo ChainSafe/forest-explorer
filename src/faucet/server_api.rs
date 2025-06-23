@@ -81,6 +81,7 @@ async fn faucet_eth_address(
 }
 
 #[server]
+#[allow(clippy::too_many_arguments)]
 pub async fn signed_fil_transfer(
     from: LotusJson<Address>,
     to: LotusJson<Address>,
