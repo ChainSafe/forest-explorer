@@ -81,11 +81,8 @@ async fn faucet_eth_address(
 }
 
 #[server]
-#[allow(clippy::too_many_arguments)]
 pub async fn signed_fil_transfer(
-    from: LotusJson<Address>,
     to: LotusJson<Address>,
-    value: LotusJson<TokenAmount>,
     gas_limit: u64,
     gas_fee_cap: LotusJson<TokenAmount>,
     gas_premium: LotusJson<TokenAmount>,
@@ -93,26 +90,24 @@ pub async fn signed_fil_transfer(
     faucet_info: FaucetInfo,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
     use crate::utils::message::create_message;
-    let LotusJson(from) = from;
     let LotusJson(to) = to;
-    let LotusJson(value) = value;
     let LotusJson(gas_fee_cap) = gas_fee_cap;
     let LotusJson(gas_premium) = gas_premium;
+
+    let from = faucet_address(faucet_info)
+        .await?
+        .to_filecoin_address(faucet_info.network())
+        .map_err(ServerFnError::new)?;
 
     let unsigned_msg = create_message(
         from,
         to,
-        value,
+        faucet_info.drip_amount().clone(),
         gas_limit,
         gas_fee_cap,
         gas_premium,
         sequence,
     );
-    if &unsigned_msg.value > faucet_info.drip_amount() {
-        return Err(ServerFnError::ServerError(
-            "Amount limit exceeded".to_string(),
-        ));
-    }
     sign_with_secret_key(unsigned_msg, faucet_info).await
 }
 

@@ -228,9 +228,7 @@ impl FaucetController {
                         let raw_msg = message_transfer(from, addr, info.drip_amount().clone());
                         let msg = rpc.estimate_gas(raw_msg).await?;
                         match signed_fil_transfer(
-                            LotusJson(from),
                             LotusJson(addr),
-                            LotusJson(msg.value),
                             msg.gas_limit,
                             LotusJson(msg.gas_fee_cap),
                             LotusJson(msg.gas_premium),
