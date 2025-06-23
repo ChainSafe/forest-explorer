@@ -10,13 +10,12 @@ pub struct RateLimiter {
     state: State,
 }
 
-#[durable_object]
 impl DurableObject for RateLimiter {
     fn new(state: State, _env: Env) -> Self {
         Self { state }
     }
 
-    async fn fetch(&mut self, req: Request) -> Result<Response> {
+    async fn fetch(&self, req: Request) -> Result<Response> {
         let now = Utc::now();
         let path = req.path();
         let faucet_info = FaucetInfo::from_str(path.split('/').last().unwrap_or_default())
@@ -54,7 +53,7 @@ impl DurableObject for RateLimiter {
         Response::from_json(&is_allowed)
     }
 
-    async fn alarm(&mut self) -> Result<Response> {
+    async fn alarm(&self) -> Result<Response> {
         console_log!("Rate limiter alarm triggered. DurableObject will be deleted.");
         self.state.storage().delete_all().await.ok();
         Response::ok("OK")
