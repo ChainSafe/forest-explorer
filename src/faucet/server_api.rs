@@ -6,7 +6,8 @@ use crate::utils::{
     lotus_json::{signed_message::SignedMessage, LotusJson},
 };
 use anyhow::Result;
-use fvm_shared::{address::Address, message::Message};
+use fvm_shared::address::Address;
+use fvm_shared::econ::TokenAmount;
 use leptos::{prelude::ServerFnError, server};
 
 #[cfg(feature = "ssr")]
@@ -81,12 +82,31 @@ async fn faucet_eth_address(
 
 #[server]
 pub async fn signed_fil_transfer(
-    msg: LotusJson<Message>,
-    nonce: u64,
+    from: LotusJson<Address>,
+    to: LotusJson<Address>,
+    value: LotusJson<TokenAmount>,
+    gas_limit: u64,
+    gas_fee_cap: LotusJson<TokenAmount>,
+    gas_premium: LotusJson<TokenAmount>,
+    sequence: u64,
     faucet_info: FaucetInfo,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
-    let LotusJson(mut unsigned_msg) = msg;
-    unsigned_msg.sequence = nonce;
+    use crate::utils::message::create_message;
+    let LotusJson(from) = from;
+    let LotusJson(to) = to;
+    let LotusJson(value) = value;
+    let LotusJson(gas_fee_cap) = gas_fee_cap;
+    let LotusJson(gas_premium) = gas_premium;
+
+    let unsigned_msg = create_message(
+        from,
+        to,
+        value,
+        gas_limit,
+        gas_fee_cap,
+        gas_premium,
+        sequence,
+    );
     if &unsigned_msg.value > faucet_info.drip_amount() {
         return Err(ServerFnError::ServerError(
             "Amount limit exceeded".to_string(),
