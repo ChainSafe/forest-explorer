@@ -27,7 +27,7 @@ pub fn TransactionList(
                                 })
                                 .map(|tx_url| {
                                     view! {
-                                        <a href=tx_url.to_string() target="_blank" class="link-text-hover">
+                                        <a href=tx_url.to_string() target="_blank" class="link-text">
                                             {msg.to_string()}
                                         </a>
                                     }
