@@ -44,6 +44,10 @@ pub async fn secret_key(faucet_info: FaucetInfo) -> Result<Key, ServerFnError> {
     Key::try_from(key_info).map_err(ServerFnError::new)
 }
 
+/// Signs a message using the faucet's secret key.
+/// Note: it is important to ensure that the `Message` is fully controlled by the server
+/// not exposed to the client, as it might be modified by the client, leading to potential
+/// security issues.
 pub async fn sign_with_secret_key(
     msg: Message,
     faucet_info: FaucetInfo,

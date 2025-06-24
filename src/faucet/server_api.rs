@@ -80,6 +80,12 @@ async fn faucet_eth_address(
     Ok(pk_addr)
 }
 
+/// Signs a Filecoin transfer message to the specified recipient with the given parameters.
+/// The required params are needed so that the server doesn't have to call the provider.
+/// Note: it's important that the message is constructed server-side to avoid exposing the
+/// `message` to the client, which could lead to security issues if the client were to
+/// manipulate the message data.
+/// This function is used for native Filecoin token transfers.
 #[server]
 pub async fn signed_fil_transfer(
     to: LotusJson<Address>,
