@@ -2,8 +2,9 @@ use fvm_ipld_encoding::RawBytes;
 use fvm_shared::message::Message;
 use fvm_shared::{address::Address, econ::TokenAmount, METHOD_SEND};
 
+/// Creates a new transfer message with default values for gas and sequence.
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
-    create_message(
+    message_transfer_custom(
         from,
         to,
         value,
@@ -14,7 +15,8 @@ pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Messa
     )
 }
 
-pub fn create_message(
+/// Creates a new transfer message with specified values for gas and sequence.
+pub fn message_transfer_custom(
     from: Address,
     to: Address,
     value: TokenAmount,
