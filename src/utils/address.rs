@@ -60,9 +60,13 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
             s.chars().skip(2).all(|c| c.is_ascii_hexdigit()),
             "Invalid characters in address"
         );
-
-        let addr = hex::decode(&s[2..])?;
-        Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
+        if s.starts_with("0xff") {
+            let id = u64::from_str_radix(&s[4..], 16)?;
+            Ok(Address::new_id(id))
+        } else {
+            let addr = hex::decode(&s[2..])?;
+            Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
+        }
     } else {
         Ok(n.parse_address(&s)?)
     }
