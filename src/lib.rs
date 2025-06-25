@@ -66,7 +66,7 @@ mod ssr_imports {
 
     #[event(start)]
     fn register() {
-        server_fn::axum::register_explicit::<faucet::server_api::SignWithSecretKey>();
+        server_fn::axum::register_explicit::<faucet::server_api::SignedFilTransfer>();
         server_fn::axum::register_explicit::<faucet::server_api::SignedErc20Transfer>();
         server_fn::axum::register_explicit::<faucet::server_api::FaucetAddress>();
     }

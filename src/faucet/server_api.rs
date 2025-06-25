@@ -6,14 +6,17 @@ use crate::utils::{
     lotus_json::{signed_message::SignedMessage, LotusJson},
 };
 use anyhow::Result;
-use fvm_shared::{address::Address, message::Message};
+use fvm_shared::address::Address;
+use fvm_shared::econ::TokenAmount;
 use leptos::{prelude::ServerFnError, server};
 
 #[cfg(feature = "ssr")]
 use alloy::{sol, sol_types::SolCall};
 
 #[cfg(feature = "ssr")]
-use super::server::{check_rate_limit, read_faucet_secret, secret_key, sign_with_eth_secret_key};
+use super::server::{
+    read_faucet_secret, secret_key, sign_with_eth_secret_key, sign_with_secret_key,
+};
 
 #[cfg(feature = "ssr")]
 use crate::faucet::constants::TokenType;
@@ -77,37 +80,41 @@ async fn faucet_eth_address(
     Ok(pk_addr)
 }
 
+/// Signs a Filecoin transfer message to the specified recipient with the given parameters.
+/// The required params are needed so that the server doesn't have to call the provider.
+/// Note: it's important that the message is constructed server-side to avoid exposing the
+/// `message` to the client, which could lead to security issues if the client were to
+/// manipulate the message data.
+/// This function is used for native Filecoin token transfers.
 #[server]
-pub async fn sign_with_secret_key(
-    msg: LotusJson<Message>,
+pub async fn signed_fil_transfer(
+    to: LotusJson<Address>,
+    gas_limit: u64,
+    gas_fee_cap: LotusJson<TokenAmount>,
+    gas_premium: LotusJson<TokenAmount>,
+    sequence: u64,
     faucet_info: FaucetInfo,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
-    use crate::utils::key::sign;
-    use crate::utils::lotus_json::signed_message::message_cid;
-    use send_wrapper::SendWrapper;
-    let LotusJson(msg) = msg;
-    let cid = message_cid(&msg);
-    let amount_limit = faucet_info.drip_amount();
-    if &msg.value > amount_limit {
-        return Err(ServerFnError::ServerError(
-            "Amount limit exceeded".to_string(),
-        ));
-    }
-    SendWrapper::new(async move {
-        check_rate_limit(faucet_info).await?;
-        let key = secret_key(faucet_info).await?;
-        let sig = sign(
-            key.key_info.r#type,
-            &key.key_info.private_key,
-            cid.to_bytes().as_slice(),
-        )
+    use crate::utils::message::message_transfer_native;
+    let LotusJson(to) = to;
+    let LotusJson(gas_fee_cap) = gas_fee_cap;
+    let LotusJson(gas_premium) = gas_premium;
+
+    let from = faucet_address(faucet_info)
+        .await?
+        .to_filecoin_address(faucet_info.network())
         .map_err(ServerFnError::new)?;
-        Ok(LotusJson(SignedMessage {
-            message: msg,
-            signature: sig,
-        }))
-    })
-    .await
+
+    let unsigned_msg = message_transfer_native(
+        from,
+        to,
+        faucet_info.drip_amount().clone(),
+        gas_limit,
+        gas_fee_cap,
+        gas_premium,
+        sequence,
+    );
+    sign_with_secret_key(unsigned_msg, faucet_info).await
 }
 
 /// Signs an ERC-20 transfer transaction to the specified recipient with the given nonce and gas

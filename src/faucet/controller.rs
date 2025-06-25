@@ -1,5 +1,5 @@
 use super::constants::{FaucetInfo, TokenType};
-use super::server_api::{faucet_address, sign_with_secret_key, signed_erc20_transfer};
+use super::server_api::{faucet_address, signed_erc20_transfer, signed_fil_transfer};
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
@@ -217,27 +217,35 @@ impl FaucetController {
             Ok(addr) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
+                        faucet.send_disabled.set(true);
+
                         let rpc = Provider::from_network(network);
                         let from = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
-
-                        faucet.send_disabled.set(true);
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let mut msg = message_transfer(from, addr, info.drip_amount().clone());
-                        msg.sequence = nonce;
-                        let msg = rpc.estimate_gas(msg).await?;
-                        match sign_with_secret_key(LotusJson(msg.clone()), info).await {
-                            Ok(LotusJson(smsg)) => {
-                                let cid = rpc.mpool_push(smsg).await?;
+                        let raw_msg = message_transfer(from, addr, info.drip_amount().clone());
+                        let msg = rpc.estimate_gas(raw_msg).await?;
+                        match signed_fil_transfer(
+                            LotusJson(addr),
+                            msg.gas_limit,
+                            LotusJson(msg.gas_fee_cap),
+                            LotusJson(msg.gas_premium),
+                            nonce,
+                            info,
+                        )
+                        .await
+                        {
+                            Ok(LotusJson(signed)) => {
+                                let cid = rpc.mpool_push(signed).await?;
                                 faucet.sent_messages.update(|messages| {
                                     messages.push((TransactionId::Native(cid), false));
                                 });
                                 log::info!("Sent message: {:?}", cid);
                             }
                             Err(e) => {
-                                log::error!("Failed to sign message: {}", e);
+                                console_log(&format!("Failed to sign message: {e}"));
                                 let rate_limit_seconds = info.rate_limit_seconds();
                                 faucet.send_limited.set(rate_limit_seconds as i32);
                             }
