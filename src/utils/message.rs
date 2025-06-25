@@ -4,7 +4,7 @@ use fvm_shared::{address::Address, econ::TokenAmount, METHOD_SEND};
 
 /// Creates a new transfer message with default values for gas and sequence.
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
-    message_transfer_custom(
+    message_transfer_native(
         from,
         to,
         value,
@@ -16,7 +16,7 @@ pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Messa
 }
 
 /// Creates a new transfer message with specified values for gas and sequence.
-pub fn message_transfer_custom(
+pub fn message_transfer_native(
     from: Address,
     to: Address,
     value: TokenAmount,

@@ -95,7 +95,7 @@ pub async fn signed_fil_transfer(
     sequence: u64,
     faucet_info: FaucetInfo,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
-    use crate::utils::message::message_transfer_custom;
+    use crate::utils::message::message_transfer_native;
     let LotusJson(to) = to;
     let LotusJson(gas_fee_cap) = gas_fee_cap;
     let LotusJson(gas_premium) = gas_premium;
@@ -105,7 +105,7 @@ pub async fn signed_fil_transfer(
         .to_filecoin_address(faucet_info.network())
         .map_err(ServerFnError::new)?;
 
-    let unsigned_msg = message_transfer_custom(
+    let unsigned_msg = message_transfer_native(
         from,
         to,
         faucet_info.drip_amount().clone(),
