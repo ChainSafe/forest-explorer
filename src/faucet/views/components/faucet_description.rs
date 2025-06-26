@@ -6,6 +6,7 @@ use leptos::{component, view, IntoView};
 #[component]
 pub fn FaucetDescription(
     drip_amount: TokenAmount,
+    wallet_cap: TokenAmount,
     token_unit: String,
     rate_limit_seconds: i64,
 ) -> impl IntoView {
@@ -14,7 +15,9 @@ pub fn FaucetDescription(
             <p>
                 "This faucet distributes " {format_balance(&drip_amount, &token_unit)}
                 " per request and is rate-limited to one request per " {rate_limit_seconds}
-                " seconds per address. Each wallet address is subject to a daily cap, and exceeding this limit may result in temporary restrictions."
+                " seconds per address. Each wallet address is subject to a daily cap of "
+                {format_balance(&wallet_cap, &token_unit)}
+                ", and exceeding this limit may result in temporary restrictions."
             </p>
             <p>
                 "Farming, abuse, or automated requests are strictly prohibited and will lead to stricter rate limits, temporary suspensions, or permanent bans."
