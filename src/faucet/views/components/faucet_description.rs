@@ -5,10 +5,15 @@ use leptos::{component, view, IntoView};
 
 #[component]
 pub fn FaucetDescription(
+    /// Amount of tokens to be dripped per request
     drip_amount: TokenAmount,
+    /// Maximum amount of tokens a wallet can receive from the faucet
     wallet_cap: TokenAmount,
+    /// Unit of the token (e.g., "FIL", "tFIL", "USDFC")
     token_unit: String,
+    /// Time in seconds between allowed faucet requests
     rate_limit_seconds: i64,
+    /// Time in seconds after which the wallet cap resets
     wallet_cap_reset: i64,
 ) -> impl IntoView {
     view! {

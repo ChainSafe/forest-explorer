@@ -69,7 +69,6 @@ impl DurableObject for RateLimiter {
         let is_allowed = block_until <= now && claimed < faucet_info.wallet_cap();
 
         if is_allowed {
-            // This Durable Object will be deleted after the alarm is triggered
             let claimed = claimed.clone() + faucet_info.drip_amount();
             let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
             self.state
@@ -92,6 +91,7 @@ impl DurableObject for RateLimiter {
         } else {
             std::time::Duration::from_secs(faucet_info.rate_limit_seconds() as u64 + 1)
         };
+        // Durable Object will be cleaned after this alarm is triggered
         self.state.storage().set_alarm(alarm_duration).await?;
         let response = RateLimiterResponse {
             block_until: block_until.timestamp(),
