@@ -2,6 +2,7 @@
 use std::str::FromStr as _;
 
 use crate::faucet::constants::FaucetInfo;
+use crate::utils::lotus_json::LotusJson;
 use chrono::{DateTime, Duration, Utc};
 use fvm_shared::econ::TokenAmount;
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ use worker::*;
 #[derive(Serialize, Deserialize)]
 pub struct RateLimiterResponse {
     pub block_until: i64,
-    pub wallet_cap_reached: bool,
+    pub claimed: LotusJson<TokenAmount>,
     pub may_sign: bool,
 }
 
@@ -90,7 +91,7 @@ impl DurableObject for RateLimiter {
             .await?;
         let response = RateLimiterResponse {
             block_until: block_until.timestamp(),
-            wallet_cap_reached: claimed >= faucet_info.wallet_cap(),
+            claimed: LotusJson(claimed),
             may_sign: is_allowed,
         };
         Response::from_json(&response)

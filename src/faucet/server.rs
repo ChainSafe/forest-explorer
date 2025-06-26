@@ -2,6 +2,7 @@
 
 use super::constants::FaucetInfo;
 use super::rate_limiter::RateLimiterResponse;
+use crate::utils::format::format_balance;
 use crate::utils::key::KeyInfo;
 use crate::utils::key::{sign, Key};
 use crate::utils::lotus_json::{
@@ -124,14 +125,17 @@ async fn check_rate_limit(faucet_info: FaucetInfo, id: u64) -> Result<(), Server
     let rate_limiter = query_rate_limiter(faucet_info, id).await?;
     let may_sign = rate_limiter_disabled || rate_limiter.may_sign;
     if !may_sign {
-        if rate_limiter.wallet_cap_reached {
+        let LotusJson(claimed) = rate_limiter.claimed;
+        if claimed >= faucet_info.wallet_cap() {
             return Err(ServerFnError::ServerError(format!(
-                "Rate limiter for {faucet_info} denied: wallet cap reached, id={id}"
+                "Rate limiter invoked for {faucet_info}: claimed={}, id={id}, ",
+                format_balance(&claimed, faucet_info.unit())
             )));
         } else {
             return Err(ServerFnError::ServerError(format!(
-                "Rate limiter for {faucet_info} denied: blocked until {}, id={id}",
-                DateTime::<Utc>::from_timestamp(rate_limiter.block_until, 0).unwrap_or_default()
+                "Rate limiter invoked for {faucet_info}: blocked until {}, claimed={}, id={id}",
+                DateTime::<Utc>::from_timestamp(rate_limiter.block_until, 0).unwrap_or_default(),
+                format_balance(&claimed, faucet_info.unit())
             )));
         }
     }
