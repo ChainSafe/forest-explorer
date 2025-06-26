@@ -126,18 +126,21 @@ async fn check_rate_limit(faucet_info: FaucetInfo, id: u64) -> Result<(), Server
     let may_sign = rate_limiter_disabled || rate_limiter.may_sign;
     if !may_sign {
         let LotusJson(claimed) = rate_limiter.claimed;
-        if claimed >= faucet_info.wallet_cap() {
-            return Err(ServerFnError::ServerError(format!(
-                "Rate limiter invoked for {faucet_info}: claimed={}, id={id}",
-                format_balance(&claimed, faucet_info.unit())
-            )));
+        let (wallet_cap_reset, wallet_cap) = (
+            faucet_info.wallet_cap_reset() * 3600,
+            faucet_info.wallet_cap(),
+        );
+        let block_until = if claimed >= wallet_cap {
+            rate_limiter.block_until + wallet_cap_reset
         } else {
-            return Err(ServerFnError::ServerError(format!(
-                "Rate limiter invoked for {faucet_info}: blocked until {}, claimed={}, id={id}",
-                DateTime::<Utc>::from_timestamp(rate_limiter.block_until, 0).unwrap_or_default(),
-                format_balance(&claimed, faucet_info.unit())
-            )));
-        }
+            rate_limiter.block_until
+        };
+
+        return Err(ServerFnError::ServerError(format!(
+            "Rate limiter invoked for {faucet_info}: claimed={}, blocked until {}, id={id}",
+            format_balance(&claimed, faucet_info.unit()),
+            DateTime::<Utc>::from_timestamp(block_until, 0).unwrap_or_default()
+        )));
     }
     Ok(())
 }
