@@ -52,6 +52,13 @@ impl FaucetInfo {
         }
     }
 
+    /// Returns the maximum amount of tokens that can be claimed by the wallet per day.
+    /// This is used to prevent the wallet from being drained completely and to ensure that the
+    /// faucet can continue to operate.
+    pub fn wallet_cap(&self) -> TokenAmount {
+        self.drip_amount() * 5
+    }
+
     /// Returns the unit of the token for the given faucet.
     pub fn unit(&self) -> &str {
         match self {
