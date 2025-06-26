@@ -71,11 +71,7 @@ impl DurableObject for RateLimiter {
         if is_allowed {
             // This Durable Object will be deleted after the alarm is triggered
             let claimed = claimed.clone() + faucet_info.drip_amount();
-            let next_block = if claimed == faucet_info.wallet_cap() {
-                block_until + Duration::hours(faucet_info.wallet_cap_reset())
-            } else {
-                now + Duration::seconds(faucet_info.rate_limit_seconds())
-            };
+            let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
             self.state
                 .storage()
                 .put(&block_until_key, next_block.timestamp())
@@ -91,12 +87,12 @@ impl DurableObject for RateLimiter {
                 "Rate limiter for {faucet_info} invoked: now={now:?}, block_until={block_until:?}, claimed={claimed:?}, may_sign={is_allowed:?}"
             );
         }
-        self.state
-            .storage()
-            .set_alarm(std::time::Duration::from_secs(
-                faucet_info.rate_limit_seconds() as u64 + 1,
-            ))
-            .await?;
+        let alarm_duration = if claimed >= faucet_info.wallet_cap() {
+            std::time::Duration::from_secs(faucet_info.wallet_cap_reset() as u64 * 3600 + 1)
+        } else {
+            std::time::Duration::from_secs(faucet_info.rate_limit_seconds() as u64 + 1)
+        };
+        self.state.storage().set_alarm(alarm_duration).await?;
         let response = RateLimiterResponse {
             block_until: block_until.timestamp(),
             claimed: LotusJson(claimed),
