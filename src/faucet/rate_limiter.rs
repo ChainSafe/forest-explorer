@@ -132,7 +132,7 @@ impl DurableObject for RateLimiter {
         id_tracker.retain(|x| !ids_to_remove.contains(x));
         self.state
             .storage()
-            .put(&id_tracker_key, id_tracker)
+            .put(id_tracker_key, id_tracker)
             .await
             .ok();
 
