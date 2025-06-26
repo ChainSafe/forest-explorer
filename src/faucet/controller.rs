@@ -221,17 +221,16 @@ impl FaucetController {
                         faucet.send_disabled.set(true);
 
                         let rpc = Provider::from_network(network);
-                        let receipient = rpc.lookup_id(addr).await?;
+                        let recipient = rpc.lookup_id(addr).await?;
                         let from = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let raw_msg =
-                            message_transfer(from, receipient, info.drip_amount().clone());
+                        let raw_msg = message_transfer(from, recipient, info.drip_amount().clone());
                         let msg = rpc.estimate_gas(raw_msg).await?;
                         match signed_fil_transfer(
-                            LotusJson(receipient),
+                            LotusJson(recipient),
                             msg.gas_limit,
                             LotusJson(msg.gas_fee_cap),
                             LotusJson(msg.gas_premium),
