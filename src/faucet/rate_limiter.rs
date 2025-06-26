@@ -71,10 +71,7 @@ impl DurableObject for RateLimiter {
                 .storage()
                 .put(&block_until_key, next_block.timestamp())
                 .await?;
-            self.state
-                .storage()
-                .put(id_tracker_key, id_tracker)
-                .await?;
+            self.state.storage().put(id_tracker_key, id_tracker).await?;
             self.state
                 .storage()
                 .put(&wallet_key, claimed.clone())
