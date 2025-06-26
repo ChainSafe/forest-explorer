@@ -59,7 +59,7 @@ impl DurableObject for RateLimiter {
             // This Durable Object will be deleted after the alarm is triggered
             let claimed = claimed.clone() + faucet_info.drip_amount();
             let next_block = if claimed == faucet_info.wallet_cap() {
-                block_until + Duration::days(1)
+                block_until + Duration::hours(faucet_info.wallet_cap_reset())
             } else {
                 now + Duration::seconds(faucet_info.rate_limit_seconds())
             };

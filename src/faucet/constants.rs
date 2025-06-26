@@ -52,6 +52,12 @@ impl FaucetInfo {
         }
     }
 
+    /// Returns the time period in hours after which the wallet cap can reset.
+    // The wallet cap defines max amount of tokens that can be claimed by the wallet per day
+    pub fn wallet_cap_reset(&self) -> i64 {
+        24 // 24 hours
+    }
+
     /// Returns the maximum amount of tokens that can be claimed by the wallet per day.
     /// This is used to prevent the wallet from being drained completely and to ensure that the
     /// faucet can continue to operate.
