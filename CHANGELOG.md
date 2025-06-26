@@ -38,10 +38,10 @@
 - [#199](https://github.com/ChainSafe/forest-explorer/pull/199) Added faucet
   transaction history button which is configurable using github env var.
 
-- [#137] (https://github.com/ChainSafe/forest-explorer/issues/137) Different
-  rate limitter for calibnet and mainnet
+- [#137](https://github.com/ChainSafe/forest-explorer/issues/137) Different rate
+  limitter for calibnet and mainnet
 
-- [#257] (https://github.com/ChainSafe/forest-explorer/issues/257) Added per
+- [#257](https://github.com/ChainSafe/forest-explorer/issues/257) Added per
   wallet daily cap on token claim.
 
 ### Changed
