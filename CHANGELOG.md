@@ -41,6 +41,9 @@
 - [#137] (https://github.com/ChainSafe/forest-explorer/issues/137) Different
   rate limitter for calibnet and mainnet
 
+- [#257] (https://github.com/ChainSafe/forest-explorer/issues/257) Added per
+  wallet daily cap on token claim.
+
 ### Changed
 
 - [#136](https://github.com/ChainSafe/forest-explorer/pull/136) Increased the
