@@ -11,6 +11,7 @@ use crate::utils::lotus_json::{
 use alloy::{network::TransactionBuilder, rpc::types::TransactionRequest};
 use anyhow::Result;
 use axum::Extension;
+use chrono::{DateTime, Utc};
 use fvm_shared::message::Message;
 use leptos::prelude::ServerFnError;
 use leptos_axum::extract;
@@ -130,7 +131,7 @@ async fn check_rate_limit(faucet_info: FaucetInfo, id: u64) -> Result<(), Server
         } else {
             return Err(ServerFnError::ServerError(format!(
                 "Rate limiter for {faucet_info} denied: blocked until {}, id={id}",
-                rate_limiter.block_until
+                DateTime::<Utc>::from_timestamp(rate_limiter.block_until, 0).unwrap_or_default()
             )));
         }
     }
