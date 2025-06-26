@@ -129,6 +129,7 @@ pub async fn signed_erc20_transfer(
     nonce: u64,
     gas_price: u64,
     faucet_info: FaucetInfo,
+    id: u64,
 ) -> Result<Vec<u8>, ServerFnError> {
     use crate::utils::conversions::TokenAmountAlloyExt as _;
     use alloy::network::TransactionBuilder as _;
@@ -162,5 +163,5 @@ pub async fn signed_erc20_transfer(
         .with_gas_price(gas_price.into())
         .with_input(calldata);
 
-    sign_with_eth_secret_key(tx.clone(), faucet_info).await
+    sign_with_eth_secret_key(tx.clone(), faucet_info, id).await
 }

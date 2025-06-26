@@ -223,6 +223,15 @@ impl Provider {
         .await
     }
 
+    pub async fn lookup_id(&self, addr: Address) -> anyhow::Result<Address> {
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.StateLookupID",
+            &[serde_json::to_value(LotusJson(addr))?, Value::Null],
+        )
+        .await
+    }
+
     /// Returns the current gas price in attoFIL.
     ///
     /// Internally, it prunes the result from `u128` to `u64` but it should be safe as we don't
