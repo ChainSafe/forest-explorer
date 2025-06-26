@@ -11,6 +11,7 @@ use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use uuid::Uuid;
+use anyhow::bail;
 
 #[derive(Clone)]
 pub struct FaucetController {
@@ -202,14 +203,14 @@ impl FaucetController {
         target_balance < drip_amount
     }
 
-    pub fn drip(self) {
-        match &self.info.token_type() {
+    pub fn drip(&self) {
+        match self.info.token_type() {
             TokenType::Native => self.drip_native_token(),
             TokenType::Erc20(_) => self.drip_erc20_token(),
         }
     }
 
-    fn drip_native_token(self) {
+    fn drip_native_token(&self) {
         let faucet = self.faucet.clone();
         let network = self.info.network();
         let info = self.info;
@@ -250,7 +251,7 @@ impl FaucetController {
                             }
                             Err(e) => {
                                 console_log(&format!("Failed to sign message: {}", e));
-                                self.add_error_message(format!("{}", e));
+                                bail!("{e}");
                             }
                         }
                         Ok(())
@@ -270,7 +271,7 @@ impl FaucetController {
         }
     }
 
-    fn drip_erc20_token(self) {
+    fn drip_erc20_token(&self) {
         let faucet = self.faucet.clone();
         let network = self.info.network();
         let info = self.info;
@@ -306,7 +307,7 @@ impl FaucetController {
                             }
                             Err(e) => {
                                 console_log(&format!("Failed to create signed transaction: {e}"));
-                                self.add_error_message(format!("Error signing transaction: {}", e));
+                                bail!("{e}");
                             }
                         }
                         Ok(())
