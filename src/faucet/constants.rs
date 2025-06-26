@@ -152,6 +152,8 @@ mod tests {
         assert!(mainnet_faucet.transaction_base_url().is_none());
         assert_eq!(mainnet_faucet.token_type(), TokenType::Native);
         assert_eq!(mainnet_faucet.chain_id(), 314);
+        assert_eq!(mainnet_faucet.wallet_cap(), 5 * &*MAINNET_DRIP_AMOUNT);
+        assert_eq!(mainnet_faucet.wallet_cap_reset(), 24);
 
         let calibnet_fil_faucet = FaucetInfo::CalibnetFIL;
         assert_eq!(calibnet_fil_faucet.drip_amount(), &*CALIBNET_DRIP_AMOUNT);
@@ -162,6 +164,8 @@ mod tests {
         assert!(calibnet_fil_faucet.transaction_base_url().is_none());
         assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
+        assert_eq!(calibnet_fil_faucet.wallet_cap(), 5 * &*CALIBNET_DRIP_AMOUNT);
+        assert_eq!(calibnet_fil_faucet.wallet_cap_reset(), 24);
 
         let calibnet_usdfc_faucet = FaucetInfo::CalibnetUSDFC;
         assert_eq!(
@@ -184,5 +188,10 @@ mod tests {
             )
         );
         assert_eq!(calibnet_usdfc_faucet.chain_id(), 314159);
+        assert_eq!(
+            calibnet_usdfc_faucet.wallet_cap(),
+            5 * &*CALIBNET_USDFC_DRIP_AMOUNT
+        );
+        assert_eq!(calibnet_usdfc_faucet.wallet_cap_reset(), 24);
     }
 }
