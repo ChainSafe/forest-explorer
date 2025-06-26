@@ -15,7 +15,7 @@ pub fn FaucetDescription(
         <div class="description">
             <p>
                 "This faucet distributes " {format_balance(&drip_amount, &token_unit)}
-                " per request and is rate-limited to one request per " {rate_limit_seconds}
+                " per request and is rate-limited to 1 request per " {rate_limit_seconds}
                 " seconds per address. Each wallet address is subject to receive "
                 {format_balance(&wallet_cap, &token_unit)} " every " {wallet_cap_reset}
                 " hours, and exceeding this limit may result in temporary restrictions."

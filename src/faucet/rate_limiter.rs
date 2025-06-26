@@ -5,7 +5,6 @@ use crate::faucet::constants::FaucetInfo;
 use chrono::{DateTime, Duration, Utc};
 use fvm_shared::econ::TokenAmount;
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
 use worker::*;
 
 #[derive(Serialize, Deserialize)]
@@ -18,15 +17,11 @@ pub struct RateLimiterResponse {
 #[durable_object]
 pub struct RateLimiter {
     state: State,
-    ids: RefCell<Vec<String>>,
 }
 
 impl DurableObject for RateLimiter {
     fn new(state: State, _env: Env) -> Self {
-        Self {
-            state,
-            ids: RefCell::new(Vec::new()),
-        }
+        Self { state }
     }
 
     async fn fetch(&self, req: Request) -> Result<Response> {
@@ -38,7 +33,16 @@ impl DurableObject for RateLimiter {
             .map_err(|e| worker::Error::RustError(e.to_string()))?;
         let block_until_key = format!("block_until_{}", id);
         let wallet_key = format!("wallet_{}", id);
-        self.ids.borrow_mut().push(id.to_string());
+        let id_tracker_key = "id_tracker";
+        let mut id_tracker: Vec<String> = self
+            .state
+            .storage()
+            .get(&id_tracker_key)
+            .await
+            .unwrap_or_default();
+        if !id_tracker.contains(&id.to_string()) {
+            id_tracker.push(id.to_string());
+        }
         let block_until = self
             .state
             .storage()
@@ -69,6 +73,10 @@ impl DurableObject for RateLimiter {
                 .await?;
             self.state
                 .storage()
+                .put(&id_tracker_key, id_tracker)
+                .await?;
+            self.state
+                .storage()
                 .put(&wallet_key, claimed.clone())
                 .await?;
             console_log!("Rate limiter for {faucet_info} set: block_until={next_block:?} claimed={claimed:?}");
@@ -96,8 +104,15 @@ impl DurableObject for RateLimiter {
         let mut ids_to_remove = Vec::new();
         let storage = self.state.storage();
         let now = Utc::now();
+        let id_tracker_key = "id_tracker";
+        let mut id_tracker: Vec<String> = self
+            .state
+            .storage()
+            .get(&id_tracker_key)
+            .await
+            .unwrap_or_default();
 
-        for id in self.ids.borrow().iter() {
+        for id in id_tracker.iter() {
             let block_until_key = format!("block_until_{}", id);
             let wallet_key = format!("wallet_{}", id);
             let block_until = self
@@ -108,16 +123,21 @@ impl DurableObject for RateLimiter {
                 .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
                 .unwrap_or(now);
             if block_until <= now {
+                console_log!("Deleting expired {block_until_key}");
                 storage.delete(&block_until_key).await.ok();
                 if now - block_until >= Duration::days(1) {
+                    console_log!("Deleting expired {wallet_key}");
                     storage.delete(&wallet_key).await.ok();
                     ids_to_remove.push(id.to_string());
                 }
             }
         }
-        self.ids
-            .borrow_mut()
-            .retain(|id| !ids_to_remove.contains(id));
+        id_tracker.retain(|x| !ids_to_remove.contains(x));
+        self.state
+            .storage()
+            .put(&id_tracker_key, id_tracker)
+            .await
+            .ok();
 
         Response::ok("OK")
     }
