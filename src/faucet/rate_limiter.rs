@@ -37,7 +37,7 @@ impl DurableObject for RateLimiter {
         let mut id_tracker: Vec<String> = self
             .state
             .storage()
-            .get(&id_tracker_key)
+            .get(id_tracker_key)
             .await
             .unwrap_or_default();
         if !id_tracker.contains(&id.to_string()) {
@@ -73,7 +73,7 @@ impl DurableObject for RateLimiter {
                 .await?;
             self.state
                 .storage()
-                .put(&id_tracker_key, id_tracker)
+                .put(id_tracker_key, id_tracker)
                 .await?;
             self.state
                 .storage()
@@ -96,7 +96,7 @@ impl DurableObject for RateLimiter {
             wallet_cap_reached: claimed >= faucet_info.wallet_cap(),
             may_sign: is_allowed,
         };
-        return Response::from_json(&response);
+        Response::from_json(&response)
     }
 
     async fn alarm(&self) -> Result<Response> {
@@ -108,7 +108,7 @@ impl DurableObject for RateLimiter {
         let mut id_tracker: Vec<String> = self
             .state
             .storage()
-            .get(&id_tracker_key)
+            .get(id_tracker_key)
             .await
             .unwrap_or_default();
 
