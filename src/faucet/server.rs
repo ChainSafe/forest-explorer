@@ -128,7 +128,7 @@ async fn check_rate_limit(faucet_info: FaucetInfo, id: u64) -> Result<(), Server
         let LotusJson(claimed) = rate_limiter.claimed;
         if claimed >= faucet_info.wallet_cap() {
             return Err(ServerFnError::ServerError(format!(
-                "Rate limiter invoked for {faucet_info}: claimed={}, id={id}, ",
+                "Rate limiter invoked for {faucet_info}: claimed={}, id={id}",
                 format_balance(&claimed, faucet_info.unit())
             )));
         } else {

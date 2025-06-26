@@ -8,10 +8,18 @@ use fvm_shared::econ::TokenAmount;
 use serde::{Deserialize, Serialize};
 use worker::*;
 
+/// Response from the rate limiter indicating whether a request can proceed
+/// and providing context about rate limiting status.
 #[derive(Serialize, Deserialize)]
 pub struct RateLimiterResponse {
+    /// Unix timestamp (in seconds) until which requests are blocked.
+    /// A value of 0 indicates no blocking is in effect.
     pub block_until: i64,
+    /// The total amount of tokens claimed by the requester so far.
+    /// Used to track usage against wallet cap.
     pub claimed: LotusJson<TokenAmount>,
+    /// Indicates whether the request is allowed to proceed with signing.
+    /// If false, the request should be rejected due to rate limiting.
     pub may_sign: bool,
 }
 

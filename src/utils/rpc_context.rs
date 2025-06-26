@@ -223,6 +223,9 @@ impl Provider {
         .await
     }
 
+    /// Looks up the ID address of a given Filecoin address.
+    /// This method makes an RPC call to the Filecoin node to convert a Filecoin address
+    /// to its corresponding ID address in the current state tree.
     pub async fn lookup_id(&self, addr: Address) -> anyhow::Result<Address> {
         invoke_rpc_method(
             &self.url,
