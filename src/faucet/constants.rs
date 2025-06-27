@@ -15,6 +15,9 @@ static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
 static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(5));
 
+#[cfg(any(test, feature = "ssr"))]
+pub const WALLET_CAP_RESET_IN_SECONDS: i64 = 86400;
+
 pub type ContractAddress = alloy::primitives::Address;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -50,11 +53,6 @@ impl FaucetInfo {
             FaucetInfo::CalibnetFIL => 60,
             FaucetInfo::CalibnetUSDFC => 60,
         }
-    }
-
-    /// Returns the time period in hours after which the wallet cap can reset.
-    pub fn wallet_cap_reset(&self) -> i64 {
-        24 // 24 hours
     }
 
     /// Returns the maximum amount of tokens that can be claimed by the wallet per day.
@@ -153,7 +151,6 @@ mod tests {
         assert_eq!(mainnet_faucet.token_type(), TokenType::Native);
         assert_eq!(mainnet_faucet.chain_id(), 314);
         assert_eq!(mainnet_faucet.wallet_cap(), 5 * &*MAINNET_DRIP_AMOUNT);
-        assert_eq!(mainnet_faucet.wallet_cap_reset(), 24);
 
         let calibnet_fil_faucet = FaucetInfo::CalibnetFIL;
         assert_eq!(calibnet_fil_faucet.drip_amount(), &*CALIBNET_DRIP_AMOUNT);
@@ -165,7 +162,6 @@ mod tests {
         assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
         assert_eq!(calibnet_fil_faucet.wallet_cap(), 5 * &*CALIBNET_DRIP_AMOUNT);
-        assert_eq!(calibnet_fil_faucet.wallet_cap_reset(), 24);
 
         let calibnet_usdfc_faucet = FaucetInfo::CalibnetUSDFC;
         assert_eq!(
@@ -192,6 +188,5 @@ mod tests {
             calibnet_usdfc_faucet.wallet_cap(),
             5 * &*CALIBNET_USDFC_DRIP_AMOUNT
         );
-        assert_eq!(calibnet_usdfc_faucet.wallet_cap_reset(), 24);
     }
 }

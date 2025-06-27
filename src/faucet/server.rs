@@ -1,6 +1,6 @@
 #![cfg(feature = "ssr")]
 
-use super::constants::FaucetInfo;
+use super::constants::{FaucetInfo, WALLET_CAP_RESET_IN_SECONDS};
 use super::rate_limiter::RateLimiterResponse;
 use crate::utils::format::format_balance;
 use crate::utils::key::KeyInfo;
@@ -126,12 +126,8 @@ async fn check_rate_limit(faucet_info: FaucetInfo, id: u64) -> Result<(), Server
     let may_sign = rate_limiter_disabled || rate_limiter.may_sign;
     if !may_sign {
         let LotusJson(claimed) = rate_limiter.claimed;
-        let (wallet_cap_reset, wallet_cap) = (
-            faucet_info.wallet_cap_reset() * 3600,
-            faucet_info.wallet_cap(),
-        );
-        let block_until = if claimed >= wallet_cap {
-            rate_limiter.block_until + wallet_cap_reset
+        let block_until = if claimed >= faucet_info.wallet_cap() {
+            rate_limiter.block_until + WALLET_CAP_RESET_IN_SECONDS
         } else {
             rate_limiter.block_until
         };

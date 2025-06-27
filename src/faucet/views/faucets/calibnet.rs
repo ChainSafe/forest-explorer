@@ -12,7 +12,6 @@ pub fn Faucet_Calibnet() -> impl IntoView {
     let token_unit = FaucetInfo::CalibnetFIL.unit();
     let rate_limit_seconds = FaucetInfo::CalibnetFIL.rate_limit_seconds();
     let wallet_cap = FaucetInfo::CalibnetFIL.wallet_cap();
-    let wallet_cap_reset = FaucetInfo::CalibnetFIL.wallet_cap_reset();
     let rpc_context = RpcContext::use_context();
     // Set rpc context to calibnet url
     rpc_context.set(Provider::get_network_url(FaucetInfo::CalibnetFIL.network()));
@@ -31,7 +30,6 @@ pub fn Faucet_Calibnet() -> impl IntoView {
                 wallet_cap=wallet_cap
                 token_unit=token_unit.to_string()
                 rate_limit_seconds=rate_limit_seconds
-                wallet_cap_reset=wallet_cap_reset
             />
         </div>
     }

@@ -12,7 +12,6 @@ pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
     let token_unit = FaucetInfo::CalibnetUSDFC.unit();
     let rate_limit_seconds = FaucetInfo::CalibnetUSDFC.rate_limit_seconds();
     let wallet_cap = FaucetInfo::CalibnetUSDFC.wallet_cap();
-    let wallet_cap_reset = FaucetInfo::CalibnetUSDFC.wallet_cap_reset();
     let rpc_context = RpcContext::use_context();
     rpc_context.set(Provider::get_network_url(
         FaucetInfo::CalibnetUSDFC.network(),
@@ -32,8 +31,7 @@ pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
                     "This faucet distributes " {format_balance(drip_amount, token_unit)}
                     " per request. It is rate-limited to 1 request per " {rate_limit_seconds}
                     " seconds. Each wallet address is subject to receive " {format_balance(&wallet_cap, token_unit)}
-                    " every " {wallet_cap_reset}
-                    " hours, and exceeding this limit may result in temporary restrictions."
+                    " every day, and exceeding this limit may result in temporary restrictions."
                 </p>
                 <p>
                     "Farming is discouraged and will result in more stringent rate limiting in the future and/or permanent bans."

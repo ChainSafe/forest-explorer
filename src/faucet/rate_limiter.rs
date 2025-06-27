@@ -1,7 +1,7 @@
 #![cfg(feature = "ssr")]
 use std::str::FromStr as _;
 
-use crate::faucet::constants::FaucetInfo;
+use crate::faucet::constants::{FaucetInfo, WALLET_CAP_RESET_IN_SECONDS};
 use crate::utils::lotus_json::LotusJson;
 use chrono::{DateTime, Duration, Utc};
 use fvm_shared::econ::TokenAmount;
@@ -41,17 +41,7 @@ impl DurableObject for RateLimiter {
         let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
             .map_err(|e| worker::Error::RustError(e.to_string()))?;
         let block_until_key = format!("block_until_{}", id);
-        let wallet_key = format!("wallet_{}", id);
-        let id_tracker_key = "id_tracker";
-        let mut id_tracker: Vec<String> = self
-            .state
-            .storage()
-            .get(id_tracker_key)
-            .await
-            .unwrap_or_default();
-        if !id_tracker.contains(&id.to_string()) {
-            id_tracker.push(id.to_string());
-        }
+        let claimed_key = format!("claimed_{}", id);
         let block_until = self
             .state
             .storage()
@@ -62,7 +52,7 @@ impl DurableObject for RateLimiter {
         let claimed = self
             .state
             .storage()
-            .get(&wallet_key)
+            .get(&claimed_key)
             .await
             .unwrap_or(TokenAmount::default());
 
@@ -75,10 +65,9 @@ impl DurableObject for RateLimiter {
                 .storage()
                 .put(&block_until_key, next_block.timestamp())
                 .await?;
-            self.state.storage().put(id_tracker_key, id_tracker).await?;
             self.state
                 .storage()
-                .put(&wallet_key, claimed.clone())
+                .put(&claimed_key, claimed.clone())
                 .await?;
             console_log!("Rate limiter for {faucet_info} set: block_until={next_block:?} claimed={claimed:?}");
         } else {
@@ -86,13 +75,14 @@ impl DurableObject for RateLimiter {
                 "Rate limiter for {faucet_info} invoked: now={now:?}, block_until={block_until:?}, claimed={claimed:?}, may_sign={is_allowed:?}"
             );
         }
-        let alarm_duration = if claimed >= faucet_info.wallet_cap() {
-            std::time::Duration::from_secs(faucet_info.wallet_cap_reset() as u64 * 3600 + 1)
-        } else {
-            std::time::Duration::from_secs(faucet_info.rate_limit_seconds() as u64 + 1)
-        };
-        // Durable Object will be cleaned after this alarm is triggered
-        self.state.storage().set_alarm(alarm_duration).await?;
+        if self.state.storage().get_alarm().await?.is_none() {
+            self.state
+                .storage()
+                .set_alarm(std::time::Duration::from_secs(
+                    WALLET_CAP_RESET_IN_SECONDS as u64,
+                ))
+                .await?;
+        }
         let response = RateLimiterResponse {
             block_until: block_until.timestamp(),
             claimed: LotusJson(claimed),
@@ -102,44 +92,8 @@ impl DurableObject for RateLimiter {
     }
 
     async fn alarm(&self) -> Result<Response> {
-        console_log!("Rate limiter alarm triggered. Cleaning up expired keys...");
-        let mut ids_to_remove = Vec::new();
-        let storage = self.state.storage();
-        let now = Utc::now();
-        let id_tracker_key = "id_tracker";
-        let mut id_tracker: Vec<String> = self
-            .state
-            .storage()
-            .get(id_tracker_key)
-            .await
-            .unwrap_or_default();
-
-        for id in id_tracker.iter() {
-            let block_until_key = format!("block_until_{}", id);
-            let wallet_key = format!("wallet_{}", id);
-            let block_until = self
-                .state
-                .storage()
-                .get(&block_until_key)
-                .await
-                .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
-                .unwrap_or(now);
-            if block_until <= now {
-                console_log!("Deleting expired {block_until_key}");
-                storage.delete(&block_until_key).await.ok();
-                if now - block_until >= Duration::days(1) {
-                    console_log!("Deleting expired {wallet_key}");
-                    storage.delete(&wallet_key).await.ok();
-                    ids_to_remove.push(id.to_string());
-                }
-            }
-        }
-        id_tracker.retain(|x| !ids_to_remove.contains(x));
-        self.state
-            .storage()
-            .put(id_tracker_key, id_tracker)
-            .await
-            .ok();
+        console_log!("Rate limiter alarm triggered. DurableObject will be deleted.");
+        self.state.storage().delete_all().await.ok();
 
         Response::ok("OK")
     }
