@@ -70,7 +70,7 @@ impl DurableObject for RateLimiter {
             }
             return Response::from_json(&is_allowed);
         }
-
+        console_log!("{faucet_info} Rate limiter for {id} invoked: Wallet capped now={now:?}, claimed={claimed:?}");
         Response::from_json(&false)
     }
 
