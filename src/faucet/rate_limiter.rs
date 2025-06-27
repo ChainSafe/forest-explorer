@@ -3,6 +3,7 @@ use std::str::FromStr as _;
 
 use crate::faucet::constants::FaucetInfo;
 use chrono::{DateTime, Duration, Utc};
+use fvm_shared::econ::TokenAmount;
 use worker::*;
 
 #[durable_object]
@@ -18,39 +19,59 @@ impl DurableObject for RateLimiter {
     async fn fetch(&self, req: Request) -> Result<Response> {
         let now = Utc::now();
         let path = req.path();
-        let faucet_info = FaucetInfo::from_str(path.split('/').last().unwrap_or_default())
+        let mut path_info = path.split('/');
+        let id = path_info.next_back().unwrap_or_default();
+        let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
             .map_err(|e| worker::Error::RustError(e.to_string()))?;
-
-        let block_until = self
+        let claimed_key = format!("claimed_{}", id);
+        let claimed = self
             .state
             .storage()
-            .get("block_until")
+            .get(&claimed_key)
             .await
-            .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
-            .unwrap_or(now);
-
-        let is_allowed = block_until <= now;
-
-        if is_allowed {
-            // This Durable Object will be deleted after the alarm is triggered
-            let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
-            self.state
+            .unwrap_or(TokenAmount::default());
+        let is_wallet_capped = claimed >= faucet_info.wallet_cap();
+        if !is_wallet_capped {
+            let block_until_key = format!("block_until_{}", id);
+            let block_until = self
+                .state
                 .storage()
-                .put("block_until", next_block.timestamp())
-                .await?;
-            console_log!("Rate limiter for {faucet_info} set: block_until={next_block:?}");
-            self.state
-                .storage()
-                .set_alarm(std::time::Duration::from_secs(
-                    faucet_info.rate_limit_seconds() as u64 + 1,
-                ))
-                .await?;
-        } else {
-            console_log!(
-                "Rate limiter for {faucet_info} invoked: now={now:?}, block_until={block_until:?}, may_sign={is_allowed:?}"
+                .get(&block_until_key)
+                .await
+                .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
+                .unwrap_or(now);
+            let is_allowed = block_until <= now;
+
+            if is_allowed {
+                let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
+                let updated_claimed = claimed.clone() + faucet_info.drip_amount();
+                self.state
+                    .storage()
+                    .put(&block_until_key, next_block.timestamp())
+                    .await?;
+                self.state
+                    .storage()
+                    .put(&claimed_key, updated_claimed.clone())
+                    .await?;
+                if self.state.storage().get_alarm().await?.is_none() {
+                    // This Durable Object will be deleted after the alarm is triggered
+                    self.state
+                        .storage()
+                        .set_alarm(std::time::Duration::from_secs(
+                            faucet_info.wallet_limit_seconds() as u64,
+                        ))
+                        .await?;
+                }
+                console_log!("{faucet_info} Rate limiter for {id} set: now={now:?}, block_until={next_block:?}, claimed={updated_claimed:?}");
+            } else {
+                console_log!(
+                "{faucet_info} Rate limiter for {id} invoked: now={now:?}, block_until={block_until:?}, claimed={claimed:?}, may_sign={is_allowed:?}"
             );
+            }
+            return Response::from_json(&is_allowed);
         }
-        Response::from_json(&is_allowed)
+
+        Response::from_json(&false)
     }
 
     async fn alarm(&self) -> Result<Response> {
