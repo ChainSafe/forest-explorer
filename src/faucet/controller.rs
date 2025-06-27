@@ -220,15 +220,16 @@ impl FaucetController {
                         faucet.send_disabled.set(true);
 
                         let rpc = Provider::from_network(network);
+                        let recipient = rpc.lookup_id(addr).await?;
                         let from = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let raw_msg = message_transfer(from, addr, info.drip_amount().clone());
+                        let raw_msg = message_transfer(from, recipient, info.drip_amount().clone());
                         let msg = rpc.estimate_gas(raw_msg).await?;
                         match signed_fil_transfer(
-                            LotusJson(addr),
+                            LotusJson(recipient),
                             msg.gas_limit,
                             LotusJson(msg.gas_fee_cap),
                             LotusJson(msg.gas_premium),
@@ -245,7 +246,7 @@ impl FaucetController {
                                 log::info!("Sent message: {:?}", cid);
                             }
                             Err(e) => {
-                                console_log(&format!("Failed to sign message: {e}"));
+                                console_log(&format!("Failed to sign message: {}", e));
                                 let rate_limit_seconds = info.rate_limit_seconds();
                                 faucet.send_limited.set(rate_limit_seconds as i32);
                             }
@@ -272,12 +273,13 @@ impl FaucetController {
         let network = self.info.network();
         let info = self.info;
         match parse_address(&self.faucet.target_address.get(), network) {
-            Ok(recipient) => {
+            Ok(addr) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
 
                         let filecoin_rpc = Provider::from_network(network);
+                        let recipient = filecoin_rpc.lookup_id(addr).await?;
                         let owner_fil_address = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
@@ -287,7 +289,9 @@ impl FaucetController {
                         let gas_price = filecoin_rpc.gas_price().await?;
                         let eth_to = recipient.into_eth_address()?;
 
-                        match signed_erc20_transfer(eth_to, nonce, gas_price, info).await {
+                        match signed_erc20_transfer(eth_to, nonce, gas_price, info, recipient.id()?)
+                            .await
+                        {
                             Ok(signed) => {
                                 let tx_id =
                                     filecoin_rpc.send_eth_transaction_signed(&signed).await?;
