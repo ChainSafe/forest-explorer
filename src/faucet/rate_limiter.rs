@@ -19,6 +19,7 @@ impl DurableObject for RateLimiter {
     async fn fetch(&self, req: Request) -> Result<Response> {
         let now = Utc::now();
         let path = req.path();
+        let mut retry_after = None;
         let mut path_info = path.split('/');
         let id = path_info.next_back().unwrap_or_default();
         let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
@@ -67,11 +68,15 @@ impl DurableObject for RateLimiter {
                 console_log!(
                 "{faucet_info} Rate limiter for {id} invoked: now={now:?}, block_until={block_until:?}, claimed={claimed:?}, may_sign={is_allowed:?}"
             );
+                retry_after = Some(block_until.signed_duration_since(&now).num_seconds());
             }
-            return Response::from_json(&is_allowed);
+            return Response::from_json(&Some(retry_after));
         }
         console_log!("{faucet_info} Rate limiter for {id} invoked: Wallet capped now={now:?}, claimed={claimed:?}");
-        Response::from_json(&false)
+        let wallet_block_until = self.state.storage().get_alarm().await?.unwrap_or_default();
+        retry_after =
+            Some(Duration::milliseconds(wallet_block_until - now.timestamp_millis()).num_seconds());
+        Response::from_json(&retry_after)
     }
 
     async fn alarm(&self) -> Result<Response> {
