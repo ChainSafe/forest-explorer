@@ -68,7 +68,7 @@ impl DurableObject for RateLimiter {
                 console_log!(
                 "{faucet_info} Rate limiter for {id} invoked: now={now:?}, block_until={block_until:?}, claimed={claimed:?}, may_sign={is_allowed:?}"
             );
-                retry_after = Some(block_until.signed_duration_since(&now).num_seconds());
+                retry_after = Some(block_until.signed_duration_since(now).num_seconds());
             }
             return Response::from_json(&Some(retry_after));
         }
