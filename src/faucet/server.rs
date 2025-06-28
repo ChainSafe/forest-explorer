@@ -91,7 +91,7 @@ pub async fn sign_with_eth_secret_key(
 /// Queries the rate limiter for a specific faucet and wallet ID.
 /// Returns:
 /// - `None` if no rate limit is set.
-/// - `Some(i32)` containing the remaining cooldown time in seconds.
+/// - `Some(i32)` containing the remaining cool-down time in seconds.
 pub async fn query_rate_limiter(
     faucet_info: FaucetInfo,
     id: u64,
