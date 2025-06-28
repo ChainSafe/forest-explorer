@@ -15,7 +15,8 @@ use alloy::{sol, sol_types::SolCall};
 
 #[cfg(feature = "ssr")]
 use super::server::{
-    read_faucet_secret, secret_key, sign_with_eth_secret_key, sign_with_secret_key,
+    query_rate_limiter, read_faucet_secret, secret_key, sign_with_eth_secret_key,
+    sign_with_secret_key,
 };
 
 #[cfg(feature = "ssr")]
@@ -163,4 +164,23 @@ pub async fn signed_erc20_transfer(
         .with_input(calldata);
 
     sign_with_eth_secret_key(tx.clone(), faucet_info).await
+}
+
+/// Checks if the request can proceed based on the rate limit for the given faucet.
+#[server]
+pub async fn check_rate_limit(
+    faucet_info: FaucetInfo,
+    id: u64,
+) -> Result<Option<i32>, ServerFnError> {
+    let axum::Extension(env): axum::Extension<std::sync::Arc<worker::Env>> =
+        leptos_axum::extract().await?;
+    let mut rate_limit = None;
+    let rate_limiter_disabled = env
+        .secret("RATE_LIMITER_DISABLED")
+        .map(|v| v.to_string().to_lowercase() == "true")
+        .unwrap_or(false);
+    if !rate_limiter_disabled {
+        rate_limit = query_rate_limiter(faucet_info, id).await?;
+    }
+    Ok(rate_limit)
 }
