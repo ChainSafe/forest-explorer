@@ -5,9 +5,9 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "prettier": "^3.5.3",
+    "prettier": "^3.6.2",
     "tailwindcss": "^3.4.17",
-    "wrangler": "^4.20.5"
+    "wrangler": "^4.22.0"
   },
   "scripts": {
     "prettier-version": "prettier --version",
