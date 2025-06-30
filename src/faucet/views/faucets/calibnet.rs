@@ -6,6 +6,8 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::{Meta, Title};
 
+/// Displays the Calibnet Faucet page.
+/// Sets the RPC context to calibnet and renders the faucet and its description.
 #[component]
 pub fn Faucet_Calibnet() -> impl IntoView {
     let faucet_info = FaucetInfo::CalibnetFIL;

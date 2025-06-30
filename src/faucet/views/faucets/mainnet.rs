@@ -6,6 +6,8 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::{Meta, Title};
 
+/// Displays the Mainnet Faucet page.
+/// Sets the RPC context to mainnet and renders the faucet and its description.
 #[component]
 pub fn Faucet_Mainnet() -> impl IntoView {
     let faucet_info = FaucetInfo::MainnetFIL;
