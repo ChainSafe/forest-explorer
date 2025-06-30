@@ -3,13 +3,7 @@ use crate::utils::format::format_balance;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 
-/// Displays descriptive information about the faucet.
-/// This component renders a user-friendly description of the faucet's token distribution
-/// rules and limitations, including:
-/// - The amount of tokens dispensed per drip
-/// - The token unit/symbol
-/// - Rate limiting information (time between requests)
-/// - Wallet capping
+/// This component renders a user-friendly description of the faucet's token distribution rules and limitations.
 #[component]
 pub fn FaucetDescription(faucet_info: FaucetInfo) -> impl IntoView {
     let drip_amount = faucet_info.drip_amount();
