@@ -110,7 +110,7 @@ impl DurableObject for RateLimiter {
             self.update_rate_limit(&faucet_info, &id, now, claimed)
                 .await?;
         }
-        return Response::from_json(&retry_after);
+        Response::from_json(&retry_after)
     }
 
     async fn alarm(&self) -> Result<Response> {
