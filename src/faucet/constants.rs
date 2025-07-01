@@ -16,8 +16,10 @@ static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(5));
 
 /// The multiplier applied to the number of tokens dripped per wallet every `wallet_limit_seconds`.
-/// This corresponds to 5 times of network drip amount.
-const WALLET_CAP_MULTIPLIER: i64 = 5;
+/// This corresponds to 2x of drip amount
+const MAINNET_WALLET_CAP_MULTIPLIER: i64 = 2;
+/// This corresponds to 5x of drip amount
+const CALIBNET_WALLET_CAP_MULTIPLIER: i64 = 5;
 
 pub type ContractAddress = alloy::primitives::Address;
 
@@ -60,7 +62,11 @@ impl FaucetInfo {
     /// This is used to prevent the wallet from being drained completely and to ensure that the
     /// faucet can continue to operate.
     pub fn wallet_cap(&self) -> TokenAmount {
-        self.drip_amount() * WALLET_CAP_MULTIPLIER
+        match self {
+            FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_WALLET_CAP_MULTIPLIER,
+            FaucetInfo::CalibnetFIL => self.drip_amount() * CALIBNET_WALLET_CAP_MULTIPLIER,
+            FaucetInfo::CalibnetUSDFC => self.drip_amount() * CALIBNET_WALLET_CAP_MULTIPLIER,
+        }
     }
 
     /// Returns the number of seconds after which the wallet cap resets for the faucet.
@@ -158,7 +164,7 @@ mod tests {
         assert_eq!(mainnet_faucet.chain_id(), 314);
         assert_eq!(
             mainnet_faucet.wallet_cap(),
-            WALLET_CAP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT
+            MAINNET_WALLET_CAP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT
         );
 
         let calibnet_fil_faucet = FaucetInfo::CalibnetFIL;
@@ -172,7 +178,7 @@ mod tests {
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
         assert_eq!(
             calibnet_fil_faucet.wallet_cap(),
-            WALLET_CAP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT
+            CALIBNET_WALLET_CAP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT
         );
 
         let calibnet_usdfc_faucet = FaucetInfo::CalibnetUSDFC;
@@ -198,7 +204,7 @@ mod tests {
         assert_eq!(calibnet_usdfc_faucet.chain_id(), 314159);
         assert_eq!(
             calibnet_usdfc_faucet.wallet_cap(),
-            WALLET_CAP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT
+            CALIBNET_WALLET_CAP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT
         );
     }
 }
