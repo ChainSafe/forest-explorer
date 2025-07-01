@@ -16,9 +16,9 @@ static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(5));
 
 /// The multiplier applied to the number of tokens dripped per wallet every `wallet_limit_seconds`.
-/// This corresponds to 2x of drip amount
+/// This corresponds to 2 times of drip amount
 const MAINNET_WALLET_CAP_MULTIPLIER: i64 = 2;
-/// This corresponds to 5x of drip amount
+/// This corresponds to 5 times of drip amount
 const CALIBNET_WALLET_CAP_MULTIPLIER: i64 = 5;
 
 pub type ContractAddress = alloy::primitives::Address;
