@@ -1,9 +1,6 @@
 use super::constants::{FaucetInfo, TokenType};
-use super::server_api::{
-    check_rate_limit, faucet_address, signed_erc20_transfer, signed_fil_transfer,
-};
+use super::server_api::{faucet_address, signed_erc20_transfer, signed_fil_transfer};
 use crate::faucet::model::FaucetModel;
-use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
 use crate::utils::transaction_id::TransactionId;
@@ -223,39 +220,36 @@ impl FaucetController {
 
                         let rpc = Provider::from_network(network);
                         let id_address = rpc.lookup_id(recipient).await?;
-                        let rate_limit_seconds = check_rate_limit(info, id_address.id()?)
+                        let from = faucet_address(info)
                             .await
-                            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
+                            .to_filecoin_address(network)?;
+                        let nonce = rpc.mpool_get_nonce(from).await?;
+                        let raw_msg =
+                            message_transfer(from, id_address, info.drip_amount().clone());
+                        let msg = rpc.estimate_gas(raw_msg).await?;
+                        let (rate_limit_seconds, signed) = signed_fil_transfer(
+                            LotusJson(id_address),
+                            msg.gas_limit,
+                            LotusJson(msg.gas_fee_cap),
+                            LotusJson(msg.gas_premium),
+                            nonce,
+                            info,
+                        )
+                        .await
+                        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
                         match rate_limit_seconds {
                             Some(rate_limit) => {
                                 faucet.send_limited.set(rate_limit);
                             }
                             None => {
-                                let from = faucet_address(info)
-                                    .await
-                                    .map_err(|e| {
-                                        anyhow::anyhow!("Error getting faucet address: {}", e)
-                                    })?
-                                    .to_filecoin_address(network)?;
-                                let nonce = rpc.mpool_get_nonce(from).await?;
-                                let raw_msg =
-                                    message_transfer(from, id_address, info.drip_amount().clone());
-                                let msg = rpc.estimate_gas(raw_msg).await?;
-                                let LotusJson(signed) = signed_fil_transfer(
-                                    LotusJson(id_address),
-                                    msg.gas_limit,
-                                    LotusJson(msg.gas_fee_cap),
-                                    LotusJson(msg.gas_premium),
-                                    nonce,
-                                    info,
-                                )
-                                .await
-                                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-                                let cid = rpc.mpool_push(signed).await?;
-                                faucet.sent_messages.update(|messages| {
-                                    messages.push((TransactionId::Native(cid), false));
-                                });
-                                log::info!("Sent message: {:?}", cid);
+                                if let Some(LotusJson(smsg)) = signed {
+                                    let cid = rpc.mpool_push(smsg).await?;
+                                    faucet.sent_messages.update(|messages| {
+                                        messages.push((TransactionId::Native(cid), false));
+                                    });
+                                    log::info!("Sent message: {:?}", cid);
+                                };
                             }
                         }
                         Ok(())
@@ -287,27 +281,22 @@ impl FaucetController {
 
                         let filecoin_rpc = Provider::from_network(network);
                         let id_address = filecoin_rpc.lookup_id(recipient).await?;
-                        let rate_limit_seconds = check_rate_limit(info, id_address.id()?)
+                        let owner_fil_address = faucet_address(info)
                             .await
-                            .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
+                            .to_filecoin_address(network)?;
+
+                        let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
+                        let gas_price = filecoin_rpc.gas_price().await?;
+                        let (rate_limit_seconds, signed) =
+                            signed_erc20_transfer(LotusJson(id_address), nonce, gas_price, info)
+                                .await
+                                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
                         match rate_limit_seconds {
                             Some(rate_limit) => {
                                 faucet.send_limited.set(rate_limit);
                             }
                             None => {
-                                let owner_fil_address = faucet_address(info)
-                                    .await
-                                    .map_err(|e| {
-                                        anyhow::anyhow!("Error getting faucet address: {}", e)
-                                    })?
-                                    .to_filecoin_address(network)?;
-
-                                let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
-                                let gas_price = filecoin_rpc.gas_price().await?;
-                                let eth_to = id_address.into_eth_address()?;
-                                let signed = signed_erc20_transfer(eth_to, nonce, gas_price, info)
-                                    .await
-                                    .map_err(|e| anyhow::anyhow!(e.to_string()))?;
                                 let tx_id =
                                     filecoin_rpc.send_eth_transaction_signed(&signed).await?;
                                 faucet.sent_messages.update(|messages| {

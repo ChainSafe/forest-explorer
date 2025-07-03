@@ -15,11 +15,17 @@ static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
 static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(5));
 
-/// The multiplier applied to the number of tokens dripped per wallet every `wallet_limit_seconds`.
+/// The multiplier applied to the number of tokens dripped per wallet every `reset_limiter_seconds`.
+/// This corresponds to 1 time of drip amount
+const MAINNET_WALLET_CAP_MULTIPLIER: i64 = 1;
+/// This corresponds to 2 time of drip amount
+const CALIBNET_WALLET_CAP_MULTIPLIER: i64 = 2;
+
+/// The multiplier applied to the number of tokens to be dripped every `reset_limiter_seconds`, all users combined.
 /// This corresponds to 2 times of drip amount
-const MAINNET_WALLET_CAP_MULTIPLIER: i64 = 2;
+const MAINNET_DRIP_CAP_MULTIPLIER: i64 = 2;
 /// This corresponds to 5 times of drip amount
-const CALIBNET_WALLET_CAP_MULTIPLIER: i64 = 5;
+const CALIBNET_DRIP_CAP_MULTIPLIER: i64 = 5;
 
 pub type ContractAddress = alloy::primitives::Address;
 
@@ -58,7 +64,18 @@ impl FaucetInfo {
         }
     }
 
-    /// Returns the maximum amount of tokens that can be claimed by the wallet per `wallet_limit_seconds`.
+    /// Returns the maximum amount of tokens that can be dripped by the wallet per `reset_limiter_seconds`.
+    /// This is used to prevent the wallet from being drained completely and to ensure that the
+    /// faucet can continue to operate.
+    pub fn drip_cap(&self) -> TokenAmount {
+        match self {
+            FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_DRIP_CAP_MULTIPLIER,
+            FaucetInfo::CalibnetFIL => self.drip_amount() * CALIBNET_DRIP_CAP_MULTIPLIER,
+            FaucetInfo::CalibnetUSDFC => self.drip_amount() * CALIBNET_DRIP_CAP_MULTIPLIER,
+        }
+    }
+
+    /// Returns the maximum amount of tokens that can be claimed by the wallet per `reset_limiter_seconds`.
     /// This is used to prevent the wallet from being drained completely and to ensure that the
     /// faucet can continue to operate.
     pub fn wallet_cap(&self) -> TokenAmount {
@@ -70,7 +87,7 @@ impl FaucetInfo {
     }
 
     /// Returns the number of seconds after which the wallet cap resets for the faucet.
-    pub fn wallet_limit_seconds(&self) -> i64 {
+    pub fn reset_limiter_seconds(&self) -> i64 {
         86400 // 24 hours
     }
 
@@ -166,6 +183,10 @@ mod tests {
             mainnet_faucet.wallet_cap(),
             MAINNET_WALLET_CAP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT
         );
+        assert_eq!(
+            mainnet_faucet.drip_cap(),
+            MAINNET_DRIP_CAP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT
+        );
 
         let calibnet_fil_faucet = FaucetInfo::CalibnetFIL;
         assert_eq!(calibnet_fil_faucet.drip_amount(), &*CALIBNET_DRIP_AMOUNT);
@@ -179,6 +200,10 @@ mod tests {
         assert_eq!(
             calibnet_fil_faucet.wallet_cap(),
             CALIBNET_WALLET_CAP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT
+        );
+        assert_eq!(
+            calibnet_fil_faucet.drip_cap(),
+            CALIBNET_DRIP_CAP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT
         );
 
         let calibnet_usdfc_faucet = FaucetInfo::CalibnetUSDFC;
@@ -205,6 +230,10 @@ mod tests {
         assert_eq!(
             calibnet_usdfc_faucet.wallet_cap(),
             CALIBNET_WALLET_CAP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT
+        );
+        assert_eq!(
+            calibnet_usdfc_faucet.drip_cap(),
+            CALIBNET_DRIP_CAP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT
         );
     }
 }

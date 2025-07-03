@@ -69,7 +69,6 @@ mod ssr_imports {
         server_fn::axum::register_explicit::<faucet::server_api::SignedFilTransfer>();
         server_fn::axum::register_explicit::<faucet::server_api::SignedErc20Transfer>();
         server_fn::axum::register_explicit::<faucet::server_api::FaucetAddress>();
-        server_fn::axum::register_explicit::<faucet::server_api::CheckRateLimit>();
     }
 
     #[event(fetch)]

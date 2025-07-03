@@ -26,7 +26,14 @@ impl RateLimiter {
         faucet_info: &FaucetInfo,
         id: &str,
         now: DateTime<Utc>,
-    ) -> Result<(bool, Option<i64>, TokenAmount)> {
+    ) -> Result<(bool, Option<i64>, TokenAmount, TokenAmount)> {
+        let dripped_key = format!("dripped");
+        let dripped: TokenAmount = self
+            .state
+            .storage()
+            .get(&dripped_key)
+            .await
+            .unwrap_or(TokenAmount::default());
         let claimed_key = format!("claimed_{id}");
         let claimed: TokenAmount = self
             .state
@@ -34,16 +41,23 @@ impl RateLimiter {
             .get(&claimed_key)
             .await
             .unwrap_or(TokenAmount::default());
+        if dripped >= faucet_info.drip_cap() {
+            let drip_block_until = self.state.storage().get_alarm().await?.unwrap_or_default();
+            let retry_after =
+                Duration::milliseconds(drip_block_until - now.timestamp_millis()).num_seconds();
+            console_log!("{faucet_info} Rate limiter for {id} invoked: Drip capped now={now:?}, dripped={dripped:?}, retry_after={retry_after:?}");
+            return Ok((false, Some(retry_after), claimed, dripped));
+        }
 
         if claimed >= faucet_info.wallet_cap() {
             let wallet_block_until = self.state.storage().get_alarm().await?.unwrap_or_default();
             let retry_after =
                 Duration::milliseconds(wallet_block_until - now.timestamp_millis()).num_seconds();
             console_log!("{faucet_info} Rate limiter for {id} invoked: Wallet capped now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}");
-            return Ok((false, Some(retry_after), claimed));
+            return Ok((false, Some(retry_after), claimed, dripped));
         }
 
-        let block_until_key = format!("block_until_{id}");
+        let block_until_key = format!("block_until");
         let block_until = self
             .state
             .storage()
@@ -57,10 +71,10 @@ impl RateLimiter {
             console_log!(
                 "{faucet_info} Rate limiter for {id} invoked: now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}"
             );
-            return Ok((false, Some(retry_after), claimed));
+            return Ok((false, Some(retry_after), claimed, dripped));
         }
 
-        Ok((true, None, claimed))
+        Ok((true, None, claimed, dripped))
     }
 
     async fn update_rate_limit(
@@ -69,28 +83,34 @@ impl RateLimiter {
         id: &str,
         now: DateTime<Utc>,
         claimed: TokenAmount,
+        dripped: TokenAmount,
     ) -> Result<()> {
+        let update_dripped = dripped + faucet_info.drip_amount();
         let updated_claimed = claimed + faucet_info.drip_amount();
         let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
 
+        self.state
+            .storage()
+            .put(&format!("dripped"), update_dripped.clone())
+            .await?;
         self.state
             .storage()
             .put(&format!("claimed_{id}"), updated_claimed.clone())
             .await?;
         self.state
             .storage()
-            .put(&format!("block_until_{id}"), next_block.timestamp())
+            .put(&format!("block_until"), next_block.timestamp())
             .await?;
 
         if self.state.storage().get_alarm().await?.is_none() {
             self.state
                 .storage()
                 .set_alarm(std::time::Duration::from_secs(
-                    faucet_info.wallet_limit_seconds() as u64,
+                    faucet_info.reset_limiter_seconds() as u64,
                 ))
                 .await?;
         }
-        console_log!("{faucet_info} Rate limiter for {id} set: now={now:?}, block_until={next_block:?}, claimed={updated_claimed:?}");
+        console_log!("{faucet_info} Rate limiter for {id} set: now={now:?}, block_until={next_block:?}, claimed={updated_claimed:?}, dripped={update_dripped:?}");
         Ok(())
     }
 }
@@ -103,11 +123,11 @@ impl DurableObject for RateLimiter {
     async fn fetch(&self, req: Request) -> Result<Response> {
         let now = Utc::now();
         let (faucet_info, id) = Self::parse_request_path(&req.path())?;
-        let (is_allowed, retry_after, claimed) =
+        let (is_allowed, retry_after, claimed, dripped) =
             self.get_rate_limit(&faucet_info, &id, now).await?;
 
         if is_allowed {
-            self.update_rate_limit(&faucet_info, &id, now, claimed)
+            self.update_rate_limit(&faucet_info, &id, now, claimed, dripped)
                 .await?;
         }
         Response::from_json(&retry_after)

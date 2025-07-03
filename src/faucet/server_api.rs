@@ -15,7 +15,7 @@ use alloy::{sol, sol_types::SolCall};
 
 #[cfg(feature = "ssr")]
 use super::server::{
-    query_rate_limiter, read_faucet_secret, secret_key, sign_with_eth_secret_key,
+    check_rate_limit, read_faucet_secret, secret_key, sign_with_eth_secret_key,
     sign_with_secret_key,
 };
 
@@ -95,11 +95,16 @@ pub async fn signed_fil_transfer(
     gas_premium: LotusJson<TokenAmount>,
     sequence: u64,
     faucet_info: FaucetInfo,
-) -> Result<LotusJson<SignedMessage>, ServerFnError> {
+) -> Result<(Option<i32>, Option<LotusJson<SignedMessage>>), ServerFnError> {
     use crate::utils::message::message_transfer_native;
     let LotusJson(to) = to;
     let LotusJson(gas_fee_cap) = gas_fee_cap;
     let LotusJson(gas_premium) = gas_premium;
+
+    let rate_limit_seconds = check_rate_limit(faucet_info, to.id()?).await?;
+    if rate_limit_seconds.is_some() {
+        return Ok((rate_limit_seconds, None));
+    }
 
     let from = faucet_address(faucet_info)
         .await?
@@ -115,7 +120,10 @@ pub async fn signed_fil_transfer(
         gas_premium,
         sequence,
     );
-    sign_with_secret_key(unsigned_msg, faucet_info).await
+    Ok((
+        rate_limit_seconds,
+        Some(sign_with_secret_key(unsigned_msg, faucet_info).await?),
+    ))
 }
 
 /// Signs an ERC-20 transfer transaction to the specified recipient with the given nonce and gas
@@ -126,14 +134,21 @@ pub async fn signed_fil_transfer(
 /// manipulate the transaction data.
 #[server]
 pub async fn signed_erc20_transfer(
-    recipient: alloy::primitives::Address,
+    recipient: LotusJson<Address>,
     nonce: u64,
     gas_price: u64,
     faucet_info: FaucetInfo,
-) -> Result<Vec<u8>, ServerFnError> {
+) -> Result<(Option<i32>, Vec<u8>), ServerFnError> {
+    use crate::utils::address::AddressAlloyExt as _;
     use crate::utils::conversions::TokenAmountAlloyExt as _;
     use alloy::network::TransactionBuilder as _;
 
+    let LotusJson(recipient) = recipient;
+    let rate_limit_seconds = check_rate_limit(faucet_info, recipient.id()?).await?;
+    if rate_limit_seconds.is_some() {
+        return Ok((rate_limit_seconds, vec![]));
+    }
+    let recipient = recipient.into_eth_address().map_err(ServerFnError::new)?;
     log::info!("Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}");
     sol! {
         #[sol(rpc)]
@@ -163,24 +178,8 @@ pub async fn signed_erc20_transfer(
         .with_gas_price(gas_price.into())
         .with_input(calldata);
 
-    sign_with_eth_secret_key(tx.clone(), faucet_info).await
-}
-
-/// Checks if the request can proceed based on the rate limit for the given faucet.
-#[server]
-pub async fn check_rate_limit(
-    faucet_info: FaucetInfo,
-    id: u64,
-) -> Result<Option<i32>, ServerFnError> {
-    let axum::Extension(env): axum::Extension<std::sync::Arc<worker::Env>> =
-        leptos_axum::extract().await?;
-    let mut rate_limit = None;
-    let rate_limiter_disabled = env
-        .secret("RATE_LIMITER_DISABLED")
-        .map(|v| v.to_string().to_lowercase() == "true")
-        .unwrap_or(false);
-    if !rate_limiter_disabled {
-        rate_limit = query_rate_limiter(faucet_info, id).await?;
-    }
-    Ok(rate_limit)
+    Ok((
+        rate_limit_seconds,
+        sign_with_eth_secret_key(tx.clone(), faucet_info).await?,
+    ))
 }
