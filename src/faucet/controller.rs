@@ -1,7 +1,6 @@
 use super::constants::{FaucetInfo, TokenType};
 use super::server_api::{faucet_address, signed_erc20_transfer, signed_fil_transfer};
 use crate::faucet::model::FaucetModel;
-use crate::utils::address::AddressAlloyExt;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
 use crate::utils::transaction_id::TransactionId;
@@ -214,21 +213,23 @@ impl FaucetController {
         let network = self.info.network();
         let info = self.info;
         match parse_address(&self.faucet.target_address.get(), network) {
-            Ok(addr) => {
+            Ok(recipient) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
 
                         let rpc = Provider::from_network(network);
+                        let id_address = rpc.lookup_id(recipient).await?;
                         let from = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let raw_msg = message_transfer(from, addr, info.drip_amount().clone());
+                        let raw_msg =
+                            message_transfer(from, id_address, info.drip_amount().clone());
                         let msg = rpc.estimate_gas(raw_msg).await?;
-                        match signed_fil_transfer(
-                            LotusJson(addr),
+                        let (rate_limit_seconds, signed) = signed_fil_transfer(
+                            LotusJson(id_address),
                             msg.gas_limit,
                             LotusJson(msg.gas_fee_cap),
                             LotusJson(msg.gas_premium),
@@ -236,18 +237,19 @@ impl FaucetController {
                             info,
                         )
                         .await
-                        {
-                            Ok(LotusJson(signed)) => {
-                                let cid = rpc.mpool_push(signed).await?;
-                                faucet.sent_messages.update(|messages| {
-                                    messages.push((TransactionId::Native(cid), false));
-                                });
-                                log::info!("Sent message: {:?}", cid);
+                        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+                        match rate_limit_seconds {
+                            Some(rate_limit) => {
+                                faucet.send_limited.set(rate_limit);
                             }
-                            Err(e) => {
-                                console_log(&format!("Failed to sign message: {e}"));
-                                let rate_limit_seconds = info.rate_limit_seconds();
-                                faucet.send_limited.set(rate_limit_seconds as i32);
+                            None => {
+                                if let Some(LotusJson(smsg)) = signed {
+                                    let cid = rpc.mpool_push(smsg).await?;
+                                    faucet.sent_messages.update(|messages| {
+                                        messages.push((TransactionId::Native(cid), false));
+                                    });
+                                    log::info!("Sent message: {:?}", cid);
+                                };
                             }
                         }
                         Ok(())
@@ -278,6 +280,7 @@ impl FaucetController {
                         faucet.send_disabled.set(true);
 
                         let filecoin_rpc = Provider::from_network(network);
+                        let id_address = filecoin_rpc.lookup_id(recipient).await?;
                         let owner_fil_address = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
@@ -285,21 +288,21 @@ impl FaucetController {
 
                         let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
                         let gas_price = filecoin_rpc.gas_price().await?;
-                        let eth_to = recipient.into_eth_address()?;
-
-                        match signed_erc20_transfer(eth_to, nonce, gas_price, info).await {
-                            Ok(signed) => {
+                        let (rate_limit_seconds, signed) =
+                            signed_erc20_transfer(LotusJson(id_address), nonce, gas_price, info)
+                                .await
+                                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+                        match rate_limit_seconds {
+                            Some(rate_limit) => {
+                                faucet.send_limited.set(rate_limit);
+                            }
+                            None => {
                                 let tx_id =
                                     filecoin_rpc.send_eth_transaction_signed(&signed).await?;
                                 faucet.sent_messages.update(|messages| {
                                     messages.push((TransactionId::Eth(tx_id), false));
                                 });
                                 console_log(&format!("Transaction sent successfully: {tx_id}"));
-                            }
-                            Err(e) => {
-                                console_log(&format!("Failed to create signed transaction: {e}"));
-                                let rate_limit_seconds = info.rate_limit_seconds();
-                                faucet.send_limited.set(rate_limit_seconds as i32);
                             }
                         }
                         Ok(())

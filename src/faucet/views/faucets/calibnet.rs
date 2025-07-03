@@ -6,11 +6,11 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::{Meta, Title};
 
+/// Displays the Calibnet Faucet page.
+/// Sets the RPC context to calibnet and renders the faucet and its description.
 #[component]
 pub fn Faucet_Calibnet() -> impl IntoView {
-    let drip_amount = FaucetInfo::CalibnetFIL.drip_amount();
-    let token_unit = FaucetInfo::CalibnetFIL.unit();
-    let rate_limit_seconds = FaucetInfo::CalibnetFIL.rate_limit_seconds();
+    let faucet_info = FaucetInfo::CalibnetFIL;
     let rpc_context = RpcContext::use_context();
     // Set rpc context to calibnet url
     rpc_context.set(Provider::get_network_url(FaucetInfo::CalibnetFIL.network()));
@@ -23,12 +23,8 @@ pub fn Faucet_Calibnet() -> impl IntoView {
         />
         <h1 class="header">"🧪 Filecoin Calibnet Faucet"</h1>
         <div class="main-container">
-            <Faucet faucet_info=FaucetInfo::CalibnetFIL />
-            <FaucetDescription
-                drip_amount=drip_amount.clone()
-                token_unit=token_unit.to_string()
-                rate_limit_seconds=rate_limit_seconds
-            />
+            <Faucet faucet_info=faucet_info />
+            <FaucetDescription faucet_info=faucet_info />
         </div>
     }
 }

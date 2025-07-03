@@ -3,6 +3,7 @@ use std::str::FromStr as _;
 
 use crate::faucet::constants::FaucetInfo;
 use chrono::{DateTime, Duration, Utc};
+use fvm_shared::econ::TokenAmount;
 use worker::*;
 
 #[durable_object]
@@ -10,16 +11,50 @@ pub struct RateLimiter {
     state: State,
 }
 
-impl DurableObject for RateLimiter {
-    fn new(state: State, _env: Env) -> Self {
-        Self { state }
+impl RateLimiter {
+    fn parse_request_path(path: &str) -> Result<(FaucetInfo, String)> {
+        // Request path format: http://do/rate_limiter/{faucet_info}/{id}
+        let mut path_info = path.split('/');
+        let id = path_info.next_back().unwrap_or_default().to_string();
+        let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
+            .map_err(|e| Error::RustError(e.to_string()))?;
+        Ok((faucet_info, id))
     }
 
-    async fn fetch(&self, req: Request) -> Result<Response> {
-        let now = Utc::now();
-        let path = req.path();
-        let faucet_info = FaucetInfo::from_str(path.split('/').last().unwrap_or_default())
-            .map_err(|e| worker::Error::RustError(e.to_string()))?;
+    async fn get_rate_limit(
+        &self,
+        faucet_info: &FaucetInfo,
+        id: &str,
+        now: DateTime<Utc>,
+    ) -> Result<(bool, Option<i64>, TokenAmount, TokenAmount)> {
+        let dripped: TokenAmount = self
+            .state
+            .storage()
+            .get("dripped")
+            .await
+            .unwrap_or(TokenAmount::default());
+        let claimed_key = format!("claimed_{id}");
+        let claimed: TokenAmount = self
+            .state
+            .storage()
+            .get(&claimed_key)
+            .await
+            .unwrap_or(TokenAmount::default());
+        if dripped >= faucet_info.drip_cap() {
+            let drip_block_until = self.state.storage().get_alarm().await?.unwrap_or_default();
+            let retry_after =
+                Duration::milliseconds(drip_block_until - now.timestamp_millis()).num_seconds();
+            console_log!("{faucet_info} Rate limiter for {id} invoked: Drip capped now={now:?}, dripped={dripped:?}, retry_after={retry_after:?}");
+            return Ok((false, Some(retry_after), claimed, dripped));
+        }
+
+        if claimed >= faucet_info.wallet_cap() {
+            let wallet_block_until = self.state.storage().get_alarm().await?.unwrap_or_default();
+            let retry_after =
+                Duration::milliseconds(wallet_block_until - now.timestamp_millis()).num_seconds();
+            console_log!("{faucet_info} Rate limiter for {id} invoked: Wallet capped now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}");
+            return Ok((false, Some(retry_after), claimed, dripped));
+        }
 
         let block_until = self
             .state
@@ -29,28 +64,71 @@ impl DurableObject for RateLimiter {
             .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
             .unwrap_or(now);
 
-        let is_allowed = block_until <= now;
+        if block_until > now {
+            let retry_after = block_until.signed_duration_since(now).num_seconds();
+            console_log!(
+                "{faucet_info} Rate limiter for {id} invoked: now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}"
+            );
+            return Ok((false, Some(retry_after), claimed, dripped));
+        }
 
-        if is_allowed {
-            // This Durable Object will be deleted after the alarm is triggered
-            let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
-            self.state
-                .storage()
-                .put("block_until", next_block.timestamp())
-                .await?;
-            console_log!("Rate limiter for {faucet_info} set: block_until={next_block:?}");
+        Ok((true, None, claimed, dripped))
+    }
+
+    async fn update_rate_limit(
+        &self,
+        faucet_info: &FaucetInfo,
+        id: &str,
+        now: DateTime<Utc>,
+        claimed: TokenAmount,
+        dripped: TokenAmount,
+    ) -> Result<()> {
+        let update_dripped = dripped + faucet_info.drip_amount();
+        let updated_claimed = claimed + faucet_info.drip_amount();
+        let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
+
+        self.state
+            .storage()
+            .put("dripped", update_dripped.clone())
+            .await?;
+        self.state
+            .storage()
+            .put(&format!("claimed_{id}"), updated_claimed.clone())
+            .await?;
+        self.state
+            .storage()
+            .put("block_until", next_block.timestamp())
+            .await?;
+
+        if self.state.storage().get_alarm().await?.is_none() {
             self.state
                 .storage()
                 .set_alarm(std::time::Duration::from_secs(
-                    faucet_info.rate_limit_seconds() as u64 + 1,
+                    faucet_info.reset_limiter_seconds() as u64,
                 ))
                 .await?;
-        } else {
-            console_log!(
-                "Rate limiter for {faucet_info} invoked: now={now:?}, block_until={block_until:?}, may_sign={is_allowed:?}"
-            );
         }
-        Response::from_json(&is_allowed)
+        console_log!("{faucet_info} Rate limiter for {id} set: now={now:?}, block_until={next_block:?}, claimed={updated_claimed:?}, dripped={update_dripped:?}");
+        Ok(())
+    }
+}
+
+impl DurableObject for RateLimiter {
+    fn new(state: State, _env: Env) -> Self {
+        Self { state }
+    }
+
+    async fn fetch(&self, req: Request) -> Result<Response> {
+        let now = Utc::now();
+        let (faucet_info, id) = Self::parse_request_path(&req.path())?;
+        let (is_allowed, retry_after, claimed, dripped) =
+            self.get_rate_limit(&faucet_info, &id, now).await?;
+
+        if is_allowed {
+            self.update_rate_limit(&faucet_info, &id, now, claimed, dripped)
+                .await?;
+        }
+        Response::from_json(&retry_after)
     }
 
     async fn alarm(&self) -> Result<Response> {
