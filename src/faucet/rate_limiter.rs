@@ -27,11 +27,10 @@ impl RateLimiter {
         id: &str,
         now: DateTime<Utc>,
     ) -> Result<(bool, Option<i64>, TokenAmount, TokenAmount)> {
-        let dripped_key = format!("dripped");
         let dripped: TokenAmount = self
             .state
             .storage()
-            .get(&dripped_key)
+            .get("dripped")
             .await
             .unwrap_or(TokenAmount::default());
         let claimed_key = format!("claimed_{id}");
@@ -57,11 +56,10 @@ impl RateLimiter {
             return Ok((false, Some(retry_after), claimed, dripped));
         }
 
-        let block_until_key = format!("block_until");
         let block_until = self
             .state
             .storage()
-            .get(&block_until_key)
+            .get("block_until")
             .await
             .map(|v| DateTime::<Utc>::from_timestamp(v, 0).unwrap_or_default())
             .unwrap_or(now);
@@ -91,7 +89,7 @@ impl RateLimiter {
 
         self.state
             .storage()
-            .put(&format!("dripped"), update_dripped.clone())
+            .put("dripped", update_dripped.clone())
             .await?;
         self.state
             .storage()
@@ -99,7 +97,7 @@ impl RateLimiter {
             .await?;
         self.state
             .storage()
-            .put(&format!("block_until"), next_block.timestamp())
+            .put("block_until", next_block.timestamp())
             .await?;
 
         if self.state.storage().get_alarm().await?.is_none() {
