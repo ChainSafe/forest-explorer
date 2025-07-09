@@ -16,20 +16,20 @@ static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(5));
 
 /// Multiplier to determine the maximum amount of tokens that can be dripped per wallet every [`FaucetInfo::reset_limiter_seconds`].
-/// This corresponds to 1 × [`FaucetInfo::drip_amount`]
+/// This corresponds to 1 * [`FaucetInfo::drip_amount`]
 const MAINNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 1;
-/// This corresponds to 2 × [`FaucetInfo::drip_amount`]
+/// This corresponds to 2 * [`FaucetInfo::drip_amount`]
 const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;
 
 /// Multiplier used to determine the maximum amount of tokens that can be dripped globally every [`FaucetInfo::reset_limiter_seconds`].
-/// This corresponds to 2 × [`FaucetInfo::drip_amount`]
+/// This corresponds to 2 * [`FaucetInfo::drip_amount`]
 const MAINNET_GLOBAL_DRIP_MULTIPLIER: i64 = 2;
-/// This corresponds to 5 × [`FaucetInfo::drip_amount`]
+/// This corresponds to 5 * [`FaucetInfo::drip_amount`]
 const CALIBNET_GLOBAL_DRIP_MULTIPLIER: i64 = 5;
 
-/// Cooldown duration in seconds between faucet requests on mainnet.
+/// Cool-down duration in seconds between faucet requests on mainnet.
 const MAINNET_COOLDOWN_SECONDS: i64 = 600; // 10 minutes
-/// Cooldown duration in seconds between faucet requests on calibnet.
+/// Cool-down duration in seconds between faucet requests on calibnet.
 const CALIBNET_COOLDOWN_SECONDS: i64 = 60; // 1 minute
 /// Time in seconds after which the wallet drip cap resets.
 const DRIP_CAP_RESET_SECONDS: i64 = 86400; // 24 hours
