@@ -251,6 +251,16 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_id_address() {
+        let addr = Address::new_id(163506);
+        let eth_addr = addr.into_eth_address().unwrap();
+        let exp_addr =
+            parse_address(&eth_addr.to_string().to_lowercase(), Network::Mainnet).unwrap();
+
+        assert_eq!(addr, exp_addr);
+    }
+
+    #[test]
     fn test_id_address_conversion_to_eth() {
         let address = Address::new_id(163506);
         let eth_addr = address.into_eth_address().unwrap();
