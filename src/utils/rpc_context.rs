@@ -223,6 +223,18 @@ impl Provider {
         .await
     }
 
+    /// Looks up the ID address of a given Filecoin address.
+    /// This method makes an RPC call to the Filecoin node to convert a Filecoin address
+    /// to its corresponding ID address in the current state tree.
+    pub async fn lookup_id(&self, addr: Address) -> anyhow::Result<Address> {
+        invoke_rpc_method(
+            &self.url,
+            "Filecoin.StateLookupID",
+            &[serde_json::to_value(LotusJson(addr))?, Value::Null],
+        )
+        .await
+    }
+
     /// Returns the current gas price in attoFIL.
     ///
     /// Internally, it prunes the result from `u128` to `u64` but it should be safe as we don't

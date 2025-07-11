@@ -1,5 +1,6 @@
 #![cfg(feature = "ssr")]
 
+use super::constants::FaucetInfo;
 use crate::utils::key::KeyInfo;
 use crate::utils::key::{sign, Key};
 use crate::utils::lotus_json::{
@@ -15,10 +16,7 @@ use leptos_axum::extract;
 use send_wrapper::SendWrapper;
 use std::str::FromStr as _;
 use std::sync::Arc;
-use worker::Env;
-use worker::{Method, Request};
-
-use super::constants::FaucetInfo;
+use worker::*;
 
 /// Reads the faucet secret key from the CloudFlare Worker secrets.
 pub async fn read_faucet_secret(faucet_info: FaucetInfo) -> Result<String, ServerFnError> {
@@ -53,7 +51,6 @@ pub async fn sign_with_secret_key(
     faucet_info: FaucetInfo,
 ) -> Result<LotusJson<SignedMessage>, ServerFnError> {
     SendWrapper::new(async move {
-        check_rate_limit(faucet_info).await?;
         let cid = message_cid(&msg);
         let key = secret_key(faucet_info).await?;
         let sig = sign(
@@ -80,7 +77,6 @@ pub async fn sign_with_eth_secret_key(
     faucet_info: FaucetInfo,
 ) -> Result<Vec<u8>, ServerFnError> {
     SendWrapper::new(async move {
-        check_rate_limit(faucet_info).await?;
         let key = read_faucet_secret(faucet_info).await?;
         let pk_signer: alloy::signers::local::PrivateKeySigner = std::str::FromStr::from_str(&key)?;
         let wallet = alloy::network::EthereumWallet::new(pk_signer);
@@ -92,37 +88,47 @@ pub async fn sign_with_eth_secret_key(
     .await
 }
 
-/// Internal. Queries the rate limiter Durable Object to check if the request can proceed.
-async fn query_rate_limiter(faucet_info: FaucetInfo) -> Result<bool, ServerFnError> {
-    let Extension(env): Extension<Arc<Env>> = extract().await?;
-    let rate_limiter = env
-        .durable_object("RATE_LIMITER")?
-        .id_from_name(&faucet_info.to_string())?
-        .get_stub()?;
-    Ok(rate_limiter
-        .fetch_with_request(Request::new(
-            &format!("http://do/rate_limiter/{faucet_info}"),
-            Method::Get,
-        )?)
-        .await?
-        .json::<bool>()
-        .await?)
+/// Queries the rate limiter for a specific faucet and wallet ID.
+/// Returns:
+/// - `None` if no rate limit is set.
+/// - `Some(i32)` containing the remaining cool-down time in seconds.
+async fn query_rate_limiter(
+    faucet_info: FaucetInfo,
+    id: u64,
+) -> Result<Option<i32>, ServerFnError> {
+    SendWrapper::new(async move {
+        let Extension(env): Extension<Arc<Env>> = extract().await?;
+        let rate_limiter = env
+            .durable_object("RATE_LIMITER")?
+            .id_from_name(&faucet_info.to_string())?
+            .get_stub()?;
+        rate_limiter
+            .fetch_with_request(Request::new(
+                &format!("http://do/rate_limiter/{faucet_info}/{id}"),
+                Method::Get,
+            )?)
+            .await?
+            .json::<Option<i32>>()
+            .await
+            .map_err(ServerFnError::new)
+    })
+    .await
 }
 
 /// Checks if the request can proceed based on the rate limit for the given faucet.
-async fn check_rate_limit(faucet_info: FaucetInfo) -> Result<(), ServerFnError> {
+pub async fn check_rate_limit(
+    faucet_info: FaucetInfo,
+    id: u64,
+) -> Result<Option<i32>, ServerFnError> {
     let axum::Extension(env): axum::Extension<std::sync::Arc<worker::Env>> =
         leptos_axum::extract().await?;
+    let mut rate_limit = None;
     let rate_limiter_disabled = env
         .secret("RATE_LIMITER_DISABLED")
         .map(|v| v.to_string().to_lowercase() == "true")
         .unwrap_or(false);
-    let may_sign = rate_limiter_disabled || query_rate_limiter(faucet_info).await?;
-    if !may_sign {
-        let rate_limit_seconds = faucet_info.rate_limit_seconds();
-        return Err(ServerFnError::ServerError(format!(
-            "Rate limit exceeded - wait {rate_limit_seconds} seconds"
-        )));
+    if !rate_limiter_disabled {
+        rate_limit = query_rate_limiter(faucet_info, id).await?;
     }
-    Ok(())
+    Ok(rate_limit)
 }
