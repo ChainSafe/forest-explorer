@@ -351,7 +351,7 @@ mod tests {
         assert!(result.is_none());
     }
 
-    /// Checks that a request is rate limited if block_until is in the future (cooldown period).
+    /// Checks that a request is rate limited.
     #[tokio::test]
     async fn test_rate_limiter_cooldown_period() {
         let wallet_id = "test_wallet";
@@ -440,7 +440,7 @@ mod tests {
         assert!(result.is_none());
     }
 
-    /// Checks that parse_request_path correctly parses a valid path.
+    /// Checks path parsing with a valid path.
     #[tokio::test]
     async fn test_parse_request_path() {
         let path = "http://do/rate_limiter/CalibnetFIL/test_wallet_123";
@@ -450,7 +450,7 @@ mod tests {
         assert_eq!(id, "test_wallet_123");
     }
 
-    /// Checks that parse_request_path returns an error for an invalid faucet.
+    /// Checks path parsing with an invalid path.
     #[tokio::test]
     async fn test_parse_request_path_invalid_faucet() {
         let path = "http://do/rate_limiter/InvalidFaucet/test_wallet";
@@ -458,7 +458,7 @@ mod tests {
         assert!(result.is_err());
     }
 
-    /// Checks that the alarm handler calls delete_all on storage.
+    /// Checks that the alarm handler resets storage.
     #[tokio::test]
     async fn test_alarm_handler() {
         let mut mock_storage = MockRateLimiterStorage::new();
@@ -741,7 +741,7 @@ mod tests {
         assert!(result.is_none());
     }
 
-    /// Simulates the cooldown period: allowed, blocked, partially blocked, then allowed again.
+    /// Simulates the cool-down stages: allowed, blocked, partially blocked, then allowed again.
     #[tokio::test]
     async fn test_cooldown_period_progression() {
         let faucet_info = FaucetInfo::CalibnetFIL;
