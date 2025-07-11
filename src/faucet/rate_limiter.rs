@@ -38,7 +38,7 @@ impl<'a> DurableObjectStorage<'a> {
 
 #[cfg(not(test))]
 #[async_trait::async_trait(?Send)]
-impl<'a> RateLimiterStorage for DurableObjectStorage<'a> {
+impl RateLimiterStorage for DurableObjectStorage<'_> {
     async fn get<T>(&self, key: &str) -> Result<Option<T>>
     where
         T: for<'de> serde::Deserialize<'de>,
@@ -267,11 +267,11 @@ mod tests {
         fn new(_state: State, _env: Env) -> Self {
             panic!("Not required in tests");
         }
-        fn fetch(&self, _req: Request) -> impl std::future::Future<Output = Result<Response>> {
-            async { panic!("Not required in tests") }
+        async fn fetch(&self, _req: Request) -> Result<Response> {
+            panic!("Not required in tests")
         }
-        fn alarm(&self) -> impl std::future::Future<Output = Result<Response>> {
-            async { panic!("Not required in tests") }
+        async fn alarm(&self) -> Result<Response> {
+            panic!("Not required in tests")
         }
     }
 
@@ -495,8 +495,8 @@ mod tests {
             let now = chrono::Utc::now();
             let result = core.handle_request(&path, now).await.unwrap();
             assert!(result.is_none());
-            claimed = claimed + faucet_info.drip_amount();
-            dripped = dripped + faucet_info.drip_amount();
+            claimed += faucet_info.drip_amount();
+            dripped += faucet_info.drip_amount();
         }
 
         // Final request should hit wallet cap
@@ -560,8 +560,8 @@ mod tests {
                 .await
                 .unwrap();
             assert!(result.is_none());
-            claimed_1 = claimed_1 + faucet_info.drip_amount();
-            dripped = dripped + faucet_info.drip_amount();
+            claimed_1 += faucet_info.drip_amount();
+            dripped += faucet_info.drip_amount();
         }
         // Wallet 2: Up to wallet cap
         for _ in 0..wallet_cap_requests {
@@ -586,8 +586,8 @@ mod tests {
                 .await
                 .unwrap();
             assert!(result.is_none());
-            claimed_2 = claimed_2 + faucet_info.drip_amount();
-            dripped = dripped + faucet_info.drip_amount();
+            claimed_2 += faucet_info.drip_amount();
+            dripped += faucet_info.drip_amount();
         }
         // Wallet 3: Up to drip cap
         while dripped < faucet_info.drip_cap() {
@@ -609,8 +609,8 @@ mod tests {
                 .await
                 .unwrap();
             assert!(result.is_none());
-            claimed_3 = claimed_3 + faucet_info.drip_amount();
-            dripped = dripped + faucet_info.drip_amount();
+            claimed_3 += faucet_info.drip_amount();
+            dripped += faucet_info.drip_amount();
         }
         // Now all wallets should be rate limited due to drip cap
         for wallet in [wallet_1, wallet_2, wallet_3] {
@@ -685,7 +685,7 @@ mod tests {
                     .get_mut(wallet)
                     .unwrap()
                     .add_assign(faucet_info.drip_amount());
-                dripped = dripped + faucet_info.drip_amount();
+                dripped += faucet_info.drip_amount();
             }
         }
         // Verify drip cap is reached
@@ -774,7 +774,7 @@ mod tests {
         let result_2 = core.handle_request(&path, now).await.unwrap();
         assert!(result_2.is_some());
         let retry_2 = result_2.unwrap();
-        assert!(retry_2 > 0 && retry_2 <= faucet_info.rate_limit_seconds());
+        assert!((0..=faucet_info.rate_limit_seconds()).contains(&retry_2));
         // Step 3: Partial cooldown (should still be rate limited, less time left)
         let partial_block_until = now + chrono::Duration::seconds(1); // 1 second in the future
         let mock_storage = new_mock_storage(MockStorageConfig {
@@ -789,7 +789,7 @@ mod tests {
         let result_3 = core.handle_request(&path, now).await.unwrap();
         assert!(result_3.is_some());
         let retry_3 = result_3.unwrap();
-        assert!(retry_3 >= 0 && retry_3 <= 1);
+        assert!((0..=1).contains(&retry_3));
         assert!(retry_3 < retry_2);
         let past_block_until = now - chrono::Duration::seconds(1);
         let mock_storage = new_mock_storage(MockStorageConfig {
