@@ -10,7 +10,7 @@ use worker::*;
 #[cfg(test)]
 use mockall::automock;
 
-/// Abstraction for storage backends used by the rate limiter.
+/// Abstraction for storage backend used by the rate limiter.
 /// This trait allows the rate limiter logic to be decoupled from the underlying storage implementation.
 /// Implementations may use [`DurableObjectStorage`], in-memory mocks, or other storage systems.
 #[cfg_attr(test, automock)]

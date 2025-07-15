@@ -125,8 +125,7 @@ pub async fn signed_fil_transfer(
         gas_premium,
         sequence,
     );
-    let signed = sign_with_secret_key(unsigned_msg, faucet_info)
-        .await?;
+    let signed = sign_with_secret_key(unsigned_msg, faucet_info).await?;
     Ok(signed)
 }
 
@@ -148,7 +147,9 @@ pub async fn signed_erc20_transfer(
     use alloy::network::TransactionBuilder as _;
 
     let LotusJson(recipient) = recipient;
-    let id = recipient.id().map_err(|e| FaucetError::Server(e.to_string()))?;
+    let id = recipient
+        .id()
+        .map_err(|e| FaucetError::Server(e.to_string()))?;
     let rate_limit_seconds = check_rate_limit(faucet_info, id).await?;
     if let Some(secs) = rate_limit_seconds {
         return Err(FaucetError::RateLimited {
@@ -187,7 +188,6 @@ pub async fn signed_erc20_transfer(
         .with_gas_price(gas_price.into())
         .with_input(calldata);
 
-    let signed = sign_with_eth_secret_key(tx.clone(), faucet_info)
-        .await?;
+    let signed = sign_with_eth_secret_key(tx.clone(), faucet_info).await?;
     Ok(signed)
 }
