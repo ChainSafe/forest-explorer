@@ -1,6 +1,7 @@
 use super::constants::{FaucetInfo, TokenType};
 use super::server_api::{faucet_address, signed_erc20_transfer, signed_fil_transfer};
 use crate::faucet::model::FaucetModel;
+use crate::utils::error::FaucetError;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
 use crate::utils::transaction_id::TransactionId;
@@ -228,7 +229,7 @@ impl FaucetController {
                         let raw_msg =
                             message_transfer(from, id_address, info.drip_amount().clone());
                         let msg = rpc.estimate_gas(raw_msg).await?;
-                        let (rate_limit_seconds, signed) = signed_fil_transfer(
+                        match signed_fil_transfer(
                             LotusJson(id_address),
                             msg.gas_limit,
                             LotusJson(msg.gas_fee_cap),
@@ -237,19 +238,18 @@ impl FaucetController {
                             info,
                         )
                         .await
-                        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-                        match rate_limit_seconds {
-                            Some(rate_limit) => {
-                                faucet.send_limited.set(rate_limit);
+                        {
+                            Ok(LotusJson(smsg)) => {
+                                let cid = rpc.mpool_push(smsg).await?;
+                                faucet.sent_messages.update(|messages| {
+                                    messages.push((TransactionId::Native(cid), false));
+                                });
+                                log::info!("Sent message: {:?}", cid);
                             }
-                            None => {
-                                if let Some(LotusJson(smsg)) = signed {
-                                    let cid = rpc.mpool_push(smsg).await?;
-                                    faucet.sent_messages.update(|messages| {
-                                        messages.push((TransactionId::Native(cid), false));
-                                    });
-                                    log::info!("Sent message: {:?}", cid);
-                                };
+                            Err(e) => {
+                                if let FaucetError::RateLimited { retry_after_secs } = e {
+                                    faucet.send_limited.set(retry_after_secs);
+                                }
                             }
                         }
                         Ok(())
@@ -288,21 +288,21 @@ impl FaucetController {
 
                         let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
                         let gas_price = filecoin_rpc.gas_price().await?;
-                        let (rate_limit_seconds, signed) =
-                            signed_erc20_transfer(LotusJson(id_address), nonce, gas_price, info)
-                                .await
-                                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
-                        match rate_limit_seconds {
-                            Some(rate_limit) => {
-                                faucet.send_limited.set(rate_limit);
-                            }
-                            None => {
+                        match signed_erc20_transfer(LotusJson(id_address), nonce, gas_price, info)
+                            .await
+                        {
+                            Ok(signed) => {
                                 let tx_id =
                                     filecoin_rpc.send_eth_transaction_signed(&signed).await?;
                                 faucet.sent_messages.update(|messages| {
                                     messages.push((TransactionId::Eth(tx_id), false));
                                 });
                                 console_log(&format!("Transaction sent successfully: {tx_id}"));
+                            }
+                            Err(e) => {
+                                if let FaucetError::RateLimited { retry_after_secs } = e {
+                                    faucet.send_limited.set(retry_after_secs);
+                                }
                             }
                         }
                         Ok(())

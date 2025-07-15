@@ -10,9 +10,12 @@ use worker::*;
 #[cfg(test)]
 use mockall::automock;
 
+/// Abstraction for storage backends used by the rate limiter.
+/// This trait allows the rate limiter logic to be decoupled from the underlying storage implementation.
+/// Implementations may use [`DurableObjectStorage`], in-memory mocks, or other storage systems.
 #[cfg_attr(test, automock)]
 #[async_trait::async_trait(?Send)]
-pub trait RateLimiterStorage {
+trait RateLimiterStorage {
     async fn get<T>(&self, key: &str) -> Result<Option<T>>
     where
         T: for<'de> serde::Deserialize<'de> + 'static;
@@ -24,14 +27,16 @@ pub trait RateLimiterStorage {
     async fn delete_all(&self) -> Result<()>;
 }
 
+/// Storage backend for the rate limiter using Durable Objects.
+/// This struct implements the [`RateLimiterStorage`] trait and is used in production to persist rate limiting state.
 #[cfg(not(test))]
-pub struct DurableObjectStorage<'a> {
+struct DurableObjectStorage<'a> {
     state: &'a State,
 }
 
 #[cfg(not(test))]
 impl<'a> DurableObjectStorage<'a> {
-    pub fn new(state: &'a State) -> Self {
+    fn new(state: &'a State) -> Self {
         Self { state }
     }
 }
@@ -62,16 +67,19 @@ impl RateLimiterStorage for DurableObjectStorage<'_> {
     }
 }
 
-pub struct RateLimiterCore<S: RateLimiterStorage> {
+/// Core logic for rate limiting, generic over a storage backend.
+/// This struct encapsulates all rate limiting logic and can be used with any storage backend that implements [`RateLimiterStorage`].
+/// It is used by the [`RateLimiter`] durable object handler in production and by mocks in tests.
+struct RateLimiterCore<S: RateLimiterStorage> {
     storage: S,
 }
 
 impl<S: RateLimiterStorage> RateLimiterCore<S> {
-    pub fn new(storage: S) -> Self {
+    fn new(storage: S) -> Self {
         Self { storage }
     }
 
-    pub fn parse_request_path(path: &str) -> Result<(FaucetInfo, String)> {
+    fn parse_request_path(path: &str) -> Result<(FaucetInfo, String)> {
         let mut path_info = path.split('/');
         let id = path_info.next_back().unwrap_or_default().to_string();
         let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
@@ -175,7 +183,7 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
     }
 
     #[allow(dead_code)]
-    pub async fn handle_request(&self, path: &str, now: DateTime<Utc>) -> Result<Option<i64>> {
+    async fn handle_request(&self, path: &str, now: DateTime<Utc>) -> Result<Option<i64>> {
         let (faucet_info, id) = Self::parse_request_path(path)?;
         let (is_allowed, retry_after, claimed, dripped) =
             self.get_rate_limit(&faucet_info, &id, now).await?;
@@ -187,12 +195,13 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
     }
 
     #[allow(dead_code)]
-    pub async fn handle_alarm(&self) -> Result<()> {
+    async fn handle_alarm(&self) -> Result<()> {
         log::info!("Rate limiter alarm triggered. DurableObject will be deleted.");
         self.storage.delete_all().await
     }
 }
 
+#[cfg(not(test))]
 #[durable_object]
 pub struct RateLimiter {
     #[cfg(not(test))]
@@ -263,18 +272,8 @@ mod tests {
     use num_traits::cast::ToPrimitive;
     use std::ops::AddAssign;
 
-    impl DurableObject for RateLimiter {
-        fn new(_state: State, _env: Env) -> Self {
-            panic!("Not required in tests");
-        }
-        async fn fetch(&self, _req: Request) -> Result<Response> {
-            panic!("Not required in tests")
-        }
-        async fn alarm(&self) -> Result<Response> {
-            panic!("Not required in tests")
-        }
-    }
-
+    /// Configuration for mock storage used in rate limiter tests.
+    /// This struct allows tests to specify the initial state and expected behavior of the mock storage backend implementing [`RateLimiterStorage`].
     struct MockStorageConfig<'a> {
         dripped: Option<TokenAmount>,
         claimed: Option<TokenAmount>,
