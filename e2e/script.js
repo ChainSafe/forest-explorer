@@ -26,7 +26,7 @@ async function checkPath(page, path) {
 }
 
 // Check if the button exists, is visible, and is enabled
-async function checkButton(page, path, buttonText) {
+async function checkButton(page, path, buttonText, action) {
   const buttons = await page.$$("button");
   let btn = null;
   for (const b of buttons) {
@@ -39,25 +39,68 @@ async function checkButton(page, path, buttonText) {
 
   // Check if the button exists
   const exists = btn !== null;
-  const existenceMsg = `Button "${buttonText}" on "${path}" ${exists ? "exists" : "does not exist"}`;
-  check(exists, { [existenceMsg]: () => exists });
-  if (!exists) {
-    return;
-  }
-
+  check(exists, { [`Button "${buttonText}" on "${path}" exists`]: () => exists });
   // Check if the button is visible
   // Note: In some cases, the button might exist but not be visible
   const isVisible = await btn.isVisible();
-  check(isVisible, {
-    [`Button "${buttonText}" on "${path}" is visible`]: () => isVisible,
-  });
-
+  check(isVisible, { [`Button "${buttonText}" on "${path}" is visible`]: () => isVisible });
   // Check if the button is enabled
   // Note: In some cases, the button might be visible but not enabled
-  check(btn, {
-    [`Button "${buttonText}" on "${path}" is enabled`]: () => btn.isEnabled(),
-  });
+  const isEnabled = await btn.isEnabled();
+  check(isEnabled, { [`Button "${buttonText}" on "${path}" is enabled`]: () => isEnabled });
+  if (!isEnabled || !action) return;
+
+  let isClickable = false;
+  let msg;
+  if (action.type === "navigate") {
+    const oldUrl = page.url();
+    await btn.click();
+    const newUrl = page.url();
+    isClickable = oldUrl !== newUrl;
+    msg = `Clicking "${buttonText}" on "${path}" navigated in the same tab`;
+    if (isClickable) {
+      await page.goto(`${BASE_URL}${path}`);
+    }
+  } else if (action.type === "clickable") {
+    try {
+      await btn.click();
+      isClickable = true;
+    } catch (e) {
+      isClickable = false;
+    }
+    msg = `Clicking "${buttonText}" on "${path}" did not throw an error`;
+  } else if (action.type === "error") {
+    await btn.click();
+    const content = await page.content();
+    const errorMatch = content.match(new RegExp(action.errorMsg + "[^<]*", "i"));
+    if (errorMatch) {
+      isClickable = true;
+      msg = `Clicking "${buttonText}" on "${path}" shows error: ${errorMatch[0]}`;
+    } else {
+      isClickable = false;
+      msg = `Clicking "${buttonText}" on "${path}" did not show an error message matching "${action.errorMsg}"`;
+    }
+  }
+  check(isClickable, { [msg]: () => isClickable });
 }
+
+const BUTTON_ACTIONS = {
+  "/faucet/calibnet_usdfc": {
+    "Faucet List": { type: "navigate" },
+    "Transaction History": { type: "clickable" },
+    "Claim tUSDFC": { type: "error", errorMsg: "Invalid address" }
+  },
+  "/faucet/calibnet": {
+    "Faucet List": { type: "navigate" },
+    "Transaction History": { type: "clickable" },
+    "Claim tFIL": { type: "error", errorMsg: "Invalid address" }
+  },
+  "/faucet/mainnet": {
+    "Faucet List": { type: "navigate" },
+    "Transaction History": { type: "clickable" },
+    "Claim FIL": { type: "error", errorMsg: "Invalid address" }
+  }
+};
 
 // Check if the link exists, is visible, and has a valid href
 async function checkLink(page, path, linkText) {
@@ -134,7 +177,8 @@ async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
     await checkPath(page, path);
     for (const btn of buttons) {
-      await checkButton(page, path, btn);
+      const action = BUTTON_ACTIONS[path]?.[btn];
+      await checkButton(page, path, btn, action);
     }
     for (const lnk of links) {
       await checkLink(page, path, lnk);
