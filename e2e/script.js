@@ -1,5 +1,6 @@
 import { browser } from "k6/browser";
 import { check } from "k6";
+import { BUTTON_ACTIONS, PAGES, CLAIM_TESTS } from "./config.js";
 
 export const options = {
   scenarios: {
@@ -95,24 +96,6 @@ async function checkButton(page, path, buttonText, action) {
   check(isClickable, { [msg]: () => isClickable });
 }
 
-const BUTTON_ACTIONS = {
-  "/faucet/calibnet_usdfc": {
-    "Faucet List": { type: "navigate" },
-    "Transaction History": { type: "clickable" },
-    "Claim tUSDFC": { type: "error", errorMsg: "Invalid address" },
-  },
-  "/faucet/calibnet": {
-    "Faucet List": { type: "navigate" },
-    "Transaction History": { type: "clickable" },
-    "Claim tFIL": { type: "error", errorMsg: "Invalid address" },
-  },
-  "/faucet/mainnet": {
-    "Faucet List": { type: "navigate" },
-    "Transaction History": { type: "clickable" },
-    "Claim FIL": { type: "error", errorMsg: "Invalid address" },
-  },
-};
-
 // Check if the link exists, is visible, and has a valid href
 async function checkLink(page, path, linkText) {
   const links = await page.$$("a");
@@ -154,35 +137,6 @@ async function checkFooter(page, path) {
   await checkLink(page, path, "ChainSafe Systems");
 }
 
-const PAGES = [
-  {
-    path: "",
-    buttons: ["Faucet List"],
-    links: ["Filecoin Slack", "documentation"],
-  },
-  {
-    path: "/faucet",
-    buttons: ["Home"],
-    links: [
-      "💰 Calibration Network USDFC Faucet",
-      "🧪 Calibration Network Faucet",
-      "🌐 Mainnet Network Faucet",
-    ],
-  },
-  {
-    path: "/faucet/calibnet_usdfc",
-    buttons: ["Faucet List", "Transaction History", "Claim tUSDFC"],
-  },
-  {
-    path: "/faucet/calibnet",
-    buttons: ["Faucet List", "Transaction History", "Claim tFIL"],
-  },
-  {
-    path: "/faucet/mainnet",
-    buttons: ["Faucet List", "Transaction History", "Claim FIL"],
-  },
-];
-
 // Loops through each page config, performing:
 // - checkPath
 // - checkButton
@@ -201,36 +155,6 @@ async function runChecks(page) {
     await checkFooter(page, path);
   }
 }
-
-const CLAIM_TESTS = [
-  {
-    path: "/faucet/calibnet",
-    button: "Claim tFIL",
-    addresses: [
-      "t1ox5dc3ifjimvn33tawpnyizikkbdikbnllyi2nq", // valid
-      "f1mwllxrw7frn2lwhf4u26y4f3m7f6wsl4i3o3jvix", // invalid
-    ],
-    expectSuccess: [true, false],
-  },
-  {
-    path: "/faucet/calibnet_usdfc",
-    button: "Claim tUSDFC",
-    addresses: [
-      "0xAe9C4b9508c929966ef37209b336E5796D632CDc", // valid
-      "f1mwllxrw7frn2lwhf4u26y4f3m7f6wsl4i3o3jvi", // invalid
-    ],
-    expectSuccess: [true, false],
-  },
-  {
-    path: "/faucet/mainnet",
-    button: "Claim FIL",
-    addresses: [
-      "f1mwllxrw7frn2lwhf4u26y4f3m7f6wsl4i3o3jvi", // valid
-      "t1ox5dc3ifjimvn33tawpnyizikkbdikbnllyi2nq", // invalid
-    ],
-    expectSuccess: [true, false],
-  },
-];
 
 async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
   await checkPath(page, path);
