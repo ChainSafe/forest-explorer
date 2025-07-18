@@ -15,13 +15,16 @@ use alloy::{sol, sol_types::SolCall};
 
 #[cfg(feature = "ssr")]
 use super::server::{
-    read_faucet_secret, secret_key, sign_with_eth_secret_key, sign_with_secret_key,
+    check_rate_limit, read_faucet_secret, secret_key, sign_with_eth_secret_key,
+    sign_with_secret_key,
 };
 
 #[cfg(feature = "ssr")]
 use crate::faucet::constants::TokenType;
 
 use super::constants::FaucetInfo;
+use crate::utils::error::FaucetError;
+
 /// Returns the faucet address. This assumes the faucet in place is a native token faucet.
 #[server]
 async fn faucet_fil_address(faucet_info: FaucetInfo) -> Result<LotusJson<Address>, ServerFnError> {
@@ -94,7 +97,7 @@ pub async fn signed_fil_transfer(
     gas_premium: LotusJson<TokenAmount>,
     sequence: u64,
     faucet_info: FaucetInfo,
-) -> Result<LotusJson<SignedMessage>, ServerFnError> {
+) -> Result<LotusJson<SignedMessage>, FaucetError> {
     use crate::utils::message::message_transfer_native;
     let LotusJson(to) = to;
     let LotusJson(gas_fee_cap) = gas_fee_cap;
@@ -104,11 +107,18 @@ pub async fn signed_fil_transfer(
     let gas_limit = gas_limit.min(faucet_info.max_gas_limit());
     let gas_fee_cap = gas_fee_cap.min(faucet_info.max_gas_fee_cap());
     let gas_premium = gas_premium.min(faucet_info.max_gas_premium());
+    let id = to.id().map_err(|e| FaucetError::Server(e.to_string()))?;
+    let rate_limit_seconds = check_rate_limit(faucet_info, id).await?;
+    if let Some(secs) = rate_limit_seconds {
+        return Err(FaucetError::RateLimited {
+            retry_after_secs: secs,
+        });
+    }
 
     let from = faucet_address(faucet_info)
         .await?
         .to_filecoin_address(faucet_info.network())
-        .map_err(ServerFnError::new)?;
+        .map_err(|e| FaucetError::Server(e.to_string()))?;
 
     let unsigned_msg = message_transfer_native(
         from,
@@ -119,7 +129,8 @@ pub async fn signed_fil_transfer(
         gas_premium,
         sequence,
     );
-    sign_with_secret_key(unsigned_msg, faucet_info).await
+    let signed = sign_with_secret_key(unsigned_msg, faucet_info).await?;
+    Ok(signed)
 }
 
 /// Signs an ERC-20 transfer transaction to the specified recipient with the given nonce and gas
@@ -130,14 +141,28 @@ pub async fn signed_fil_transfer(
 /// manipulate the transaction data.
 #[server]
 pub async fn signed_erc20_transfer(
-    recipient: alloy::primitives::Address,
+    recipient: LotusJson<Address>,
     nonce: u64,
     gas_price: u64,
     faucet_info: FaucetInfo,
-) -> Result<Vec<u8>, ServerFnError> {
+) -> Result<Vec<u8>, FaucetError> {
+    use crate::utils::address::AddressAlloyExt as _;
     use crate::utils::conversions::TokenAmountAlloyExt as _;
     use alloy::network::TransactionBuilder as _;
 
+    let LotusJson(recipient) = recipient;
+    let id = recipient
+        .id()
+        .map_err(|e| FaucetError::Server(e.to_string()))?;
+    let rate_limit_seconds = check_rate_limit(faucet_info, id).await?;
+    if let Some(secs) = rate_limit_seconds {
+        return Err(FaucetError::RateLimited {
+            retry_after_secs: secs,
+        });
+    }
+    let recipient = recipient
+        .into_eth_address()
+        .map_err(|e| FaucetError::Server(e.to_string()))?;
     log::info!("Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}");
     sol! {
         #[sol(rpc)]
@@ -149,7 +174,7 @@ pub async fn signed_erc20_transfer(
     let contract_address = match faucet_info.token_type() {
         TokenType::Erc20(addr) => addr,
         _ => {
-            return Err(ServerFnError::ServerError(
+            return Err(FaucetError::Server(
                 "This function is only for ERC-20 token transfers".to_string(),
             ));
         }
@@ -167,5 +192,6 @@ pub async fn signed_erc20_transfer(
         .with_gas_price(gas_price.into())
         .with_input(calldata);
 
-    sign_with_eth_secret_key(tx.clone(), faucet_info).await
+    let signed = sign_with_eth_secret_key(tx.clone(), faucet_info).await?;
+    Ok(signed)
 }
