@@ -6,11 +6,11 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::{Meta, Title};
 
+/// Displays the Mainnet Faucet page.
+/// Sets the RPC context to mainnet and renders the faucet and its description.
 #[component]
 pub fn Faucet_Mainnet() -> impl IntoView {
-    let drip_amount = FaucetInfo::MainnetFIL.drip_amount();
-    let token_unit = FaucetInfo::MainnetFIL.unit();
-    let rate_limit_seconds = FaucetInfo::MainnetFIL.rate_limit_seconds();
+    let faucet_info = FaucetInfo::MainnetFIL;
     let rpc_context = RpcContext::use_context();
     // Set rpc context to mainnet url
     rpc_context.set(Provider::get_network_url(FaucetInfo::MainnetFIL.network()));
@@ -21,12 +21,8 @@ pub fn Faucet_Mainnet() -> impl IntoView {
 
         <h1 class="header">"🌐 Filecoin Mainnet Faucet"</h1>
         <div class="main-container">
-            <Faucet faucet_info=FaucetInfo::MainnetFIL />
-            <FaucetDescription
-                drip_amount=drip_amount.clone()
-                token_unit=token_unit.to_string()
-                rate_limit_seconds=rate_limit_seconds
-            />
+            <Faucet faucet_info=faucet_info />
+            <FaucetDescription faucet_info=faucet_info />
         </div>
     }
 }

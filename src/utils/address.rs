@@ -60,9 +60,13 @@ pub fn parse_address(raw: &str, n: Network) -> anyhow::Result<Address> {
             s.chars().skip(2).all(|c| c.is_ascii_hexdigit()),
             "Invalid characters in address"
         );
-
-        let addr = hex::decode(&s[2..])?;
-        Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
+        if let Some(id) = s.strip_prefix("0xff") {
+            let id = u64::from_str_radix(id, 16)?;
+            Ok(Address::new_id(id))
+        } else {
+            let addr = hex::decode(&s[2..])?;
+            Ok(Address::new_delegated(EAM_NAMESPACE, &addr)?)
+        }
     } else {
         Ok(n.parse_address(&s)?)
     }
@@ -244,6 +248,16 @@ mod tests {
         let e = parse_address(addr_str, Network::Mainnet).err().unwrap();
 
         assert_eq!(e.to_string(), "Invalid characters in address");
+    }
+
+    #[test]
+    fn test_parse_id_address() {
+        let addr = Address::new_id(163506);
+        let eth_addr = addr.into_eth_address().unwrap();
+        let exp_addr =
+            parse_address(&eth_addr.to_string().to_lowercase(), Network::Mainnet).unwrap();
+
+        assert_eq!(addr, exp_addr);
     }
 
     #[test]

@@ -15,6 +15,25 @@ static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
 static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(5));
 
+/// Multiplier to determine the maximum amount of tokens that can be dripped per wallet every [`FaucetInfo::reset_limiter_seconds`].
+/// This corresponds to 1 * [`FaucetInfo::drip_amount`]
+const MAINNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 1;
+/// This corresponds to 2 * [`FaucetInfo::drip_amount`]
+const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;
+
+/// Multiplier used to determine the maximum amount of tokens that can be dripped globally every [`FaucetInfo::reset_limiter_seconds`].
+/// This corresponds to 2 * [`FaucetInfo::drip_amount`]
+const MAINNET_GLOBAL_DRIP_MULTIPLIER: i64 = 2;
+/// This corresponds to 5 * [`FaucetInfo::drip_amount`]
+const CALIBNET_GLOBAL_DRIP_MULTIPLIER: i64 = 5;
+
+/// Cool-down duration in seconds between faucet requests on mainnet.
+const MAINNET_COOLDOWN_SECONDS: i64 = 600; // 10 minutes
+/// Cool-down duration in seconds between faucet requests on calibnet.
+const CALIBNET_COOLDOWN_SECONDS: i64 = 60; // 1 minute
+/// Time in seconds after which the wallet drip cap resets.
+const DRIP_CAP_RESET_SECONDS: i64 = 86400; // 24 hours
+
 pub type ContractAddress = alloy::primitives::Address;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -46,10 +65,36 @@ impl FaucetInfo {
     /// which the faucet is temporarily disabled and no more drips can be sent.
     pub fn rate_limit_seconds(&self) -> i64 {
         match self {
-            FaucetInfo::MainnetFIL => 600,
-            FaucetInfo::CalibnetFIL => 60,
-            FaucetInfo::CalibnetUSDFC => 60,
+            FaucetInfo::MainnetFIL => MAINNET_COOLDOWN_SECONDS,
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => CALIBNET_COOLDOWN_SECONDS,
         }
+    }
+
+    /// Returns the maximum amount of tokens that can be dripped by the wallet per [`FaucetInfo::reset_limiter_seconds`].
+    /// This is used to prevent the wallet from being drained completely and to ensure that the
+    /// faucet can continue to operate.
+    pub fn drip_cap(&self) -> TokenAmount {
+        match self {
+            FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_GLOBAL_DRIP_MULTIPLIER,
+            FaucetInfo::CalibnetFIL => self.drip_amount() * CALIBNET_GLOBAL_DRIP_MULTIPLIER,
+            FaucetInfo::CalibnetUSDFC => self.drip_amount() * CALIBNET_GLOBAL_DRIP_MULTIPLIER,
+        }
+    }
+
+    /// Returns the maximum amount of tokens that can be claimed by the wallet per [`FaucetInfo::reset_limiter_seconds`].
+    /// This is used to prevent the wallet from being drained completely and to ensure that the
+    /// faucet can continue to operate.
+    pub fn wallet_cap(&self) -> TokenAmount {
+        match self {
+            FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_PER_WALLET_DRIP_MULTIPLIER,
+            FaucetInfo::CalibnetFIL => self.drip_amount() * CALIBNET_PER_WALLET_DRIP_MULTIPLIER,
+            FaucetInfo::CalibnetUSDFC => self.drip_amount() * CALIBNET_PER_WALLET_DRIP_MULTIPLIER,
+        }
+    }
+
+    /// Returns the number of seconds after which the all drip cap resets for the faucet.
+    pub fn reset_limiter_seconds(&self) -> i64 {
+        DRIP_CAP_RESET_SECONDS
     }
 
     /// Returns the unit of the token for the given faucet.
@@ -140,6 +185,14 @@ mod tests {
         assert!(mainnet_faucet.transaction_base_url().is_none());
         assert_eq!(mainnet_faucet.token_type(), TokenType::Native);
         assert_eq!(mainnet_faucet.chain_id(), 314);
+        assert_eq!(
+            mainnet_faucet.wallet_cap(),
+            MAINNET_PER_WALLET_DRIP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT
+        );
+        assert_eq!(
+            mainnet_faucet.drip_cap(),
+            MAINNET_GLOBAL_DRIP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT
+        );
 
         let calibnet_fil_faucet = FaucetInfo::CalibnetFIL;
         assert_eq!(calibnet_fil_faucet.drip_amount(), &*CALIBNET_DRIP_AMOUNT);
@@ -150,6 +203,14 @@ mod tests {
         assert!(calibnet_fil_faucet.transaction_base_url().is_none());
         assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
+        assert_eq!(
+            calibnet_fil_faucet.wallet_cap(),
+            CALIBNET_PER_WALLET_DRIP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT
+        );
+        assert_eq!(
+            calibnet_fil_faucet.drip_cap(),
+            CALIBNET_GLOBAL_DRIP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT
+        );
 
         let calibnet_usdfc_faucet = FaucetInfo::CalibnetUSDFC;
         assert_eq!(
@@ -172,5 +233,13 @@ mod tests {
             )
         );
         assert_eq!(calibnet_usdfc_faucet.chain_id(), 314159);
+        assert_eq!(
+            calibnet_usdfc_faucet.wallet_cap(),
+            CALIBNET_PER_WALLET_DRIP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT
+        );
+        assert_eq!(
+            calibnet_usdfc_faucet.drip_cap(),
+            CALIBNET_GLOBAL_DRIP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT
+        );
     }
 }
