@@ -166,6 +166,34 @@ impl FaucetInfo {
             Network::Testnet => 314159, // chainlist.org/chain/314159
         }
     }
+
+    /// Returns the maximum allowed gas limit.
+    #[allow(dead_code)]
+    pub fn max_gas_limit(&self) -> u64 {
+        match self {
+            FaucetInfo::MainnetFIL => 10_000_000,
+            FaucetInfo::CalibnetFIL => 2_000_000,
+            FaucetInfo::CalibnetUSDFC => 30_000_000, // the actual gas usage should be ~ 20M, but we add some buffer
+        }
+    }
+
+    /// Returns the maximum allowed gas fee cap (in attoFIL).
+    #[allow(dead_code)]
+    pub fn max_gas_fee_cap(&self) -> TokenAmount {
+        match self {
+            FaucetInfo::MainnetFIL => TokenAmount::from_atto(1_000_000),
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => TokenAmount::from_atto(200_000),
+        }
+    }
+
+    /// Returns the maximum allowed gas premium (in attoFIL).
+    #[allow(dead_code)]
+    pub fn max_gas_premium(&self) -> TokenAmount {
+        match self {
+            FaucetInfo::MainnetFIL => TokenAmount::from_atto(1_000_000),
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => TokenAmount::from_atto(200_000),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -185,6 +213,15 @@ mod tests {
         assert!(mainnet_faucet.transaction_base_url().is_none());
         assert_eq!(mainnet_faucet.token_type(), TokenType::Native);
         assert_eq!(mainnet_faucet.chain_id(), 314);
+        assert_eq!(mainnet_faucet.max_gas_limit(), 10_000_000);
+        assert_eq!(
+            mainnet_faucet.max_gas_fee_cap(),
+            TokenAmount::from_atto(1_000_000)
+        );
+        assert_eq!(
+            mainnet_faucet.max_gas_premium(),
+            TokenAmount::from_atto(1_000_000)
+        );
         assert_eq!(
             mainnet_faucet.wallet_cap(),
             MAINNET_PER_WALLET_DRIP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT
@@ -203,6 +240,15 @@ mod tests {
         assert!(calibnet_fil_faucet.transaction_base_url().is_none());
         assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
+        assert_eq!(calibnet_fil_faucet.max_gas_limit(), 2_000_000);
+        assert_eq!(
+            calibnet_fil_faucet.max_gas_fee_cap(),
+            TokenAmount::from_atto(200_000)
+        );
+        assert_eq!(
+            calibnet_fil_faucet.max_gas_premium(),
+            TokenAmount::from_atto(200_000)
+        );
         assert_eq!(
             calibnet_fil_faucet.wallet_cap(),
             CALIBNET_PER_WALLET_DRIP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT
@@ -233,6 +279,15 @@ mod tests {
             )
         );
         assert_eq!(calibnet_usdfc_faucet.chain_id(), 314159);
+        assert_eq!(calibnet_usdfc_faucet.max_gas_limit(), 30_000_000);
+        assert_eq!(
+            calibnet_usdfc_faucet.max_gas_premium(),
+            TokenAmount::from_atto(200_000)
+        );
+        assert_eq!(
+            calibnet_usdfc_faucet.max_gas_fee_cap(),
+            TokenAmount::from_atto(200_000)
+        );
         assert_eq!(
             calibnet_usdfc_faucet.wallet_cap(),
             CALIBNET_PER_WALLET_DRIP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT
