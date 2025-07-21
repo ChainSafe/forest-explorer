@@ -53,7 +53,7 @@ worker = { version = "0.6", features = ['http', 'axum'], optional = true }
 worker-macros = { version = "0.6", features = ['http'], optional = true }
 
 [dev-dependencies]
-mockall = "0.12"
+mockall = "0.13"
 rusty-fork = "0.3"
 tokio = { version = "1", features = ["macros", "rt"] }
 
