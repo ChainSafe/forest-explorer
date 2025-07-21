@@ -69,7 +69,10 @@ async function checkButton(page, path, buttonText, action) {
     isClickable = oldUrl !== newUrl;
     msg = `Clicking "${buttonText}" on "${path}" navigated in the same tab`;
     if (isClickable) {
-      await page.goto(`${BASE_URL}${path}`);
+      await page.goto(`${BASE_URL}${path}`, {
+      timeout: 60_000,
+      waitUntil: "networkidle",
+    });
     }
   } else if (action.type === "clickable") {
     try {
@@ -173,7 +176,7 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
     let claimBtn = null;
     for (const b of buttons) {
       const text = await b.evaluate((el) => el.textContent.trim());
-      if (text === button) {
+      if (text.includes(button)) {
         claimBtn = b;
         break;
       }
@@ -184,8 +187,12 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
     let found = false;
     if (shouldSucceed) {
       await page.waitForTimeout(500);
-      const txContainer = await page.$(".transaction-container");
-      if (txContainer) found = true;
+      try {
+        const txContainer = await page.waitForSelector(".transaction-container", { timeout: 5000 });
+        if (txContainer) found = true;
+      } catch (e) {
+        found = false;
+      }
       check(found, {
         [`Claim success for '${address}' on ${path}`]: () => found,
       });

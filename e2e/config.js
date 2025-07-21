@@ -62,7 +62,7 @@ export const CLAIM_TESTS = [
     path: "/faucet/mainnet",
     button: "Claim FIL",
     addresses: [
-      "f1mwllxrw7frn2lwhf4u26y4f3m7f6wsl4i3o3jvi", // valid
+      "f1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy", // valid
       "t1ox5dc3ifjimvn33tawpnyizikkbdikbnllyi2nq", // invalid
     ],
     expectSuccess: [true, false],
@@ -71,7 +71,7 @@ export const CLAIM_TESTS = [
     path: "/faucet/calibnet",
     button: "Claim tFIL",
     addresses: [
-      "t1ox5dc3ifjimvn33tawpnyizikkbdikbnllyi2nq", // valid
+      "t1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq", // valid
       "f1mwllxrw7frn2lwhf4u26y4f3m7f6wsl4i3o3jvi", // invalid
     ],
     expectSuccess: [true, false],
