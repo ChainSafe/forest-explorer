@@ -137,28 +137,21 @@ pub async fn signed_fil_transfer(
 /// manipulate the transaction data.
 #[server]
 pub async fn signed_erc20_transfer(
-    recipient: LotusJson<Address>,
+    recipient: alloy::primitives::Address,
     nonce: u64,
     gas_price: u64,
     faucet_info: FaucetInfo,
+    id: u64,
 ) -> Result<Vec<u8>, FaucetError> {
-    use crate::utils::address::AddressAlloyExt as _;
     use crate::utils::conversions::TokenAmountAlloyExt as _;
     use alloy::network::TransactionBuilder as _;
 
-    let LotusJson(recipient) = recipient;
-    let id = recipient
-        .id()
-        .map_err(|e| FaucetError::Server(e.to_string()))?;
     let rate_limit_seconds = check_rate_limit(faucet_info, id).await?;
     if let Some(secs) = rate_limit_seconds {
         return Err(FaucetError::RateLimited {
             retry_after_secs: secs,
         });
     }
-    let recipient = recipient
-        .into_eth_address()
-        .map_err(|e| FaucetError::Server(e.to_string()))?;
     log::info!("Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}");
     sol! {
         #[sol(rpc)]

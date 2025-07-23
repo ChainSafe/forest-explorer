@@ -1,6 +1,7 @@
 use super::constants::{FaucetInfo, TokenType};
 use super::server_api::{faucet_address, signed_erc20_transfer, signed_fil_transfer};
 use crate::faucet::model::FaucetModel;
+use crate::utils::address::AddressAlloyExt;
 use crate::utils::error::FaucetError;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::rpc_context::Provider;
@@ -285,11 +286,17 @@ impl FaucetController {
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
-
+                        let eth_to = recipient.into_eth_address()?;
                         let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
                         let gas_price = filecoin_rpc.gas_price().await?;
-                        match signed_erc20_transfer(LotusJson(id_address), nonce, gas_price, info)
-                            .await
+                        match signed_erc20_transfer(
+                            eth_to,
+                            nonce,
+                            gas_price,
+                            info,
+                            id_address.id()?,
+                        )
+                        .await
                         {
                             Ok(signed) => {
                                 let tx_id =
