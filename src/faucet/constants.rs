@@ -258,7 +258,7 @@ mod tests {
         assert!(calibnet_fil_faucet.transaction_base_url().is_none());
         assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
-        assert_eq!(calibnet_fil_faucet.max_gas_limit(), 2_000_000);
+        assert_eq!(calibnet_fil_faucet.max_gas_limit(), 30_000_000);
         assert_eq!(
             calibnet_fil_faucet.max_gas_fee_cap(),
             TokenAmount::from_atto(200_000)
