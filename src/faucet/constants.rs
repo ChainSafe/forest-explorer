@@ -34,6 +34,25 @@ const CALIBNET_COOLDOWN_SECONDS: i64 = 60; // 1 minute
 /// Time in seconds after which the wallet drip cap resets.
 const DRIP_CAP_RESET_SECONDS: i64 = 86400; // 24 hours
 
+/// Maximum gas limit for mainnet including buffer.
+const MAX_MAINNET_GAS_LIMIT: u64 = 10_000_000;
+/// Maximum gas limit for calibnet including buffer.
+const MAX_CALIBNET_GAS_LIMIT: u64 = 30_000_000;
+
+/// Maximum gas fee cap for mainnet including buffer.
+static MAX_MAINNET_GAS_FEE_CAP: LazyLock<TokenAmount> =
+    LazyLock::new(|| TokenAmount::from_atto(1_000_000));
+/// Maximum gas fee cap for calibnet including buffer.
+static MAX_CALIBNET_GAS_FEE_CAP: LazyLock<TokenAmount> =
+    LazyLock::new(|| TokenAmount::from_atto(200_000));
+
+/// Maximum gas premium for mainnet including buffer.
+static MAX_MAINNET_GAS_PREMIUM: LazyLock<TokenAmount> =
+    LazyLock::new(|| TokenAmount::from_atto(1_000_000));
+/// Maximum gas premium for calibnet including buffer.
+static MAX_CALIBNET_GAS_PREMIUM: LazyLock<TokenAmount> =
+    LazyLock::new(|| TokenAmount::from_atto(200_000));
+
 pub type ContractAddress = alloy::primitives::Address;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -171,9 +190,8 @@ impl FaucetInfo {
     #[allow(dead_code)]
     pub fn max_gas_limit(&self) -> u64 {
         match self {
-            FaucetInfo::MainnetFIL => 10_000_000,
-            FaucetInfo::CalibnetFIL => 2_000_000,
-            FaucetInfo::CalibnetUSDFC => 30_000_000, // the actual gas usage should be ~ 20M, but we add some buffer
+            FaucetInfo::MainnetFIL => MAX_MAINNET_GAS_LIMIT,
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => MAX_CALIBNET_GAS_LIMIT,
         }
     }
 
@@ -181,8 +199,8 @@ impl FaucetInfo {
     #[allow(dead_code)]
     pub fn max_gas_fee_cap(&self) -> TokenAmount {
         match self {
-            FaucetInfo::MainnetFIL => TokenAmount::from_atto(1_000_000),
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => TokenAmount::from_atto(200_000),
+            FaucetInfo::MainnetFIL => MAX_MAINNET_GAS_FEE_CAP.clone(),
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => MAX_CALIBNET_GAS_FEE_CAP.clone(),
         }
     }
 
@@ -190,8 +208,8 @@ impl FaucetInfo {
     #[allow(dead_code)]
     pub fn max_gas_premium(&self) -> TokenAmount {
         match self {
-            FaucetInfo::MainnetFIL => TokenAmount::from_atto(1_000_000),
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => TokenAmount::from_atto(200_000),
+            FaucetInfo::MainnetFIL => MAX_MAINNET_GAS_PREMIUM.clone(),
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => MAX_CALIBNET_GAS_PREMIUM.clone(),
         }
     }
 }
