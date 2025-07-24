@@ -1,3 +1,24 @@
+/*
+Forest Explorer E2E Test Script
+==============================
+
+This script uses k6 browser to automate e2e tests for the Forest Explorer faucet.
+
+Test Flow:
+- For each page defined in config.js:
+  - Navigate to the page and check for a 200 response
+  - For each button: check existence, visibility, enabled state, and perform the expected action
+  - For each link: check existence, visibility, and validity
+  - Check that footer links are present and valid
+- For each claim scenario in config.js:
+  - Enter each address in the input field and click the claim button
+  - Check for success (transaction container appears) or error ("Invalid address" message)
+
+Notes:
+- All checks use k6's check() function for assertions
+- The script is designed to fail fast if any check does not pass
+- Update config.js to add or modify test scenarios as the UI evolves
+*/
 import { browser } from "k6/browser";
 import { check } from "k6";
 import { BUTTON_ACTIONS, PAGES, CLAIM_TESTS } from "./config.js";
@@ -29,6 +50,55 @@ async function checkPath(page, path) {
   check(res, { [`GET ${path} → 200`]: (r) => r && r.status() === 200 });
 }
 
+// Handle 'navigate' action type
+async function handleNavigateAction(page, path, btn, buttonText) {
+  const oldUrl = page.url();
+  await btn.click();
+  const newUrl = page.url();
+  const isWorking = oldUrl !== newUrl;
+  let msg = `Clicking "${buttonText}" on "${path}" navigated in the same tab`;
+  if (isWorking) {
+    await page.goto(`${BASE_URL}${path}`, {
+      timeout: 60_000,
+      waitUntil: "networkidle",
+    });
+  }
+  check(isWorking, { [msg]: () => isWorking });
+}
+
+// Handle 'clickable' action type
+async function handleClickableAction(page, path, btn, buttonText) {
+  let isWorking = false;
+  let msg;
+  try {
+    await btn.click();
+    isWorking = true;
+  } catch (e) {
+    isWorking = false;
+  }
+  msg = `Clicking "${buttonText}" on "${path}" did not throw an error`;
+  check(isWorking, { [msg]: () => isWorking });
+}
+
+// Handle 'expectError' action type
+async function handleExpectErrorAction(page, path, btn, buttonText, errorMsg) {
+  let isWorking = false;
+  let msg;
+  await btn.click();
+  const content = await page.content();
+  const errorMatch = content.match(
+    new RegExp(errorMsg + "[^<]*", "i"),
+  );
+  if (errorMatch) {
+    isWorking = true;
+    msg = `Clicking "${buttonText}" on "${path}" shows error: ${errorMatch[0]}`;
+  } else {
+    isWorking = false;
+    msg = `Clicking "${buttonText}" on "${path}" did not show an error message matching "${errorMsg}"`;
+  }
+  check(isWorking, { [msg]: () => isWorking });
+}
+
 // Check if the button exists, is visible, and is enabled
 async function checkButton(page, path, buttonText, action) {
   const buttons = await page.$$("button");
@@ -46,57 +116,29 @@ async function checkButton(page, path, buttonText, action) {
   check(exists, {
     [`Button "${buttonText}" on "${path}" exists`]: () => exists,
   });
+  if (!exists) return;
+
   // Check if the button is visible
-  // Note: In some cases, the button might exist but not be visible
   const isVisible = await btn.isVisible();
   check(isVisible, {
     [`Button "${buttonText}" on "${path}" is visible`]: () => isVisible,
   });
+  if (!isVisible) return;
+
   // Check if the button is enabled
-  // Note: In some cases, the button might be visible but not enabled
   const isEnabled = await btn.isEnabled();
   check(isEnabled, {
     [`Button "${buttonText}" on "${path}" is enabled`]: () => isEnabled,
   });
   if (!isEnabled || !action) return;
 
-  let isClickable = false;
-  let msg;
   if (action.type === "navigate") {
-    const oldUrl = page.url();
-    await btn.click();
-    const newUrl = page.url();
-    isClickable = oldUrl !== newUrl;
-    msg = `Clicking "${buttonText}" on "${path}" navigated in the same tab`;
-    if (isClickable) {
-      await page.goto(`${BASE_URL}${path}`, {
-      timeout: 60_000,
-      waitUntil: "networkidle",
-    });
-    }
+    await handleNavigateAction(page, path, btn, buttonText);
   } else if (action.type === "clickable") {
-    try {
-      await btn.click();
-      isClickable = true;
-    } catch (e) {
-      isClickable = false;
-    }
-    msg = `Clicking "${buttonText}" on "${path}" did not throw an error`;
-  } else if (action.type === "error") {
-    await btn.click();
-    const content = await page.content();
-    const errorMatch = content.match(
-      new RegExp(action.errorMsg + "[^<]*", "i"),
-    );
-    if (errorMatch) {
-      isClickable = true;
-      msg = `Clicking "${buttonText}" on "${path}" shows error: ${errorMatch[0]}`;
-    } else {
-      isClickable = false;
-      msg = `Clicking "${buttonText}" on "${path}" did not show an error message matching "${action.errorMsg}"`;
-    }
+    await handleClickableAction(page, path, btn, buttonText);
+  } else if (action.type === "expectError") {
+    await handleExpectErrorAction(page, path, btn, buttonText, action.errorMsg);
   }
-  check(isClickable, { [msg]: () => isClickable });
 }
 
 // Check if the link exists, is visible, and has a valid href
