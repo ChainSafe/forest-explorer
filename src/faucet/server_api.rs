@@ -103,6 +103,10 @@ pub async fn signed_fil_transfer(
     let LotusJson(gas_fee_cap) = gas_fee_cap;
     let LotusJson(gas_premium) = gas_premium;
 
+    // Make sure gas values aren't too high
+    let gas_limit = gas_limit.min(faucet_info.max_gas_limit());
+    let gas_fee_cap = gas_fee_cap.min(faucet_info.max_gas_fee_cap());
+    let gas_premium = gas_premium.min(faucet_info.max_gas_premium());
     let id = to.id().map_err(|e| FaucetError::Server(e.to_string()))?;
     let rate_limit_seconds = check_rate_limit(faucet_info, id).await?;
     if let Some(secs) = rate_limit_seconds {
@@ -170,7 +174,7 @@ pub async fn signed_erc20_transfer(
     };
     let amount = faucet_info.drip_amount().to_alloy_amount();
 
-    let gas_limit = 30_000_000; // the actual gas usage should be ~ 20M, but we add some buffer
+    let gas_limit = faucet_info.max_gas_limit();
     let calldata = ERC20::transferCall::new((recipient, amount)).abi_encode();
 
     let tx = alloy::rpc::types::TransactionRequest::default()
