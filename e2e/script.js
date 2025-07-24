@@ -1,5 +1,27 @@
+/*
+Forest Explorer E2E Test Script
+==============================
+
+This script uses k6 browser to automate e2e tests for the Forest Explorer faucet.
+
+Test Flow:
+- For each page defined in config.js:
+  - Navigate to the page and check for a 200 response
+  - For each button: check existence, visibility, enabled state, and perform the expected action
+  - For each link: check existence, visibility, and validity
+  - Check that footer links are present and valid
+- For each claim scenario in config.js:
+  - Enter each address in the input field and click the claim button
+  - Check for success (transaction container appears) or error ("Invalid address" message)
+
+Notes:
+- All checks use k6's check() function for assertions
+- The script is designed to fail fast if any check does not pass
+- Update config.js to add or modify test scenarios as the UI evolves
+*/
 import { browser } from "k6/browser";
 import { check } from "k6";
+import { BUTTON_ACTIONS, PAGES, CLAIM_TESTS } from "./config.js";
 
 export const options = {
   scenarios: {
@@ -21,12 +43,64 @@ const BASE_URL = "http://127.0.0.1:8787";
 
 // Check if the path is reachable
 async function checkPath(page, path) {
-  const res = await page.goto(`${BASE_URL}${path}`, { timeout: 60_000, waitUntil: "networkidle" });
+  const res = await page.goto(`${BASE_URL}${path}`, {
+    timeout: 60_000,
+    waitUntil: "networkidle",
+  });
   check(res, { [`GET ${path} → 200`]: (r) => r && r.status() === 200 });
 }
 
+// Handle 'navigate' action type
+async function handleNavigateAction(page, path, btn, buttonText) {
+  const oldUrl = page.url();
+  await btn.click();
+  const newUrl = page.url();
+  const isWorking = oldUrl !== newUrl;
+  let msg = `Clicking "${buttonText}" on "${path}" navigated in the same tab`;
+  if (isWorking) {
+    await page.goto(`${BASE_URL}${path}`, {
+      timeout: 60_000,
+      waitUntil: "networkidle",
+    });
+  }
+  check(isWorking, { [msg]: () => isWorking });
+}
+
+// Handle 'clickable' action type
+async function handleClickableAction(page, path, btn, buttonText) {
+  let isWorking = false;
+  let msg;
+  try {
+    await btn.click();
+    isWorking = true;
+  } catch (e) {
+    isWorking = false;
+  }
+  msg = `Clicking "${buttonText}" on "${path}" did not throw an error`;
+  check(isWorking, { [msg]: () => isWorking });
+}
+
+// Handle 'expectError' action type
+async function handleExpectErrorAction(page, path, btn, buttonText, errorMsg) {
+  let isWorking = false;
+  let msg;
+  await btn.click();
+  const content = await page.content();
+  const errorMatch = content.match(
+    new RegExp(errorMsg + "[^<]*", "i"),
+  );
+  if (errorMatch) {
+    isWorking = true;
+    msg = `Clicking "${buttonText}" on "${path}" shows error: ${errorMatch[0]}`;
+  } else {
+    isWorking = false;
+    msg = `Clicking "${buttonText}" on "${path}" did not show an error message matching "${errorMsg}"`;
+  }
+  check(isWorking, { [msg]: () => isWorking });
+}
+
 // Check if the button exists, is visible, and is enabled
-async function checkButton(page, path, buttonText) {
+async function checkButton(page, path, buttonText, action) {
   const buttons = await page.$$("button");
   let btn = null;
   for (const b of buttons) {
@@ -39,24 +113,32 @@ async function checkButton(page, path, buttonText) {
 
   // Check if the button exists
   const exists = btn !== null;
-  const existenceMsg = `Button "${buttonText}" on "${path}" ${exists ? "exists" : "does not exist"}`;
-  check(exists, { [existenceMsg]: () => exists });
-  if (!exists) {
-    return;
-  }
+  check(exists, {
+    [`Button "${buttonText}" on "${path}" exists`]: () => exists,
+  });
+  if (!exists) return;
 
   // Check if the button is visible
-  // Note: In some cases, the button might exist but not be visible
   const isVisible = await btn.isVisible();
   check(isVisible, {
     [`Button "${buttonText}" on "${path}" is visible`]: () => isVisible,
   });
+  if (!isVisible) return;
 
   // Check if the button is enabled
-  // Note: In some cases, the button might be visible but not enabled
-  check(btn, {
-    [`Button "${buttonText}" on "${path}" is enabled`]: () => btn.isEnabled(),
+  const isEnabled = await btn.isEnabled();
+  check(isEnabled, {
+    [`Button "${buttonText}" on "${path}" is enabled`]: () => isEnabled,
   });
+  if (!isEnabled || !action) return;
+
+  if (action.type === "navigate") {
+    await handleNavigateAction(page, path, btn, buttonText);
+  } else if (action.type === "clickable") {
+    await handleClickableAction(page, path, btn, buttonText);
+  } else if (action.type === "expectError") {
+    await handleExpectErrorAction(page, path, btn, buttonText, action.errorMsg);
+  }
 }
 
 // Check if the link exists, is visible, and has a valid href
@@ -100,31 +182,6 @@ async function checkFooter(page, path) {
   await checkLink(page, path, "ChainSafe Systems");
 }
 
-const PAGES = [
-  {
-    path: "",
-    buttons: ["Faucet List"],
-    links: ["Filecoin Slack", "documentation"],
-  },
-  {
-    path: "/faucet",
-    buttons: ["Home"],
-    links: ["💰 Calibration Network USDFC Faucet", "🧪 Calibration Network Faucet", "🌐 Mainnet Network Faucet"],
-  },
-  {
-    path: "/faucet/calibnet_usdfc",
-    buttons: ["Faucet List", "Transaction History", "Claim tUSDFC"],
-  },
-  {
-    path: "/faucet/calibnet",
-    buttons: ["Faucet List", "Transaction History", "Claim tFIL"],
-  },
-  {
-    path: "/faucet/mainnet",
-    buttons: ["Faucet List", "Transaction History", "Claim FIL"],
-  },
-];
-
 // Loops through each page config, performing:
 // - checkPath
 // - checkButton
@@ -134,7 +191,8 @@ async function runChecks(page) {
   for (const { path, buttons = [], links = [] } of PAGES) {
     await checkPath(page, path);
     for (const btn of buttons) {
-      await checkButton(page, path, btn);
+      const action = BUTTON_ACTIONS[path]?.[btn];
+      await checkButton(page, path, btn, action);
     }
     for (const lnk of links) {
       await checkLink(page, path, lnk);
@@ -143,10 +201,63 @@ async function runChecks(page) {
   }
 }
 
+async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
+  await checkPath(page, path);
+  for (let i = 0; i < addresses.length; i++) {
+    const address = addresses[i];
+    const shouldSucceed = Array.isArray(expectSuccess)
+      ? expectSuccess[i]
+      : expectSuccess;
+    const input = await page.$("input.input");
+    check(!!input, { [`Input exists on ${path}`]: () => !!input });
+    if (!input) continue;
+    await input.click({ clickCount: 3 });
+    await input.press("Backspace");
+    await input.type(address);
+    const buttons = await page.$$("button");
+    let claimBtn = null;
+    for (const b of buttons) {
+      const text = await b.evaluate((el) => el.textContent.trim());
+      if (text.includes(button)) {
+        claimBtn = b;
+        break;
+      }
+    }
+    check(!!claimBtn, { [`Claim button exists on ${path}`]: () => !!claimBtn });
+    if (!claimBtn) continue;
+    await claimBtn.click();
+    let found = false;
+    if (shouldSucceed) {
+      await page.waitForTimeout(500);
+      try {
+        const txContainer = await page.waitForSelector(".transaction-container", { timeout: 5000 });
+        if (txContainer) found = true;
+      } catch (e) {
+        found = false;
+      }
+      check(found, {
+        [`Claim success for '${address}' on ${path}`]: () => found,
+      });
+    } else {
+      await page.waitForTimeout(250);
+      const content = await page.content();
+      if (/Invalid address/i.test(content)) {
+        found = true;
+      }
+      check(found, {
+        [`Invalid address error for '${address}' on ${path}`]: () => found,
+      });
+    }
+  }
+}
+
 export default async function () {
   const page = await browser.newPage();
   try {
     await runChecks(page);
+    for (const test of CLAIM_TESTS) {
+      await runClaimTests(page, test);
+    }
   } finally {
     await page.close();
   }
