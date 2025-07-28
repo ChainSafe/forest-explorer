@@ -1,24 +1,3 @@
-/*
-Forest Explorer E2E Test Script
-==============================
-
-This script uses k6 browser to automate e2e tests for the Forest Explorer faucet.
-
-Test Flow:
-- For each page defined in config.js:
-  - Navigate to the page and check for a 200 response
-  - For each button: check existence, visibility, enabled state, and perform the expected action
-  - For each link: check existence, visibility, and validity
-  - Check that footer links are present and valid
-- For each claim scenario in config.js:
-  - Enter each address in the input field and click the claim button
-  - Check for success (transaction container appears) or error ("Invalid address" message)
-
-Notes:
-- All checks use k6's check() function for assertions
-- The script is designed to fail fast if any check does not pass
-- Update config.js to add or modify test scenarios as the UI evolves
-*/
 import { browser } from "k6/browser";
 import { check } from "k6";
 import { BUTTON_ACTIONS, PAGES, CLAIM_TESTS } from "./config.js";
@@ -50,7 +29,6 @@ async function checkPath(page, path) {
   check(res, { [`GET ${path} → 200`]: (r) => r && r.status() === 200 });
 }
 
-// Handle 'navigate' action type
 async function handleNavigateAction(page, path, btn, buttonText) {
   const oldUrl = page.url();
   await btn.click();
@@ -66,7 +44,6 @@ async function handleNavigateAction(page, path, btn, buttonText) {
   check(isWorking, { [msg]: () => isWorking });
 }
 
-// Handle 'clickable' action type
 async function handleClickableAction(page, path, btn, buttonText) {
   let isWorking = false;
   let msg;
@@ -80,7 +57,6 @@ async function handleClickableAction(page, path, btn, buttonText) {
   check(isWorking, { [msg]: () => isWorking });
 }
 
-// Handle 'expectError' action type
 async function handleExpectErrorAction(page, path, btn, buttonText, errorMsg) {
   let isWorking = false;
   let msg;
@@ -177,6 +153,7 @@ async function checkLink(page, path, linkText) {
   });
 }
 
+// Checks for required footer links on each page
 async function checkFooter(page, path) {
   await checkLink(page, path, "Forest Explorer");
   await checkLink(page, path, "ChainSafe Systems");
@@ -218,7 +195,7 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
     let claimBtn = null;
     for (const b of buttons) {
       const text = await b.evaluate((el) => el.textContent.trim());
-      if (text.includes(button)) {
+      if (text.trim() === button) {
         claimBtn = b;
         break;
       }
@@ -228,6 +205,7 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
     await claimBtn.click();
     let found = false;
     if (shouldSucceed) {
+      // Wait for transaction container to appear
       await page.waitForTimeout(500);
       try {
         const txContainer = await page.waitForSelector(".transaction-container", { timeout: 5000 });
@@ -239,6 +217,7 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
         [`Claim success for '${address}' on ${path}`]: () => found,
       });
     } else {
+      // Wait for error message to appear
       await page.waitForTimeout(250);
       const content = await page.content();
       if (/Invalid address/i.test(content)) {
