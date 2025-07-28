@@ -145,12 +145,12 @@ pub async fn signed_erc20_transfer(
     nonce: u64,
     gas_price: u64,
     faucet_info: FaucetInfo,
-    id: u64,
+    wallet_id: u64,
 ) -> Result<Vec<u8>, FaucetError> {
     use crate::utils::conversions::TokenAmountAlloyExt as _;
     use alloy::network::TransactionBuilder as _;
 
-    let rate_limit_seconds = check_rate_limit(faucet_info, id).await?;
+    let rate_limit_seconds = check_rate_limit(faucet_info, wallet_id).await?;
     if let Some(secs) = rate_limit_seconds {
         return Err(FaucetError::RateLimited {
             retry_after_secs: secs,
