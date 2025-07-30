@@ -281,7 +281,6 @@ impl FaucetController {
                         faucet.send_disabled.set(true);
 
                         let filecoin_rpc = Provider::from_network(network);
-                        let id_address = filecoin_rpc.lookup_id(recipient).await?;
                         let owner_fil_address = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
@@ -289,15 +288,7 @@ impl FaucetController {
                         let eth_to = recipient.into_eth_address()?;
                         let nonce = filecoin_rpc.mpool_get_nonce(owner_fil_address).await?;
                         let gas_price = filecoin_rpc.gas_price().await?;
-                        match signed_erc20_transfer(
-                            eth_to,
-                            nonce,
-                            gas_price,
-                            info,
-                            id_address.id()?,
-                        )
-                        .await
-                        {
+                        match signed_erc20_transfer(eth_to, nonce, gas_price, info).await {
                             Ok(signed) => {
                                 let tx_id =
                                     filecoin_rpc.send_eth_transaction_signed(&signed).await?;

@@ -1,4 +1,5 @@
 use anyhow::{bail, ensure};
+use derive_more::Display;
 use fvm_shared::address::{Address, DelegatedAddress, Network, Protocol};
 use fvm_shared::ActorID;
 use leptos::logging::error;
@@ -10,9 +11,11 @@ use super::lotus_json::LotusJson;
 /// to/from the backend for further processing.
 ///
 /// Note: the [`Address`] cannot be used directly in the frontend because it is not serializable.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Display)]
 pub enum AnyAddress {
+    #[display("{}", _0.0)]
     Filecoin(LotusJson<Address>),
+    #[display("{:#x}", _0)]
     Ethereum(alloy::primitives::Address),
 }
 
