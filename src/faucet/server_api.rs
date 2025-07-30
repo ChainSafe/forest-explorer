@@ -136,6 +136,11 @@ pub async fn signed_fil_transfer(
 /// Signs an ERC-20 transfer transaction to the specified recipient with the given nonce and gas
 /// price. The required params are needed so that the server doesn't have to call the provider.
 ///
+/// For ERC-20 tokens, Ethereum addresses and EVM alias addresses are treated separately,  
+/// even if they internally map to the same actor ID.  
+/// As a result, their token balances are maintained independently.  
+/// However, for rate limit checks, we use the `wallet_id`, treating both addresses as a single wallet.
+///
 /// Note: it's important that the transaction is constructed server-side to avoid exposing the
 /// `calldata` to the client, which could lead to security issues if the client were to
 /// manipulate the transaction data.
