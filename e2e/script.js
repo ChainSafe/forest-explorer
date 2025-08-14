@@ -32,9 +32,10 @@ async function checkPath(page, path) {
 async function handleNavigateAction(page, path, btn, buttonText) {
   const oldUrl = page.url();
   await btn.click();
+  await page.waitForTimeout(500);
   const newUrl = page.url();
   const isWorking = oldUrl !== newUrl;
-  let msg = `Clicking "${buttonText}" on "${path}" navigated in the same tab`;
+  let msg = `Clicking "${buttonText}" on "${path}" navigated from "${oldUrl}" to "${newUrl}"`;
   if (isWorking) {
     await page.goto(`${BASE_URL}${path}`, {
       timeout: 60_000,
@@ -203,10 +204,9 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
     check(!!claimBtn, { [`Claim button exists on ${path}`]: () => !!claimBtn });
     if (!claimBtn) continue;
     await claimBtn.click();
+    await page.waitForTimeout(500);
     let found = false;
     if (shouldSucceed) {
-      // Wait for transaction container to appear
-      await page.waitForTimeout(500);
       try {
         const txContainer = await page.waitForSelector(".transaction-container", { timeout: 5000 });
         if (txContainer) found = true;
@@ -217,8 +217,6 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
         [`Claim success for '${address}' on ${path}`]: () => found,
       });
     } else {
-      // Wait for error message to appear
-      await page.waitForTimeout(250);
       const content = await page.content();
       if (/Invalid address/i.test(content)) {
         found = true;
