@@ -160,6 +160,21 @@ async function checkFooter(page, path) {
   await checkLink(page, path, "ChainSafe Systems");
 }
 
+// Check if the 'Request Faucet Top-up' link exists
+async function checkTopupLink(page, path) {
+  const links = await page.$$('a');
+  let linkExists = false;
+  for (const l of links) {
+    const text = await l.evaluate((el) => el.textContent.trim());
+    if (text === 'Request Faucet Top-up') {
+      linkExists = true;
+      break;
+    }
+  }
+  const msg = `Link 'Request Faucet Top-up' on '${path}' should not exist`;
+  check(!linkExists, { [msg]: () => !linkExists });
+}
+
 // Loops through each page config, performing:
 // - checkPath
 // - checkButton
@@ -176,6 +191,7 @@ async function runChecks(page) {
       await checkLink(page, path, lnk);
     }
     await checkFooter(page, path);
+    await checkTopupLink(page, path);
   }
 }
 
