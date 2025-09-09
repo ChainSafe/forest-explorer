@@ -3,10 +3,10 @@
 use super::constants::FaucetInfo;
 use crate::utils::address::AnyAddress;
 use crate::utils::key::KeyInfo;
-use crate::utils::key::{sign, Key};
+use crate::utils::key::{Key, sign};
 use crate::utils::lotus_json::{
-    signed_message::{message_cid, SignedMessage},
     LotusJson,
+    signed_message::{SignedMessage, message_cid},
 };
 use alloy::{network::TransactionBuilder, rpc::types::TransactionRequest};
 use anyhow::Result;

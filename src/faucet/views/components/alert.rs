@@ -1,7 +1,7 @@
 use crate::faucet::controller::FaucetController;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
-use leptos::{component, view, IntoView};
+use leptos::{IntoView, component, view};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;

@@ -3,12 +3,12 @@ use alloy::providers::{Provider as AlloyProvider, ProviderBuilder as AlloyProvid
 use alloy::sol;
 use anyhow::Context as _;
 use cid::Cid;
-use fvm_shared::address::{set_current_network, Address, Network};
+use fvm_shared::address::{Address, Network, set_current_network};
 use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
 use leptos::prelude::*;
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::LazyLock;
 use url::Url;
 
@@ -16,7 +16,7 @@ use crate::faucet::constants::TokenType;
 use crate::utils::address::AddressAlloyExt as _;
 use crate::utils::conversions::TokenAmountAlloyExt as _;
 
-use super::lotus_json::{signed_message::SignedMessage, HasLotusJson, LotusJson};
+use super::lotus_json::{HasLotusJson, LotusJson, signed_message::SignedMessage};
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 

@@ -1,7 +1,7 @@
-use crate::utils::format::{format_url, SearchPath};
+use crate::utils::format::{SearchPath, format_url};
 use crate::utils::transaction_id::TransactionId;
 use leptos::prelude::*;
-use leptos::{component, view, IntoView};
+use leptos::{IntoView, component, view};
 use url::Url;
 
 use crate::faucet::controller::FaucetController;

@@ -118,7 +118,9 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
                 .flatten()
                 .map(|alarm| Duration::milliseconds(alarm - now.timestamp_millis()).num_seconds())
                 .unwrap_or(0);
-            log::info!("{faucet_info} Rate limiter for {id} invoked: Drip capped now={now:?}, dripped={dripped:?}, retry_after={retry_after:?}");
+            log::info!(
+                "{faucet_info} Rate limiter for {id} invoked: Drip capped now={now:?}, dripped={dripped:?}, retry_after={retry_after:?}"
+            );
             return Ok((false, Some(retry_after), claimed, dripped));
         }
         if claimed >= faucet_info.wallet_cap() {
@@ -130,7 +132,9 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
                 .flatten()
                 .map(|alarm| Duration::milliseconds(alarm - now.timestamp_millis()).num_seconds())
                 .unwrap_or(0);
-            log::info!("{faucet_info} Rate limiter for {id} invoked: Wallet capped now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}");
+            log::info!(
+                "{faucet_info} Rate limiter for {id} invoked: Wallet capped now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}"
+            );
             return Ok((false, Some(retry_after), claimed, dripped));
         }
         let block_until = self
@@ -178,7 +182,9 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
                 ))
                 .await?;
         }
-        log::info!("{faucet_info} Rate limiter for {id} set: now={now:?}, block_until={next_block:?}, claimed={updated_claimed:?}, dripped={update_dripped:?}");
+        log::info!(
+            "{faucet_info} Rate limiter for {id} set: now={now:?}, block_until={next_block:?}, claimed={updated_claimed:?}, dripped={update_dripped:?}"
+        );
         Ok(())
     }
 
@@ -213,7 +219,7 @@ impl RateLimiter {
     fn parse_request_path(path: &str) -> Result<(FaucetInfo, String)> {
         RateLimiterCore::<DurableObjectStorage>::parse_request_path(path)
     }
-    fn create_core(&self) -> RateLimiterCore<DurableObjectStorage> {
+    fn create_core(&self) -> RateLimiterCore<DurableObjectStorage<'_>> {
         RateLimiterCore::new(DurableObjectStorage::new(&self.state))
     }
     async fn get_rate_limit(

@@ -3,7 +3,7 @@
 
 use crate::utils::{
     address::AnyAddress,
-    lotus_json::{signed_message::SignedMessage, LotusJson},
+    lotus_json::{LotusJson, signed_message::SignedMessage},
 };
 use anyhow::Result;
 use fvm_shared::address::Address;
@@ -155,7 +155,9 @@ pub async fn signed_erc20_transfer(
             retry_after_secs: secs,
         });
     }
-    log::info!("Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}");
+    log::info!(
+        "Signing ERC-20 transfer transaction for {faucet_info} to {recipient} with nonce {nonce} and gas price {gas_price}"
+    );
     sol! {
         #[sol(rpc)]
         contract ERC20 {
