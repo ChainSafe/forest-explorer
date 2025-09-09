@@ -2,7 +2,7 @@ use crate::faucet::constants::FaucetInfo;
 use crate::utils::format::format_balance;
 use chrono::Duration;
 use leptos::prelude::*;
-use leptos::{component, view, IntoView};
+use leptos::{IntoView, component, view};
 
 /// This component renders a user-friendly description of the faucet's token distribution rules and limitations.
 #[component]

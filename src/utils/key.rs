@@ -30,7 +30,7 @@ pub fn new_address(sig_type: SignatureType, public_key: &[u8]) -> Result<Address
 pub mod base64_standard {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-    use base64::engine::{general_purpose::STANDARD, Engine as _};
+    use base64::engine::{Engine as _, general_purpose::STANDARD};
 
     pub fn serialize<S>(value: &[u8], serializer: S) -> Result<S::Ok, S::Error>
     where

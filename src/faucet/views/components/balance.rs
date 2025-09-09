@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use leptos::{component, view, IntoView};
+use leptos::{IntoView, component, view};
 
 use crate::faucet::controller::FaucetController;
 use crate::utils::format::format_balance;

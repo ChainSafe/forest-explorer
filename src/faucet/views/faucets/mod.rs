@@ -3,7 +3,7 @@ pub mod calibnet_usdfc;
 pub mod mainnet;
 
 use leptos::prelude::*;
-use leptos::{component, leptos_dom::helpers::event_target_value, view, IntoView};
+use leptos::{IntoView, component, leptos_dom::helpers::event_target_value, view};
 use leptos_meta::{Meta, Title};
 
 use crate::faucet::constants::FaucetInfo;

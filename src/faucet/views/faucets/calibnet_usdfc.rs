@@ -3,7 +3,7 @@ use crate::faucet::constants::FaucetInfo;
 use crate::faucet::views::components::faucet_description::FaucetDescription;
 use crate::utils::rpc_context::{Provider, RpcContext};
 use leptos::prelude::*;
-use leptos::{component, view, IntoView};
+use leptos::{IntoView, component, view};
 use leptos_meta::{Meta, Title};
 
 /// Displays the Calibnet USDFC Faucet page.
