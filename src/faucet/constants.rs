@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{str::FromStr as _, sync::LazyLock};
 use strum::EnumString;
 
-/// The amount of mainnet FIL to be dripped to the user.
+/// The amount of calibnet FIL to be dripped to the user.
 static CALIBNET_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| TokenAmount::from_whole(1));
 
 /// The amount of mainnet FIL to be dripped to the user. This corresponds to 0.01 FIL.
