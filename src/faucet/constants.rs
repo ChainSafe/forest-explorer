@@ -4,27 +4,23 @@ use serde::{Deserialize, Serialize};
 use std::{str::FromStr as _, sync::LazyLock};
 use strum::EnumString;
 
-/// The amount of mainnet FIL to be dripped to the user. This corresponds to 1 tFIL.
+/// The amount of mainnet FIL to be dripped to the user.
 static CALIBNET_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| TokenAmount::from_whole(1));
 
 /// The amount of mainnet FIL to be dripped to the user. This corresponds to 0.01 FIL.
 static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_nano(10_000_000));
 
-/// The amount of calibnet `USDFC` to be dripped to the user. This corresponds to 1 `tUSDFC`.
+/// The amount of calibnet `USDFC` to be dripped to the user.
 static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_whole(5));
 
 /// Multiplier to determine the maximum amount of tokens that can be dripped per wallet every [`FaucetInfo::reset_limiter_seconds`].
-/// This corresponds to 1 * [`FaucetInfo::drip_amount`]
 const MAINNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 1;
-/// This corresponds to 2 * [`FaucetInfo::drip_amount`]
 const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;
 
 /// Multiplier used to determine the maximum amount of tokens that can be dripped globally every [`FaucetInfo::reset_limiter_seconds`].
-/// This corresponds to 2 * [`FaucetInfo::drip_amount`]
 const MAINNET_GLOBAL_DRIP_MULTIPLIER: i64 = 2;
-/// This corresponds to 5 * [`FaucetInfo::drip_amount`]
 const CALIBNET_GLOBAL_DRIP_MULTIPLIER: i64 = 200;
 
 /// Cool-down duration in seconds between faucet requests on mainnet.
@@ -182,7 +178,7 @@ impl FaucetInfo {
     pub fn chain_id(&self) -> u64 {
         match self.network() {
             Network::Mainnet => 314,    // https://chainlist.org/chain/314
-            Network::Testnet => 314159, // chainlist.org/chain/314159
+            Network::Testnet => 314159, // https://chainlist.org/chain/314159
         }
     }
 
