@@ -25,7 +25,7 @@ const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;
 /// This corresponds to 2 * [`FaucetInfo::drip_amount`]
 const MAINNET_GLOBAL_DRIP_MULTIPLIER: i64 = 2;
 /// This corresponds to 5 * [`FaucetInfo::drip_amount`]
-const CALIBNET_GLOBAL_DRIP_MULTIPLIER: i64 = 5;
+const CALIBNET_GLOBAL_DRIP_MULTIPLIER: i64 = 200;
 
 /// Cool-down duration in seconds between faucet requests on mainnet.
 const MAINNET_COOLDOWN_SECONDS: i64 = 600; // 10 minutes
