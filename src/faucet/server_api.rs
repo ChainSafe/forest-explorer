@@ -191,7 +191,7 @@ pub async fn signed_erc20_transfer(
     Ok(signed)
 }
 
-#[server(endpoint = "claim_token", input = Json)]
+#[server(endpoint = "claim_token")]
 pub async fn claim_token(
     faucet_info: FaucetInfo,
     address: String,
@@ -205,11 +205,9 @@ pub async fn claim_token(
 
     SendWrapper::new(async move {
         match faucet_info {
-            FaucetInfo::MainnetFIL => {
-                return Err(ServerFnError::ServerError(
-                    "Mainnet token claim is not supported.".to_string(),
-                ));
-            }
+            FaucetInfo::MainnetFIL => Err(ServerFnError::ServerError(
+                "Mainnet token claim is not supported.".to_string(),
+            )),
             FaucetInfo::CalibnetFIL => {
                 let network = Network::Testnet;
                 set_current_network(network);
