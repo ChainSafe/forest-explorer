@@ -8,7 +8,6 @@ use crate::utils::{
 use anyhow::Result;
 use fvm_shared::address::Address;
 use fvm_shared::econ::TokenAmount;
-use leptos::server_fn::codec::Json;
 use leptos::{prelude::ServerFnError, server};
 
 #[cfg(feature = "ssr")]
