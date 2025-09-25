@@ -84,4 +84,4 @@ jobs:
           path: 'e2e/test_claim_token_api.js'
         env:
           BASE_URL: 'http://127.0.0.1:8787'
-          FAUCET_TX_URL_CALIBNET: ${{ env.FAUCET_TX_URL_CALIBNET }}
+          CALIBNET_RPC: 'https://api.calibration.node.glif.io/rpc/v1'

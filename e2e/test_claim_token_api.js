@@ -1,11 +1,13 @@
-// k6 Faucet API Testing Script
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
-import { Rate } from 'k6/metrics';
+import { Rate, Counter } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'http://127.0.0.1:8787';
 const API_ENDPOINT = `${BASE_URL}/api/claim_token`;
-const CALIBNET_RPC = __ENV.FAUCET_TX_URL_CALIBNET || 'https://api.calibration.node.glif.io';
+const CALIBNET_RPC =
+  __ENV.CALIBNET_RPC ||
+  __ENV.FAUCET_TX_URL_CALIBNET ||
+  'https://api.calibration.node.glif.io/rpc/v1';
 
 const TEST_ADDRESSES = {
   FIL_FORMAT_ADDRESS: 't1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq',
@@ -17,7 +19,7 @@ const TEST_ADDRESSES = {
 export const options = {
   vus: 1,
   iterations: 1,
-  maxDuration: '6m',
+  duration: '6m',
   thresholds: {
     'checks': ['rate==1.0'],
     'test_run_success_rate': ['rate==1.0'],
@@ -25,122 +27,160 @@ export const options = {
 };
 
 const testRunSuccessRate = new Rate('test_run_success_rate');
+const responseTracker = new Counter('api_responses');
 
 const API_TESTS = [
   {
     name: 'Invalid Faucet Type',
-    data: `faucet_info=InvalidFaucet&address=${TEST_ADDRESSES.FIL_FORMAT_ADDRESS}`,
+    data: {
+      faucet_info: "InvalidFaucet",
+      address: TEST_ADDRESSES.FIL_FORMAT_ADDRESS
+    },
     expectPattern: 'unknown variant',
     expectSuccess: false,
-    verifyOnChain: false,
   },
   {
     name: 'Typo in Faucet Type',
-    data: `faucet_info=CalibnettFIL&address=${TEST_ADDRESSES.FIL_FORMAT_ADDRESS}`,
+    data: {
+      faucet_info: "CalibnettFIL",
+      address: TEST_ADDRESSES.FIL_FORMAT_ADDRESS
+    },
     expectPattern: 'unknown variant',
     expectSuccess: false,
-    verifyOnChain: false,
   },
   {
     name: 'Invalid Address Format',
-    data: `faucet_info=CalibnetFIL&address=${TEST_ADDRESSES.INVALID_ADDRESS}`,
+    data: {
+      faucet_info: "CalibnetFIL",
+      address: TEST_ADDRESSES.INVALID_ADDRESS
+    },
     expectPattern: 'ServerError|Not a valid Testnet address',
     expectSuccess: false,
-    verifyOnChain: false,
   },
   {
     name: 'Empty Address',
-    data: 'faucet_info=CalibnetFIL&address=',
+    data: {
+      faucet_info: "CalibnetFIL",
+      address: ""
+    },
     expectPattern: 'ServerError|Not a valid Testnet address',
     expectSuccess: false,
-    verifyOnChain: false,
   },
   {
-    name: 'Missing Address Parameter',
-    data: 'faucet_info=CalibnetFIL',
+    name: 'Missing Address',
+    data: {
+      faucet_info: "CalibnetFIL"
+    },
     expectPattern: 'Args|missing field',
     expectSuccess: false,
-    verifyOnChain: false,
   },
   {
-    name: 'Missing Faucet Info Parameter',
-    data: `address=${TEST_ADDRESSES.FIL_FORMAT_ADDRESS}`,
+    name: 'Missing Faucet Info',
+    data: {
+      address: TEST_ADDRESSES.FIL_FORMAT_ADDRESS
+    },
     expectPattern: 'Args|missing field',
     expectSuccess: false,
-    verifyOnChain: false,
   },
   {
-    name: 'Mainnet FIL Request (Security) - invalid address for testnet',
-    data: `faucet_info=CalibnetFIL&address=${TEST_ADDRESSES.MAINNET_ADDRESS}`,
+    name: 'Mainnet FIL Request invalid address for testnet',
+    data: {
+      faucet_info: "CalibnetFIL",
+      address: TEST_ADDRESSES.MAINNET_ADDRESS
+    },
     expectPattern: 'ServerError|Not a valid Testnet address',
     expectSuccess: false,
-    verifyOnChain: false,
   },
   {
-    name: 'Mainnet FIL Request (Security) - invalid faucet type',
-    data: `faucet_info=MainnetFIL&address=${TEST_ADDRESSES.FIL_FORMAT_ADDRESS}`,
+    name: 'Mainnet FIL Request invalid faucet type',
+    data: {
+      faucet_info: "MainnetFIL",
+      address: TEST_ADDRESSES.FIL_FORMAT_ADDRESS
+    },
     expectPattern: 'ServerError|Mainnet',
+    expectSuccess: false,
   },
 ];
 
 const RATE_LIMIT_TESTS = [
   {
     name: 'Rate Limit Test: CalibnetFIL First Request (t1 format) - should succeed',
-    data: `faucet_info=CalibnetFIL&address=${TEST_ADDRESSES.FIL_FORMAT_ADDRESS}`,
+    data: {
+      faucet_info: "CalibnetFIL",
+      address: TEST_ADDRESSES.FIL_FORMAT_ADDRESS
+    },
     expectSuccess: true,
     verifyOnChain: true,
     waitTime: 2,
   },
   {
     name: 'Rate Limit Test: CalibnetFIL Consecutive Request (t1 format) - should be rate limited',
-    data: `faucet_info=CalibnetFIL&address=${TEST_ADDRESSES.FIL_FORMAT_ADDRESS}`,
+    data: {
+      faucet_info: "CalibnetFIL",
+      address: TEST_ADDRESSES.FIL_FORMAT_ADDRESS
+    },
     expectPattern: 'ServerError|Rate limited. Try again',
-    verifyOnChain: false,
+    expectSuccess: false,
     waitTime: 62,
   },
   {
     name: 'Rate Limit Test: CalibnetFIL First Request (0x format) - should succeed',
-    data: `faucet_info=CalibnetFIL&address=${TEST_ADDRESSES.ETH_FORMAT_ADDRESS}`,
+    data: {
+      faucet_info: "CalibnetFIL",
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS
+    },
     expectSuccess: true,
     verifyOnChain: true,
     waitTime: 2,
   },
   {
     name: 'Rate Limit Test: CalibnetFIL Consecutive Request (0x format) - should be rate limited',
-    data: `faucet_info=CalibnetFIL&address=${TEST_ADDRESSES.ETH_FORMAT_ADDRESS}`,
+    data: {
+      faucet_info: "CalibnetFIL",
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS
+    },
     expectPattern: 'ServerError|Rate limited.',
     expectSuccess: false,
-    verifyOnChain: false,
     waitTime: 62,
   },
   {
     name: 'Rate Limit Test: CalibnetUSDFC First Request (0x format) - should succeed',
-    data: `faucet_info=CalibnetUSDFC&address=${TEST_ADDRESSES.ETH_FORMAT_ADDRESS}`,
+    data: {
+      faucet_info: "CalibnetUSDFC",
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS
+    },
     expectSuccess: true,
     verifyOnChain: true,
     waitTime: 2,
   },
   {
     name: 'Rate Limit Test: CalibnetUSDFC Consecutive Request (0x format) - should be rate limited',
-    data: `faucet_info=CalibnetUSDFC&address=${TEST_ADDRESSES.ETH_FORMAT_ADDRESS}`,
-    expectPattern: 'ServerError|Rate limited. Try again ',
+    data: {
+      faucet_info: "CalibnetUSDFC",
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS
+    },
+    expectPattern: 'ServerError|Rate limited. Try again',
     expectSuccess: false,
-    verifyOnChain: false,
     waitTime: 2,
   },
 ];
 
 function extractTransactionId(responseBody) {
-  const cleanResponse = responseBody.replace(/"/g, '').replace(/%$/, '').trim();
+  // Clean up the response body to extract transaction ID
+  const cleanResponse = responseBody.replace(/[^a-zA-Z0-9]/g, '');
 
-  if (cleanResponse.length < 10) {
+  if (!cleanResponse || cleanResponse.length < 10) {
     return null;
   }
 
-  if (cleanResponse.startsWith('0x')) {
+  // Detect format based on prefix and appropriate length
+  if (cleanResponse.startsWith('0x') && cleanResponse.length === 66) {
     return { type: 'ethereum', id: cleanResponse };
+  } else if (cleanResponse.length > 40) {
+    return { type: 'filecoin', id: cleanResponse };
   }
-  return { type: 'filecoin', id: cleanResponse };
+
+  return null;
 }
 
 function verifyFilecoinTransaction(cid) {
@@ -152,20 +192,27 @@ function verifyFilecoinTransaction(cid) {
   };
 
   const params = {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'forest-explorer-k6-tests/1.0',
+    },
+    timeout: '30s',
   };
 
   try {
     const res = http.post(CALIBNET_RPC, JSON.stringify(rpcRequest), params);
 
+    if (res.status === 429) {
+      return 'pending';
+    }
+
     if (res.status !== 200) {
-      console.error(`   RPC Error: ${res.status} - ${res.body}`);
+      console.error(`   RPC Error: ${res.status}`);
       return 'failed';
     }
 
     const result = res.json();
     if (result.result === null) {
-      console.log(`   🟡 Transaction not yet confirmed (CID: ${cid})`);
       return 'pending';
     }
 
@@ -173,7 +220,6 @@ function verifyFilecoinTransaction(cid) {
       return 'confirmed';
     }
   } catch (e) {
-    console.error(`   Transaction verification failed: ${e.message}`);
     return 'failed';
   }
   return 'failed';
@@ -188,31 +234,38 @@ function verifyEthereumTransaction(txHash) {
   };
 
   const params = {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'forest-explorer-k6-tests/1.0',
+    },
+    timeout: '30s',
   };
 
   try {
     const res = http.post(CALIBNET_RPC, JSON.stringify(rpcRequest), params);
 
+    if (res.status === 429) {
+      return 'pending';
+    }
+
     if (res.status !== 200) {
-      console.error(`   RPC Error: ${res.status} - ${res.body}`);
+      console.error(`   RPC Error: ${res.status}`);
       return 'failed';
     }
 
     const result = res.json();
     if (result.result === null) {
-      console.log(`   🟡 Transaction not yet confirmed (TX: ${txHash})`);
       return 'pending';
     }
 
     if (result.result && result.result.blockNumber && result.result.status === '0x1') {
       return 'confirmed';
     } else if (result.result && result.result.blockNumber && result.result.status === '0x0') {
-      console.error(`   Transaction failed on-chain (TX: ${txHash})`);
+      console.error(`   Transaction failed on-chain`);
       return 'failed';
     }
   } catch (e) {
-    console.error(`   Transaction verification failed: ${e.message}`);
+    console.error(`   Verification failed: ${e.message}`);
     return 'failed';
   }
   return 'failed';
@@ -229,22 +282,30 @@ function verifyTransaction(transaction) {
   }
 }
 
-function runTestSuite(tests, suiteName) {
+function runTestSuite(tests, suiteName, terminateOnFailure = false) {
   console.log(`\n🧪 Starting ${suiteName}...`);
 
   for (const test of tests) {
-    group(`🧪 ${test.name}`, () => {
-      console.log(`Running: ${test.name}`);
+    let testPassed = false;
 
+    group(`🧪 ${test.name}`, () => {
       const params = {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'forest-explorer-k6-tests/1.0',
+        },
+        timeout: '30s',
       };
 
-      console.log(`   Request: ${test.data}`);
-      const res = http.post(API_ENDPOINT, test.data, params);
-      console.log(`   Response: ${res.body}`);
+      console.log(`   Request: ${test.name}`);
+      const res = http.post(API_ENDPOINT, JSON.stringify(test.data), params);
 
-      let testPassed = false;
+      // Add a response body to k6 metrics instead of console
+      responseTracker.add(1, {
+        test_name: test.name,
+        status: res.status,
+        response_body: res.body.substring(0, 100) // Truncate long responses
+      });
 
       if (test.expectSuccess) {
         const isSuccess = check(res, {
@@ -261,22 +322,16 @@ function runTestSuite(tests, suiteName) {
             console.log(`   📋 Transaction ID: ${transactionId.id} (${transactionId.type})`);
 
             if (test.verifyOnChain) {
-              console.log(`   🔍 Verifying transaction on ${transactionId.type} network...`);
               const verificationResult = verifyTransaction(transactionId);
 
               const isVerified = check(verificationResult, {
                 'On-chain verification is confirmed or pending': (v) => v === 'confirmed' || v === 'pending',
               });
 
-              if (verificationResult === 'pending') {
-                console.log(`   🟡 Transaction submitted successfully (pending confirmation)`);
-                console.log('   ✅ PASS: Transaction submitted successfully');
-              } else if (verificationResult === 'confirmed') {
-                console.log(`   ✅ On-chain verification: CONFIRMED`);
-                console.log('   ✅ PASS: Transaction confirmed on-chain');
+              if (verificationResult === 'pending' || verificationResult === 'confirmed') {
+                console.log(`   ✅ Transaction submitted successfully (${verificationResult})`);
               } else {
                 console.log(`   ❌ On-chain verification: FAILED`);
-                console.log('   ❌ FAIL: Transaction verification failed');
               }
 
               testPassed = isVerified;
@@ -289,7 +344,7 @@ function runTestSuite(tests, suiteName) {
           }
         } else {
           // API call failed when we expected success
-          console.log(`   ❌ FAIL: Expected success but API call failed (status ${res.status}): ${res.body}`);
+          console.log(`   ❌ FAIL: Expected success but API call failed: response: ${res.body}`);
           testPassed = false;
         }
       } else {
@@ -300,7 +355,7 @@ function runTestSuite(tests, suiteName) {
         });
 
         if (!testPassed) {
-          console.log(`   ❌ FAIL: Expected pattern "${test.expectPattern}", got: "${res.body}"`);
+          console.log(`   ❌ FAIL: Expected pattern "${test.expectPattern}", got: "${res.body.substring(0, 100)}..."`);
         } else {
           console.log(`   ✅ PASS: Found expected error pattern "${test.expectPattern}"`);
         }
@@ -308,6 +363,11 @@ function runTestSuite(tests, suiteName) {
 
       testRunSuccessRate.add(testPassed);
     });
+
+    // Early termination logic for rate limit tests
+    if (terminateOnFailure && !testPassed) {
+      break;
+    }
 
     const waitTime = test.waitTime || 0.1;
     if (waitTime > 1) {
@@ -334,10 +394,11 @@ export default function () {
     }
   });
 
-  runTestSuite(API_TESTS, 'Main Test Suite (Success & Error Cases)');
+  runTestSuite(API_TESTS, 'Main Test Suite (Error Cases)', false);
 
+  sleep(60);
   console.log(`\n⏰ Starting Rate Limiting Tests (this may take several minutes)...`);
-  runTestSuite(RATE_LIMIT_TESTS, 'Rate Limiting Test Suite');
+  runTestSuite(RATE_LIMIT_TESTS, 'Rate Limiting Test Suite', true);
 
   console.log(`\n🏁 Test execution completed!`);
 }
