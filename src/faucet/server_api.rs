@@ -195,14 +195,14 @@ pub async fn claim_token(
     faucet_info: FaucetInfo,
     address: LotusJson<Address>,
 ) -> Result<String, ServerFnError> {
-    use crate::utils::address::AddressAlloyExt;
+    use crate::utils::address::{AddressAlloyExt, parse_address};
     use crate::utils::message::message_transfer;
     use crate::utils::rpc_context::Provider;
     use fvm_shared::address::Network;
     use send_wrapper::SendWrapper;
 
     SendWrapper::new(async move {
-        let LotusJson(recipient) = address;
+        let LotusJson(address) = address;
         match faucet_info {
             FaucetInfo::MainnetFIL => {
                 return Err(ServerFnError::ServerError(
@@ -212,6 +212,8 @@ pub async fn claim_token(
             }
             FaucetInfo::CalibnetFIL => {
                 let network = Network::Testnet;
+                let recipient =
+                    parse_address(&address.to_string(), network).map_err(ServerFnError::new)?;
                 let rpc = Provider::from_network(network);
                 let id_address = rpc.lookup_id(recipient).await.map_err(ServerFnError::new)?;
                 let from = faucet_address(faucet_info)
@@ -242,6 +244,8 @@ pub async fn claim_token(
             }
             FaucetInfo::CalibnetUSDFC => {
                 let network = Network::Testnet;
+                let recipient =
+                    parse_address(&address.to_string(), network).map_err(ServerFnError::new)?;
                 let rpc = Provider::from_network(network);
                 let owner_fil_address = faucet_address(faucet_info)
                     .await
