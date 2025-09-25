@@ -208,7 +208,7 @@ pub async fn claim_token(
         match faucet_info {
             FaucetInfo::MainnetFIL => {
                 return Err(ServerFnError::ServerError(
-                    "Mainnet token claim is not supported, please use the mainnet faucet"
+                    "Mainnet token claim is not supported."
                         .to_string(),
                 ));
             }
