@@ -8,7 +8,7 @@ use crate::utils::{
 use anyhow::Result;
 use fvm_shared::address::Address;
 use fvm_shared::econ::TokenAmount;
-use leptos::{prelude::ServerFnError, server};
+use leptos::{prelude::ServerFnError, server, server_fn::codec::Json};
 
 #[cfg(feature = "ssr")]
 use alloy::{sol, sol_types::SolCall};
@@ -190,7 +190,7 @@ pub async fn signed_erc20_transfer(
     Ok(signed)
 }
 
-#[server(endpoint = "claim_token")]
+#[server(endpoint = "claim_token", input = Json)]
 pub async fn claim_token(
     faucet_info: FaucetInfo,
     address: String,
