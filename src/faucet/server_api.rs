@@ -8,6 +8,7 @@ use crate::utils::{
 use anyhow::Result;
 use fvm_shared::address::Address;
 use fvm_shared::econ::TokenAmount;
+use leptos::server_fn::codec::Json;
 use leptos::{prelude::ServerFnError, server};
 
 #[cfg(feature = "ssr")]
@@ -190,7 +191,7 @@ pub async fn signed_erc20_transfer(
     Ok(signed)
 }
 
-#[server(endpoint = "claim_token")]
+#[server(endpoint = "claim_token", input = Json, output = Json)]
 pub async fn claim_token(
     faucet_info: FaucetInfo,
     address: LotusJson<Address>,
@@ -199,6 +200,7 @@ pub async fn claim_token(
     use crate::utils::message::message_transfer;
     use crate::utils::rpc_context::Provider;
     use fvm_shared::address::Network;
+    use fvm_shared::address::set_current_network;
     use send_wrapper::SendWrapper;
 
     SendWrapper::new(async move {
@@ -212,6 +214,7 @@ pub async fn claim_token(
             }
             FaucetInfo::CalibnetFIL => {
                 let network = Network::Testnet;
+                set_current_network(network);
                 let recipient =
                     parse_address(&address.to_string(), network).map_err(ServerFnError::new)?;
                 let rpc = Provider::from_network(network);
@@ -244,6 +247,7 @@ pub async fn claim_token(
             }
             FaucetInfo::CalibnetUSDFC => {
                 let network = Network::Testnet;
+                set_current_network(network);
                 let recipient =
                     parse_address(&address.to_string(), network).map_err(ServerFnError::new)?;
                 let rpc = Provider::from_network(network);
