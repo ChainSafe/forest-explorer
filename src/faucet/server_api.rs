@@ -191,7 +191,7 @@ pub async fn signed_erc20_transfer(
     Ok(signed)
 }
 
-#[server(endpoint = "claim_token", input = Json, output = Json)]
+#[server(endpoint = "claim_token", input = Json)]
 pub async fn claim_token(
     faucet_info: FaucetInfo,
     address: String,
