@@ -8,7 +8,7 @@ use crate::utils::{
 use anyhow::Result;
 use fvm_shared::address::Address;
 use fvm_shared::econ::TokenAmount;
-use leptos::{prelude::ServerFnError, server};
+use leptos::{prelude::ServerFnError, server, server_fn::codec::GetUrl};
 
 #[cfg(feature = "ssr")]
 use alloy::{sol, sol_types::SolCall};
@@ -188,4 +188,81 @@ pub async fn signed_erc20_transfer(
 
     let signed = sign_with_eth_secret_key(tx.clone(), faucet_info).await?;
     Ok(signed)
+}
+
+#[server(endpoint = "claim_token", input = GetUrl)]
+pub async fn claim_token(
+    faucet_info: FaucetInfo,
+    address: String,
+) -> Result<String, ServerFnError> {
+    use crate::utils::address::{AddressAlloyExt, parse_address};
+    use crate::utils::message::message_transfer;
+    use crate::utils::rpc_context::Provider;
+    use fvm_shared::address::Network;
+    use fvm_shared::address::set_current_network;
+    use send_wrapper::SendWrapper;
+
+    SendWrapper::new(async move {
+        match faucet_info {
+            FaucetInfo::MainnetFIL => Err(ServerFnError::ServerError(
+                "Mainnet token claim is not supported.".to_string(),
+            )),
+            FaucetInfo::CalibnetFIL => {
+                let network = Network::Testnet;
+                set_current_network(network);
+                let recipient = parse_address(&address, network).map_err(ServerFnError::new)?;
+                let rpc = Provider::from_network(network);
+                let id_address = rpc.lookup_id(recipient).await.map_err(ServerFnError::new)?;
+                let from = faucet_address(faucet_info)
+                    .await
+                    .map_err(ServerFnError::new)?
+                    .to_filecoin_address(network)
+                    .map_err(ServerFnError::new)?;
+                let nonce = rpc
+                    .mpool_get_nonce(from)
+                    .await
+                    .map_err(ServerFnError::new)?;
+                let raw_msg = message_transfer(from, id_address, faucet_info.drip_amount().clone());
+                let msg = rpc
+                    .estimate_gas(raw_msg)
+                    .await
+                    .map_err(ServerFnError::new)?;
+                let LotusJson(signed) = signed_fil_transfer(
+                    LotusJson(id_address),
+                    msg.gas_limit,
+                    LotusJson(msg.gas_fee_cap),
+                    LotusJson(msg.gas_premium),
+                    nonce,
+                    faucet_info,
+                )
+                .await?;
+                let tx_id = rpc.mpool_push(signed).await.map_err(ServerFnError::new)?;
+                Ok(tx_id.to_string())
+            }
+            FaucetInfo::CalibnetUSDFC => {
+                let network = Network::Testnet;
+                set_current_network(network);
+                let recipient = parse_address(&address, network).map_err(ServerFnError::new)?;
+                let rpc = Provider::from_network(network);
+                let owner_fil_address = faucet_address(faucet_info)
+                    .await
+                    .map_err(ServerFnError::new)?
+                    .to_filecoin_address(network)
+                    .map_err(ServerFnError::new)?;
+                let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
+                let nonce = rpc
+                    .mpool_get_nonce(owner_fil_address)
+                    .await
+                    .map_err(ServerFnError::new)?;
+                let gas_price = rpc.gas_price().await.map_err(ServerFnError::new)?;
+                let signed = signed_erc20_transfer(eth_to, nonce, gas_price, faucet_info).await?;
+                let tx_id = rpc
+                    .send_eth_transaction_signed(&signed)
+                    .await
+                    .map_err(ServerFnError::new)?;
+                Ok(tx_id.to_string())
+            }
+        }
+    })
+    .await
 }
