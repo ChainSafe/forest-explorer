@@ -255,19 +255,20 @@ pub async fn claim_token(
                         let cid = rpc.mpool_push(smsg).await.map_err(ServerFnError::new)?;
                         Ok(cid.to_string())
                     }
-                    Err(e) => {
-                        if let FaucetError::RateLimited {
+                    Err(err) => match err {
+                        FaucetError::RateLimited {
                             retry_after_secs: _,
-                        } = e
-                        {
+                        } => {
                             response.set_status(http::StatusCode::TOO_MANY_REQUESTS);
-                            return Err(ServerFnError::ServerError(format!(
+                            Err(ServerFnError::ServerError(format!(
                                 "Too many requests: {}",
-                                e
-                            )));
+                                err
+                            )))
                         }
-                        Err(ServerFnError::ServerError(format!("{}", e)))
-                    }
+                        FaucetError::Server(_) => {
+                            Err(ServerFnError::ServerError(format!("{}", err)))
+                        }
+                    },
                 }
             }
             FaucetInfo::CalibnetUSDFC => {
@@ -302,19 +303,20 @@ pub async fn claim_token(
                             .map_err(ServerFnError::new)?;
                         Ok(tx_id.to_string())
                     }
-                    Err(e) => {
-                        if let FaucetError::RateLimited {
+                    Err(err) => match err {
+                        FaucetError::RateLimited {
                             retry_after_secs: _,
-                        } = e
-                        {
+                        } => {
                             response.set_status(http::StatusCode::TOO_MANY_REQUESTS);
-                            return Err(ServerFnError::ServerError(format!(
+                            Err(ServerFnError::ServerError(format!(
                                 "Too many requests: {}",
-                                e
-                            )));
+                                err
+                            )))
                         }
-                        Err(ServerFnError::ServerError(format!("{}", e)))
-                    }
+                        FaucetError::Server(_) => {
+                            Err(ServerFnError::ServerError(format!("{}", err)))
+                        }
+                    },
                 }
             }
         }
