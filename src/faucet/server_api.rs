@@ -266,7 +266,7 @@ pub async fn claim_token(
                                 e
                             )));
                         }
-                        return Err(ServerFnError::ServerError(format!("{}", e)));
+                        Err(ServerFnError::ServerError(format!("{}", e)))
                     }
                 }
             }
@@ -313,7 +313,7 @@ pub async fn claim_token(
                                 e
                             )));
                         }
-                        return Err(ServerFnError::ServerError(format!("{}", e)));
+                        Err(ServerFnError::ServerError(format!("{}", e)))
                     }
                 }
             }
