@@ -30,10 +30,13 @@ transaction ID confirming the token transfer.
 
 ## Status Codes
 
-| Status Code | Description                                                            |
-| ----------- | ---------------------------------------------------------------------- |
-| 200         | Token successfully claimed; response contains transaction ID           |
-| 500         | Server error, including rate limiting; response contains error message |
+| Status Code | Description                                                  |
+| ----------- | ------------------------------------------------------------ |
+| 200         | Token successfully claimed; response contains transaction ID |
+| 400         | Bad request - invalid address                                |
+| 429         | Too many requests - rate limited                             |
+| 500         | Server error; response contains error message                |
+| 501         | Not implemented - mainnet not supported                      |
 
 ---
 
@@ -56,9 +59,11 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 bafy2bzaceam3ihtqa73ru2bdvwoyaouwjwktsonkvs3rwwrn3z43e3xh3y4fk
 ```
 
-### Error
+### Failure
 
-- **Status:** `500 Internal Server Error`
+#### 400 Bad Request
+
+- **Status:** `400 Bad Request`
 - **Content:** Plain string describing the error.
 
 **Example:**
@@ -70,5 +75,56 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 **Response:**
 
 ```bash
-ServerError|Not a valid Testnet address
+ServerError|Invalid address: Not a valid Testnet address
+```
+
+#### 429 Too Many Requests
+
+- **Status:** `429 Too Many Requests`
+- **Content:** Plain string describing the rate limit error.
+
+**Example:**
+
+```bash
+curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=CalibnetFIL&address=t1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq"
+```
+
+**Response:**
+
+```bash
+ServerError|Too many requests: Rate limited. Try again in 60 seconds.
+```
+
+#### 500 Internal Server Error
+
+- **Status:** `500 Internal Server Error`
+- **Content:** Plain string describing the server error.
+
+**Example:**
+
+```bash
+curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet&address=t1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq"
+```
+
+**Response:**
+
+```bash
+Args|unknown variant `Calibnet`, expected one of `MainnetFIL`, `CalibnetFIL`, `CalibnetUSDFC`
+```
+
+#### 501 Not Implemented
+
+- **Status:** `501 Not Implemented`
+- **Content:** Plain string describing the error.
+
+**Example:**
+
+```bash
+curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=MainnetFIL&address=f1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy"
+```
+
+**Response:**
+
+```bash
+ServerError|Mainnet token claim is not implemented.
 ```

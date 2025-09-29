@@ -200,22 +200,36 @@ pub async fn claim_token(
     use crate::utils::rpc_context::Provider;
     use fvm_shared::address::Network;
     use fvm_shared::address::set_current_network;
+    use leptos_axum::ResponseOptions;
     use send_wrapper::SendWrapper;
+
+    let response = leptos::prelude::expect_context::<ResponseOptions>();
 
     SendWrapper::new(async move {
         match faucet_info {
-            FaucetInfo::MainnetFIL => Err(ServerFnError::ServerError(
-                "Mainnet token claim is not supported.".to_string(),
-            )),
+            FaucetInfo::MainnetFIL => {
+                response.set_status(http::StatusCode::NOT_IMPLEMENTED);
+                Err(ServerFnError::ServerError(
+                    "Mainnet token claim is not implemented.".to_string(),
+                ))
+            }
             FaucetInfo::CalibnetFIL => {
                 let network = Network::Testnet;
                 set_current_network(network);
-                let recipient = parse_address(&address, network).map_err(ServerFnError::new)?;
+                let recipient = match parse_address(&address, network) {
+                    Ok(addr) => addr,
+                    Err(e) => {
+                        response.set_status(http::StatusCode::BAD_REQUEST);
+                        return Err(ServerFnError::ServerError(format!(
+                            "Invalid address: {}",
+                            e
+                        )));
+                    }
+                };
                 let rpc = Provider::from_network(network);
                 let id_address = rpc.lookup_id(recipient).await.map_err(ServerFnError::new)?;
                 let from = faucet_address(faucet_info)
-                    .await
-                    .map_err(ServerFnError::new)?
+                    .await?
                     .to_filecoin_address(network)
                     .map_err(ServerFnError::new)?;
                 let nonce = rpc
@@ -227,7 +241,7 @@ pub async fn claim_token(
                     .estimate_gas(raw_msg)
                     .await
                     .map_err(ServerFnError::new)?;
-                let LotusJson(signed) = signed_fil_transfer(
+                match signed_fil_transfer(
                     LotusJson(id_address),
                     msg.gas_limit,
                     LotusJson(msg.gas_fee_cap),
@@ -235,18 +249,43 @@ pub async fn claim_token(
                     nonce,
                     faucet_info,
                 )
-                .await?;
-                let tx_id = rpc.mpool_push(signed).await.map_err(ServerFnError::new)?;
-                Ok(tx_id.to_string())
+                .await
+                {
+                    Ok(LotusJson(smsg)) => {
+                        let cid = rpc.mpool_push(smsg).await.map_err(ServerFnError::new)?;
+                        Ok(cid.to_string())
+                    }
+                    Err(e) => {
+                        if let FaucetError::RateLimited {
+                            retry_after_secs: _,
+                        } = e
+                        {
+                            response.set_status(http::StatusCode::TOO_MANY_REQUESTS);
+                            return Err(ServerFnError::ServerError(format!(
+                                "Too many requests: {}",
+                                e
+                            )));
+                        }
+                        return Err(ServerFnError::ServerError(format!("{}", e)));
+                    }
+                }
             }
             FaucetInfo::CalibnetUSDFC => {
                 let network = Network::Testnet;
                 set_current_network(network);
-                let recipient = parse_address(&address, network).map_err(ServerFnError::new)?;
+                let recipient = match parse_address(&address, network) {
+                    Ok(addr) => addr,
+                    Err(e) => {
+                        response.set_status(http::StatusCode::BAD_REQUEST);
+                        return Err(ServerFnError::ServerError(format!(
+                            "Invalid address: {}",
+                            e
+                        )));
+                    }
+                };
                 let rpc = Provider::from_network(network);
                 let owner_fil_address = faucet_address(faucet_info)
-                    .await
-                    .map_err(ServerFnError::new)?
+                    .await?
                     .to_filecoin_address(network)
                     .map_err(ServerFnError::new)?;
                 let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
@@ -255,12 +294,28 @@ pub async fn claim_token(
                     .await
                     .map_err(ServerFnError::new)?;
                 let gas_price = rpc.gas_price().await.map_err(ServerFnError::new)?;
-                let signed = signed_erc20_transfer(eth_to, nonce, gas_price, faucet_info).await?;
-                let tx_id = rpc
-                    .send_eth_transaction_signed(&signed)
-                    .await
-                    .map_err(ServerFnError::new)?;
-                Ok(tx_id.to_string())
+                match signed_erc20_transfer(eth_to, nonce, gas_price, faucet_info).await {
+                    Ok(signed) => {
+                        let tx_id = rpc
+                            .send_eth_transaction_signed(&signed)
+                            .await
+                            .map_err(ServerFnError::new)?;
+                        Ok(tx_id.to_string())
+                    }
+                    Err(e) => {
+                        if let FaucetError::RateLimited {
+                            retry_after_secs: _,
+                        } = e
+                        {
+                            response.set_status(http::StatusCode::TOO_MANY_REQUESTS);
+                            return Err(ServerFnError::ServerError(format!(
+                                "Too many requests: {}",
+                                e
+                            )));
+                        }
+                        return Err(ServerFnError::ServerError(format!("{}", e)));
+                    }
+                }
             }
         }
     })
