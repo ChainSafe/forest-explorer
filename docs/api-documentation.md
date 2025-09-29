@@ -36,7 +36,7 @@ transaction ID confirming the token transfer.
 | 400         | Bad request - invalid address                                |
 | 429         | Too many requests - rate limited                             |
 | 500         | Server error; response contains error message                |
-| 501         | Not implemented - mainnet not supported                      |
+| 418         | I'm a teapot - mainnet not supported                         |
 
 ---
 
@@ -112,9 +112,9 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 Args|unknown variant `Calibnet`, expected one of `MainnetFIL`, `CalibnetFIL`, `CalibnetUSDFC`
 ```
 
-#### 501 Not Implemented
+#### 418 I'm a Teapot
 
-- **Status:** `501 Not Implemented`
+- **Status:** `418 I'm a Teapot`
 - **Content:** Plain string describing the error.
 
 **Example:**
@@ -126,5 +126,5 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=MainnetF
 **Response:**
 
 ```bash
-ServerError|Mainnet token claim is not implemented.
+ServerError|I'm a teapot - mainnet tokens are not available.
 ```

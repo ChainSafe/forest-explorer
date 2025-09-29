@@ -208,9 +208,9 @@ pub async fn claim_token(
     SendWrapper::new(async move {
         match faucet_info {
             FaucetInfo::MainnetFIL => {
-                response.set_status(http::StatusCode::NOT_IMPLEMENTED);
+                response.set_status(http::StatusCode::IM_A_TEAPOT);
                 Err(ServerFnError::ServerError(
-                    "Mainnet token claim is not implemented.".to_string(),
+                    "I'm a teapot - mainnet tokens are not available.".to_string(),
                 ))
             }
             FaucetInfo::CalibnetFIL => {
