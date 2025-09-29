@@ -40,7 +40,7 @@ transaction ID confirming the token transfer.
 
 ---
 
-## Responses
+## Examples
 
 ### Success
 
