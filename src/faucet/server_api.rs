@@ -8,7 +8,13 @@ use crate::utils::{
 use anyhow::Result;
 use fvm_shared::address::Address;
 use fvm_shared::econ::TokenAmount;
-use leptos::{prelude::ServerFnError, server};
+use leptos::{prelude::ServerFnError, server, server_fn::codec::GetUrl};
+
+#[cfg(feature = "ssr")]
+use axum::http::StatusCode;
+
+#[cfg(feature = "ssr")]
+use leptos_axum::ResponseOptions;
 
 #[cfg(feature = "ssr")]
 use alloy::{sol, sol_types::SolCall};
@@ -188,4 +194,155 @@ pub async fn signed_erc20_transfer(
 
     let signed = sign_with_eth_secret_key(tx.clone(), faucet_info).await?;
     Ok(signed)
+}
+
+/// Server API endpoint for claiming calibnet tokens from the faucet.
+/// Returns a transaction ID on successful token claim.
+/// Supports distribution of `CalibnetFIL` and `CalibnetUSDFC` tokens.
+/// Subject to rate limiting to prevent abuse.
+#[server(endpoint = "claim_token", input = GetUrl)]
+pub async fn claim_token(
+    faucet_info: FaucetInfo,
+    address: String,
+) -> Result<String, ServerFnError> {
+    use crate::utils::rpc_context::Provider;
+    use fvm_shared::address::set_current_network;
+    use send_wrapper::SendWrapper;
+
+    let network = faucet_info.network();
+    set_current_network(network);
+    let recipient = parse_and_validate_address(&address, network)?;
+    let rpc = Provider::from_network(network);
+    let from = faucet_address(faucet_info)
+        .await?
+        .to_filecoin_address(network)
+        .map_err(ServerFnError::new)?;
+
+    SendWrapper::new(async move {
+        match faucet_info {
+            FaucetInfo::MainnetFIL => {
+                set_response_status(StatusCode::IM_A_TEAPOT);
+                Err(ServerFnError::ServerError(
+                    "I'm a teapot - mainnet tokens are not available.".to_string(),
+                ))
+            }
+            FaucetInfo::CalibnetFIL => handle_native_claim(faucet_info, recipient, from, rpc).await,
+            FaucetInfo::CalibnetUSDFC => {
+                handle_erc20_claim(faucet_info, recipient, from, rpc).await
+            }
+        }
+    })
+    .await
+}
+
+#[cfg(feature = "ssr")]
+fn parse_and_validate_address(
+    address: &str,
+    network: fvm_shared::address::Network,
+) -> Result<Address, ServerFnError> {
+    match crate::utils::address::parse_address(address, network) {
+        Ok(addr) => Ok(addr),
+        Err(e) => {
+            log::error!("Invalid address: {}", e);
+            set_response_status(StatusCode::BAD_REQUEST);
+            Err(ServerFnError::ServerError(format!(
+                "Invalid address: {}",
+                e
+            )))
+        }
+    }
+}
+
+#[cfg(feature = "ssr")]
+async fn handle_native_claim(
+    faucet_info: FaucetInfo,
+    recipient: Address,
+    from: Address,
+    rpc: crate::utils::rpc_context::Provider,
+) -> Result<String, ServerFnError> {
+    use crate::utils::message::message_transfer;
+
+    let id_address = rpc.lookup_id(recipient).await.unwrap_or_else(|_| {
+        log::debug!("ID lookup failed, using recipient address: {:?}", recipient);
+        recipient
+    });
+    let nonce = rpc
+        .mpool_get_nonce(from)
+        .await
+        .map_err(ServerFnError::new)?;
+    let drip_amount = faucet_info.drip_amount();
+    let raw_msg = message_transfer(from, id_address, drip_amount.clone());
+    let msg = rpc
+        .estimate_gas(raw_msg)
+        .await
+        .map_err(ServerFnError::new)?;
+
+    match signed_fil_transfer(
+        LotusJson(id_address),
+        msg.gas_limit,
+        LotusJson(msg.gas_fee_cap),
+        LotusJson(msg.gas_premium),
+        nonce,
+        faucet_info,
+    )
+    .await
+    {
+        Ok(LotusJson(smsg)) => {
+            let cid = rpc.mpool_push(smsg).await.map_err(ServerFnError::new)?;
+            Ok(cid.to_string())
+        }
+        Err(err) => Err(handle_faucet_error(err)),
+    }
+}
+
+#[cfg(feature = "ssr")]
+async fn handle_erc20_claim(
+    faucet_info: FaucetInfo,
+    recipient: Address,
+    from: Address,
+    rpc: crate::utils::rpc_context::Provider,
+) -> Result<String, ServerFnError> {
+    use crate::utils::address::AddressAlloyExt;
+
+    let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
+    let nonce = rpc
+        .mpool_get_nonce(from)
+        .await
+        .map_err(ServerFnError::new)?;
+    let gas_price = rpc.gas_price().await.map_err(ServerFnError::new)?;
+
+    match signed_erc20_transfer(eth_to, nonce, gas_price, faucet_info).await {
+        Ok(signed) => {
+            let tx_id = rpc
+                .send_eth_transaction_signed(&signed)
+                .await
+                .map_err(ServerFnError::new)?;
+            Ok(tx_id.to_string())
+        }
+        Err(err) => Err(handle_faucet_error(err)),
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn handle_faucet_error(err: FaucetError) -> ServerFnError {
+    match err {
+        FaucetError::RateLimited { retry_after_secs } => {
+            log::warn!("Rate limit exceeded: retry_after_secs={}", retry_after_secs);
+            set_response_status(StatusCode::TOO_MANY_REQUESTS);
+            ServerFnError::ServerError(format!(
+                "Too many requests: Rate limited. Try again in {} seconds.",
+                retry_after_secs
+            ))
+        }
+        FaucetError::Server(msg) => {
+            log::error!("Failed to drip tokens: {}", msg);
+            set_response_status(StatusCode::INTERNAL_SERVER_ERROR);
+            ServerFnError::ServerError(format!("Server error: {}", msg))
+        }
+    }
+}
+
+#[cfg(feature = "ssr")]
+fn set_response_status(status: StatusCode) {
+    leptos::prelude::expect_context::<ResponseOptions>().set_status(status);
 }
