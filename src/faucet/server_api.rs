@@ -245,7 +245,7 @@ async fn handle_native_claim(
 ) -> Result<String, ServerFnError> {
     use crate::utils::message::message_transfer;
     use crate::utils::rpc_context::Provider;
-    use fvm_shared::address::{Network, set_current_network};
+    use fvm_shared::address::set_current_network;
 
     let network = faucet_info.network();
     set_current_network(network);
@@ -295,7 +295,7 @@ async fn handle_erc20_claim(
 ) -> Result<String, ServerFnError> {
     use crate::utils::address::AddressAlloyExt;
     use crate::utils::rpc_context::Provider;
-    use fvm_shared::address::{Network, set_current_network};
+    use fvm_shared::address::set_current_network;
 
     let network = faucet_info.network();
     set_current_network(network);
