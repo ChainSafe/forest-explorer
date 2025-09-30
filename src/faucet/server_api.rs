@@ -247,7 +247,7 @@ async fn handle_native_claim(
     use crate::utils::rpc_context::Provider;
     use fvm_shared::address::{Network, set_current_network};
 
-    let network = Network::Testnet;
+    let network = faucet_info.network();
     set_current_network(network);
 
     let recipient = parse_and_validate_address(&address, network, response)?;
@@ -297,7 +297,7 @@ async fn handle_erc20_claim(
     use crate::utils::rpc_context::Provider;
     use fvm_shared::address::{Network, set_current_network};
 
-    let network = Network::Testnet;
+    let network = faucet_info.network();
     set_current_network(network);
 
     let recipient = parse_and_validate_address(&address, network, response)?;
