@@ -14,7 +14,7 @@ transaction ID confirming the token transfer.
 
 **Key points:**
 
-- Each address may be subject to rate limiting to prevent abuse.
+- Each address is subject to rate limiting to prevent abuse.
 - This API only distributes Calibnet `tFIL` and `tUSDFC` tokens.
 
 ---
@@ -25,6 +25,18 @@ transaction ID confirming the token transfer.
 | ------------- | ------ | -------- | ------------------------------------------------------------------------- |
 | `faucet_info` | string | Yes      | The type of token to claim. Valid values: `CalibnetFIL`, `CalibnetUSDFC`. |
 | `address`     | string | Yes      | The wallet address to receive the token.                                  |
+
+---
+
+## Rate Limits
+
+| Faucet Type     | Cooldown Period | Drip Amount | Wallet Cap | Global Cap   |
+| --------------- | --------------- | ----------- | ---------- | ------------ |
+| `CalibnetFIL`   | 60 seconds      | 1 tFIL      | 2 tFIL     | 200 tFIL     |
+| `CalibnetUSDFC` | 60 seconds      | 5 tUSDFC    | 10 tUSDFC  | 1,000 tUSDFC |
+
+**Note:** All limits reset every 24 hours. Abuse, farming, or automated requests
+are prohibited and may result in stricter limits or bans.
 
 ---
 
@@ -45,7 +57,7 @@ transaction ID confirming the token transfer.
 ### Success
 
 - **Status:** `200 OK`
-- **Content:** Plain JSON string containing the transaction ID.
+- **Content:** Plain text string containing the transaction ID.
 
 **Example:**
 
