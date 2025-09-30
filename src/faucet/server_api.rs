@@ -253,7 +253,10 @@ async fn handle_native_claim(
     let recipient = parse_and_validate_address(&address, network, response)?;
     let rpc = Provider::from_network(network);
 
-    let id_address = rpc.lookup_id(recipient).await.map_err(ServerFnError::new)?;
+    let id_address = rpc.lookup_id(recipient).await.unwrap_or_else(|_| {
+        log::debug!("ID lookup failed, using recipient address: {:?}", recipient);
+        recipient
+    });
     let from = faucet_address(faucet_info)
         .await?
         .to_filecoin_address(network)
