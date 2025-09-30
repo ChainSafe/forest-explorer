@@ -307,15 +307,12 @@ async fn handle_erc20_claim(
         .await?
         .to_filecoin_address(network)
         .map_err(ServerFnError::new)?;
-    let eth_to = recipient
-        .into_eth_address()
-        .map_err(|e| ServerFnError::new(e))?;
+    let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
     let nonce = rpc
         .mpool_get_nonce(owner_fil_address)
         .await
         .map_err(ServerFnError::new)?;
     let gas_price = rpc.gas_price().await.map_err(ServerFnError::new)?;
-    let drip_amount = faucet_info.drip_amount();
 
     match signed_erc20_transfer(eth_to, nonce, gas_price, faucet_info).await {
         Ok(signed) => {
