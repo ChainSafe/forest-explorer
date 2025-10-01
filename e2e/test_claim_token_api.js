@@ -16,20 +16,26 @@ export const options = {
   vus: 1,
   iterations: 1,
   thresholds: {
+    'checks': ['rate>=1.0'],           // 100% of checks MUST pass
+    'http_req_failed': ['rate<=0.0'],  // 0% HTTP failures allowed
     'http_req_duration': ['p(95)<5000'],
   },
 };
 
-function validateTransactionHash(txHash, expectedFormat) {
-  if (expectedFormat === 'ethereum') {
-    return txHash.startsWith('0x') && txHash.length === 66;
-  } else if (expectedFormat === 'filecoin') {
-    return txHash.length >= 46 && txHash.length <= 70;
+function validateTransactionHash(txHash) {
+  // Remove outer quotes if present
+  if (txHash.startsWith('"') && txHash.endsWith('"')) {
+    txHash = txHash.slice(1, -1);
   }
-  return false;
+  // Remove inner quotes if present
+  if (txHash.startsWith('"') && txHash.endsWith('"')) {
+    txHash = txHash.slice(1, -1);
+  }
+
+  // Both CalibnetFIL and CalibnetUSDFC now return Ethereum format: 0x + 64 hex chars = 66 total
+  return txHash.startsWith('0x') && txHash.length === 66;
 }
 
-// Helper function to make API request
 function makeClaimRequest(faucetInfo, address) {
   let url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINT}`;
   const params = [];
@@ -84,10 +90,9 @@ function testInputValidation() {
   console.log('✅ Input validation tests completed');
 }
 
-// Test comprehensive rate limiting scenarios
 function testRateLimiting() {
-  console.log('\n📊 Testing Rate Limiting Scenarios...');
-  console.log('📝 Testing each address format: Success → Immediate rate limit');
+  console.log('\n📊 Testing Faucet-Specific Rate Limiting...');
+  console.log('📝 Pattern: One success per faucet → All addresses for that faucet get rate limited');
 
   TEST_SCENARIOS.RATE_LIMIT_TEST_COOLDOWN_CASES.forEach(testCase => {
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
@@ -97,14 +102,14 @@ function testRateLimiting() {
         r.status === testCase.expectedStatus,
     }) || errorRate.add(1);
 
-    if (response.status === STATUS_CODES.SUCCESS && testCase.expectedTxFormat) {
+    if (response.status === STATUS_CODES.SUCCESS) {
       check(response, {
-        [`${testCase.name}: ✅ Valid ${testCase.expectedTxFormat} transaction hash`]: (r) =>
-          validateTransactionHash(r.body.trim(), testCase.expectedTxFormat),
+        [`${testCase.name}: ✅ Valid transaction hash`]: (r) =>
+          validateTransactionHash(r.body.trim()),
       }) || errorRate.add(1);
     }
 
-    // Log unexpected cases for debugging
+    // Log results for debugging
     if (response.status !== testCase.expectedStatus) {
       console.log(`❌ ${testCase.name}: Expected ${testCase.expectedStatus}, got ${response.status} - ${response.body}`);
     }

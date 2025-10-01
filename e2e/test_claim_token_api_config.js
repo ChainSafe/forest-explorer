@@ -1,7 +1,7 @@
 // API Test Configuration
 export const API_CONFIG = {
   // Base URL - can be overridden by API_URL environment variable
-  BASE_URL: __ENV.API_URL || 'http://127.0.0.1:8787',
+  BASE_URL: __ENV.API_URL || 'https://forest-explorer.chainsafe.dev',
   ENDPOINT: '/api/claim_token',
 
   // Test timeouts
@@ -10,12 +10,12 @@ export const API_CONFIG = {
 };
 
 export const TEST_ADDRESSES = {
-  F1_FORMAT_ADDRESS: 'f1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq',
-  T1_FORMAT_ADDRESS: 't1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq',
-  T410_ADDRESS: 't410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki',
-  ETH_FORMAT_ADDRESS: '0xAe9C4b9508c929966ef37209b336E5796D632CDc',
-  T0_ADDRESS: 't0163355',
-  ETH_ID_CORRESPONDING: '0xff00000000000000000000000000000000027e1b',
+  F1_FORMAT_ADDRESS: 'f175c2l7wplwrfuhbxqate3apti4sikzyq3y26uxq',
+  T1_FORMAT_ADDRESS: 't175c2l7wplwrfuhbxqate3apti4sikzyq3y26uxq',
+  T410_ADDRESS: 't410fo4ek6rlkukhpgnatfa75wxaz3zwnzj45har6u6a',
+  ETH_FORMAT_ADDRESS: '0x7708aF456aa28EF33413283FDB5C19de6CdCA79d',
+  T0_ADDRESS: 't0174726',
+  ETH_ID_CORRESPONDING: '0xff0000000000000000000000000000000002aa86',
 
   INVALID: [
     'invalidaddress',
@@ -66,8 +66,15 @@ export const TEST_SCENARIOS = {
       expectedErrorContains: 'missing'
     },
     {
-      name: 'Missing address parameter',
+      name: 'Missing address parameter CalibnetFIL',
       faucet_info: FaucetTypes.CalibnetFIL,
+      address: null,
+      expectedStatus: STATUS_CODES.INTERNAL_SERVER_ERROR,
+      expectedErrorContains: 'missing'
+    },
+    {
+      name: 'Missing address parameter CalibnetUSDFC',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
       address: null,
       expectedStatus: STATUS_CODES.INTERNAL_SERVER_ERROR,
       expectedErrorContains: 'missing'
@@ -97,97 +104,61 @@ export const TEST_SCENARIOS = {
   ],
 
   RATE_LIMIT_TEST_COOLDOWN_CASES: [
-    // CalibnetFIL with t1 address: success → rate limited
+    // === CalibnetFIL Tests: One success → All addresses rate limited ===
     {
-      name: 'CalibnetFIL with t1 address',
+      name: 'CalibnetFIL with t1 address - SUCCESS (starts 60s cooldown for CalibnetFIL)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
-      expectedTxFormat: 'filecoin',
       expectedStatus: STATUS_CODES.SUCCESS
     },
     {
-      name: 'CalibnetFIL with t1 address (immediate retry - rate limited)',
-      faucet_info: FaucetTypes.CalibnetFIL,
-      address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
-      expectedTxFormat: 'filecoin',
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
-    },
-
-    // CalibnetFIL with t410 and ETH address: success → rate limited
-    {
-      name: 'CalibnetFIL with t410 address',
+      name: 'CalibnetFIL with t410 address - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.T410_ADDRESS,
-      expectedTxFormat: 'filecoin',
-      expectedStatus: STATUS_CODES.SUCCESS
-    },
-    {
-      name: 'CalibnetFIL with t410 address (immediate retry - rate limited)',
-      faucet_info: FaucetTypes.CalibnetFIL,
-      address: TEST_ADDRESSES.T410_ADDRESS,
-      expectedTxFormat: 'filecoin',
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
     {
-      name: 'CalibnetFIL with ETH address (immediate retry after t410 - rate limited as ETH and t410 are both same address)',
+      name: 'CalibnetFIL with ETH address - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
-      expectedTxFormat: 'filecoin',
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
-
-    // CalibnetFIL with t0 address: success → rate limited
     {
-      name: 'CalibnetFIL with t0 address',
+      name: 'CalibnetFIL with t0 address - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.T0_ADDRESS,
-      expectedTxFormat: 'filecoin',
-      expectedStatus: STATUS_CODES.SUCCESS
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
     {
-      name: 'CalibnetFIL with t0 address (immediate retry - rate limited)',
+      name: 'CalibnetFIL with eth ID address - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
-      address: TEST_ADDRESSES.T0_ADDRESS,
-      expectedTxFormat: 'filecoin',
+      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
 
-    // CalibnetUSDFC with eth address: success → rate limited
+    // === CalibnetUSDFC Tests: Independent cooldown from CalibnetFIL ===
     {
-      name: 'CalibnetUSDFC with eth address',
+      name: 'CalibnetUSDFC with eth address - SUCCESS (starts 60s cooldown for CalibnetUSDFC)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
-      expectedTxFormat: 'ethereum',
       expectedStatus: STATUS_CODES.SUCCESS
     },
     {
-      name: 'CalibnetUSDFC with eth address (immediate retry - rate limited)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
-      expectedTxFormat: 'ethereum',
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
-    },
-    {
-      name: 'CalibnetUSDFC with t410 address (immediate retry after ETH - rate limited as ETH and t410 are both same address)',
+      name: 'CalibnetUSDFC with t410 address - RATE LIMITED (within CalibnetUSDFC cooldown)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.T410_ADDRESS,
-      expectedTxFormat: 'ethereum',
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
-
-    // CalibnetUSDFC with eth ID address: success → rate limited
     {
-      name: 'CalibnetUSDFC with eth ID address',
+      name: 'CalibnetUSDFC with t0 address - RATE LIMITED (within CalibnetUSDFC cooldown)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-      expectedTxFormat: 'ethereum',
-      expectedStatus: STATUS_CODES.SUCCESS
+      address: TEST_ADDRESSES.T0_ADDRESS,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
     {
-      name: 'CalibnetUSDFC with eth ID address (immediate retry - rate limited)',
+      name: 'CalibnetUSDFC with eth ID address - RATE LIMITED (within CalibnetUSDFC cooldown)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-      expectedTxFormat: 'ethereum',
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     }
   ]
