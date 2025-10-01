@@ -119,6 +119,7 @@
 //! - use a derive macro for simple compound structs
 
 use ::cid::Cid;
+use alloy::primitives::TxHash;
 use derive_more::From;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de::DeserializeOwned};
 use std::{fmt::Display, str::FromStr};
@@ -383,6 +384,7 @@ lotus_json_with_self!(
     (),
     std::path::PathBuf,
     bool,
+    TxHash,
 );
 
 // TODO(forest): https://github.com/ChainSafe/forest/issues/4032
