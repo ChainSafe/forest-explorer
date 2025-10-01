@@ -12,7 +12,7 @@ export const options = {
   vus: 1,
   iterations: 1,
   thresholds: {
-    'checks': ['rate>=1.0'],           // 100% of checks MUST pass
+    'checks': ['rate>=1.0'],
     'http_req_duration': ['p(95)<5000'],
   },
 };
@@ -91,6 +91,7 @@ function testRateLimiting() {
   console.log('\n📊 Testing Faucet-Specific Rate Limiting...');
   console.log('📝 Pattern: One success per faucet → All addresses for that faucet get rate limited');
 
+  sleep(65) // Wait in case there is already a cooldown time
   TEST_SCENARIOS.RATE_LIMIT_TEST_COOLDOWN_CASES.forEach(testCase => {
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
 
@@ -111,7 +112,7 @@ function testRateLimiting() {
       console.log(`❌ ${testCase.name}: Expected ${testCase.expectedStatus}, got ${response.status} - ${response.body}`);
     }
 
-    sleep(0.1);
+    sleep(0.5);
   });
 }
 
