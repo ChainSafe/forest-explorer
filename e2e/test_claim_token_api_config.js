@@ -1,7 +1,7 @@
 // API Test Configuration
 export const API_CONFIG = {
   // Base URL - can be overridden by API_URL environment variable
-  BASE_URL: __ENV.API_URL || 'https://forest-explorer.chainsafe.dev',
+  BASE_URL: __ENV.API_URL || 'http://127.0.0.1:8787',
   ENDPOINT: '/api/claim_token',
 
   // Test timeouts

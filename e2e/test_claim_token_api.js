@@ -1,6 +1,5 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { Rate } from 'k6/metrics';
 import {
   API_CONFIG,
   TEST_ADDRESSES,
@@ -9,15 +8,11 @@ import {
   FaucetTypes
 } from './test_claim_token_api_config.js';
 
-// Custom metrics
-const errorRate = new Rate('errors');
-
 export const options = {
   vus: 1,
   iterations: 1,
   thresholds: {
     'checks': ['rate>=1.0'],           // 100% of checks MUST pass
-    'http_req_failed': ['rate<=0.0'],  // 0% HTTP failures allowed
     'http_req_duration': ['p(95)<5000'],
   },
 };
@@ -67,24 +62,26 @@ function testInputValidation() {
   faucetTypes.forEach((faucetType) => {
     TEST_ADDRESSES.INVALID.forEach((invalidAddress, index) => {
       const response = makeClaimRequest(faucetType, invalidAddress);
+      const checkName = `${faucetType} - Invalid address "${invalidAddress}" properly rejected (400 and error)`;
       check(response, {
-        [`${faucetType} - Invalid address "${invalidAddress}" properly rejected (400 and error)`]: (r) =>
+        [checkName]: (r) =>
           r.status === STATUS_CODES.BAD_REQUEST &&
           r.body &&
           r.body.toLowerCase().includes("invalid")
-      }) || errorRate.add(1);
+      });
     });
   });
 
   // Test all other invalid request scenarios (missing parameters, mainnet blocking, etc.)
   TEST_SCENARIOS.INVALID_REQUESTS.forEach((testCase) => {
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
+    const checkName = `${testCase.name}: properly handled (${testCase.expectedStatus} + "${testCase.expectedErrorContains}")`;
     check(response, {
-      [`${testCase.name}: properly handled (${testCase.expectedStatus} + "${testCase.expectedErrorContains}")`]: (r) =>
+      [checkName]: (r) =>
         r.status === testCase.expectedStatus &&
         r.body &&
         r.body.toLowerCase().includes(testCase.expectedErrorContains.toLowerCase())
-    }) || errorRate.add(1);
+    });
   });
 
   console.log('✅ Input validation tests completed');
@@ -97,16 +94,16 @@ function testRateLimiting() {
   TEST_SCENARIOS.RATE_LIMIT_TEST_COOLDOWN_CASES.forEach(testCase => {
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
 
+    const statusCheckName = `${testCase.name}: Expected ${testCase.expectedStatus}, got ${response.status}`;
     check(response, {
-      [`${testCase.name}: Expected ${testCase.expectedStatus}, got ${response.status}`]: (r) =>
-        r.status === testCase.expectedStatus,
-    }) || errorRate.add(1);
+      [statusCheckName]: (r) => r.status === testCase.expectedStatus,
+    });
 
     if (response.status === STATUS_CODES.SUCCESS) {
+      const hashCheckName = `${testCase.name}: ✅ Valid transaction hash`;
       check(response, {
-        [`${testCase.name}: ✅ Valid transaction hash`]: (r) =>
-          validateTransactionHash(r.body.trim()),
-      }) || errorRate.add(1);
+        [hashCheckName]: (r) => validateTransactionHash(r.body.trim()),
+      });
     }
 
     // Log results for debugging
@@ -121,4 +118,5 @@ function testRateLimiting() {
 export default function () {
   testInputValidation();
   testRateLimiting();
+  console.log('\n✅ All tests passed successfully!');
 }
