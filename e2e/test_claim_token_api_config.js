@@ -10,12 +10,12 @@ export const API_CONFIG = {
 };
 
 export const TEST_ADDRESSES = {
-  F1_FORMAT_ADDRESS: 'f175c2l7wplwrfuhbxqate3apti4sikzyq3y26uxq',
-  T1_FORMAT_ADDRESS: 't175c2l7wplwrfuhbxqate3apti4sikzyq3y26uxq',
-  T410_ADDRESS: 't410fo4ek6rlkukhpgnatfa75wxaz3zwnzj45har6u6a',
-  ETH_FORMAT_ADDRESS: '0x7708aF456aa28EF33413283FDB5C19de6CdCA79d',
-  T0_ADDRESS: 't0174726',
-  ETH_ID_CORRESPONDING: '0xff0000000000000000000000000000000002aa86',
+  F1_FORMAT_ADDRESS: 'f15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla',
+  T1_FORMAT_ADDRESS: 't15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla',
+  T410_ADDRESS: 't410fokwxytjh7socxx4p3y2n3wn4xy2gjcxtc7iv3sy',
+  ETH_FORMAT_ADDRESS: '0x72ad7c4d27fc9c2bdf8fde34ddd9bcbe34648af3',
+  T0_ADDRESS: 't0163912',
+  ETH_ID_CORRESPONDING: '0xff00000000000000000000000000000000028048',
 
   INVALID: [
     'invalidaddress',
