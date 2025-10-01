@@ -289,7 +289,11 @@ async fn handle_native_claim(
     {
         Ok(LotusJson(smsg)) => {
             let cid = rpc.mpool_push(smsg).await.map_err(ServerFnError::new)?;
-            Ok(cid.to_string())
+            let tx_hash = rpc
+                .eth_get_transaction_hash_by_cid(cid)
+                .await
+                .map_err(ServerFnError::new)?;
+            Ok(tx_hash.to_string())
         }
         Err(err) => Err(handle_faucet_error(err)),
     }
@@ -313,11 +317,11 @@ async fn handle_erc20_claim(
 
     match signed_erc20_transfer(eth_to, nonce, gas_price, faucet_info).await {
         Ok(signed) => {
-            let tx_id = rpc
+            let tx_hash = rpc
                 .send_eth_transaction_signed(&signed)
                 .await
                 .map_err(ServerFnError::new)?;
-            Ok(tx_id.to_string())
+            Ok(tx_hash.to_string())
         }
         Err(err) => Err(handle_faucet_error(err)),
     }

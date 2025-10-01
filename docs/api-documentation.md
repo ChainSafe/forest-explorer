@@ -10,7 +10,7 @@ The Claim Token API provides a simple way to request calibnet tokens from the
 faucet. This is primarily intended for developers and testers who need tokens to
 interact with the network. Users provide a valid wallet address and specify the
 token type (`faucet_info`) they wish to receive. On success, the API returns a
-transaction ID confirming the token transfer.
+transaction hash confirming the token transfer.
 
 **Key points:**
 
@@ -42,13 +42,13 @@ are prohibited and may result in stricter limits or bans.
 
 ## Status Codes
 
-| Status Code | Description                                                  |
-| ----------- | ------------------------------------------------------------ |
-| 200         | Token successfully claimed; response contains transaction ID |
-| 400         | Bad request - invalid address                                |
-| 429         | Too many requests - rate limited                             |
-| 500         | Server error; response contains error message                |
-| 418         | I'm a teapot - mainnet not supported                         |
+| Status Code | Description                                                    |
+| ----------- | -------------------------------------------------------------- |
+| 200         | Token successfully claimed; response contains transaction hash |
+| 400         | Bad request - invalid address                                  |
+| 429         | Too many requests - rate limited                               |
+| 500         | Server error; response contains error message                  |
+| 418         | I'm a teapot - mainnet not supported                           |
 
 ---
 
@@ -57,7 +57,7 @@ are prohibited and may result in stricter limits or bans.
 ### Success
 
 - **Status:** `200 OK`
-- **Content:** Plain text string containing the transaction ID.
+- **Content:** Plain text string containing the transaction hash.
 
 **Example:**
 
@@ -68,7 +68,7 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 **Response:**
 
 ```bash
-bafy2bzaceam3ihtqa73ru2bdvwoyaouwjwktsonkvs3rwwrn3z43e3xh3y4fk
+0x06784dd239f7f0e01baa19a82877e17b7fcd6e1dd725913fd6f741a2a6c56ce5
 ```
 
 ### Failure
