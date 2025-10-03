@@ -77,3 +77,9 @@ jobs:
         uses: grafana/run-k6-action@v1
         with:
           path: 'e2e/script.js'
+
+      - name: Run k6 test claim token api
+        uses: grafana/run-k6-action@v1
+        with:
+          path: 'e2e/test_claim_token_api.js'
+
