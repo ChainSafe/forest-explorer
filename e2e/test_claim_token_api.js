@@ -91,7 +91,6 @@ function testRateLimiting() {
   console.log('\n📊 Testing Faucet-Specific Rate Limiting...');
   console.log('📝 Pattern: One success per faucet → All addresses for that faucet get rate limited');
 
-  sleep(65) // Wait in case there is already a cooldown time
   TEST_SCENARIOS.RATE_LIMIT_TEST_COOLDOWN_CASES.forEach(testCase => {
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
 
@@ -118,6 +117,8 @@ function testRateLimiting() {
 
 export default function () {
   testInputValidation();
+  console.log(`⏰ Waiting ${API_CONFIG.FAUCET_COOLDOWN_BUFFER_SECONDS} seconds to ensure previous global faucet cooldowns have expired...`);
+  sleep(API_CONFIG.FAUCET_COOLDOWN_BUFFER_SECONDS);
   testRateLimiting();
   console.log('\n✅ All tests passed successfully!');
 }

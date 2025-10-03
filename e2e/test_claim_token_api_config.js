@@ -7,6 +7,8 @@ export const API_CONFIG = {
   // Test timeouts
   REQUEST_TIMEOUT: '30s',
   MAX_RESPONSE_TIME: 5000, // 5 seconds
+
+  FAUCET_COOLDOWN_BUFFER_SECONDS: 65, // 65 seconds
 };
 
 export const TEST_ADDRESSES = {
