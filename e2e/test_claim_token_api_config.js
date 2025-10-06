@@ -14,10 +14,10 @@ export const API_CONFIG = {
 export const TEST_ADDRESSES = {
   F1_FORMAT_ADDRESS: 'f15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla',
   T1_FORMAT_ADDRESS: 't15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla',
-  T410_ADDRESS: 't410fokwxytjh7socxx4p3y2n3wn4xy2gjcxtc7iv3sy',
-  ETH_FORMAT_ADDRESS: '0x72ad7c4d27fc9c2bdf8fde34ddd9bcbe34648af3',
-  T0_ADDRESS: 't0163912',
-  ETH_ID_CORRESPONDING: '0xff00000000000000000000000000000000028048',
+  T410_ADDRESS: 't410fw6vb5heeptnf6yhrvzxwlq7k4reerva7p667swi',
+  ETH_FORMAT_ADDRESS: '0xb7aA1e9c847CDA5F60f1AE6f65C3eae44848D41f',
+  T0_ADDRESS: 't0175013',
+  ETH_ID_CORRESPONDING: '0xff0000000000000000000000000000000002aba5',
 
   INVALID: [
     'invalidaddress',
@@ -102,37 +102,44 @@ export const TEST_SCENARIOS = {
       address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
       expectedStatus: STATUS_CODES.INTERNAL_SERVER_ERROR,
       expectedErrorContains: 'unknown variant'
+    },
+    {
+      name: 'Invalid address format for CalibnetUSDFC',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.INTERNAL_SERVER_ERROR,
+      expectedErrorContains: 'invalid address'
     }
   ],
 
   RATE_LIMIT_TEST_COOLDOWN_CASES: [
     // === CalibnetFIL Tests: One success → All addresses rate limited ===
     {
-      name: 'CalibnetFIL with t1 address - SUCCESS (starts 60s cooldown for CalibnetFIL)',
+      name: 'CalibnetFIL (t1) - 1st SUCCESS (starts 60s cooldown for CalibnetFIL)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
       expectedStatus: STATUS_CODES.SUCCESS
     },
     {
-      name: 'CalibnetFIL with t410 address - RATE LIMITED (within CalibnetFIL cooldown)',
+      name: 'CalibnetFIL (t410) - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.T410_ADDRESS,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
     {
-      name: 'CalibnetFIL with ETH address - RATE LIMITED (within CalibnetFIL cooldown)',
+      name: 'CalibnetFIL (eth) - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
     {
-      name: 'CalibnetFIL with t0 address - RATE LIMITED (within CalibnetFIL cooldown)',
+      name: 'CalibnetFIL (t0) - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.T0_ADDRESS,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
     {
-      name: 'CalibnetFIL with eth ID address - RATE LIMITED (within CalibnetFIL cooldown)',
+      name: 'CalibnetFIL (ID) - RATE LIMITED (within CalibnetFIL cooldown)',
       faucet_info: FaucetTypes.CalibnetFIL,
       address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
@@ -140,28 +147,159 @@ export const TEST_SCENARIOS = {
 
     // === CalibnetUSDFC Tests: Independent cooldown from CalibnetFIL ===
     {
-      name: 'CalibnetUSDFC with eth address - SUCCESS (starts 60s cooldown for CalibnetUSDFC)',
+      name: 'CalibnetUSDFC (eth) - 1st SUCCESS (starts 60s cooldown for CalibnetUSDFC)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
       expectedStatus: STATUS_CODES.SUCCESS
     },
     {
-      name: 'CalibnetUSDFC with t410 address - RATE LIMITED (within CalibnetUSDFC cooldown)',
+      name: 'CalibnetUSDFC (t410) - RATE LIMITED (within CalibnetUSDFC cooldown)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.T410_ADDRESS,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
     {
-      name: 'CalibnetUSDFC with t0 address - RATE LIMITED (within CalibnetUSDFC cooldown)',
+      name: 'CalibnetUSDFC (t0) - RATE LIMITED (within CalibnetUSDFC cooldown)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.T0_ADDRESS,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     },
+    // CalibnetUSDFC doesn't support the t1 format address
     {
-      name: 'CalibnetUSDFC with eth ID address - RATE LIMITED (within CalibnetUSDFC cooldown)',
+      name: 'CalibnetUSDFC (ID) - RATE LIMITED (within CalibnetUSDFC cooldown)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     }
+  ],
+
+  RATE_LIMIT_TEST_WALLET_CAP_CASES: [
+    // === CalibnetFIL t1 Wallet (already has 1 transaction in RATE_LIMIT_TEST_COOLDOWN_CASES) ===
+    {
+      name: 'CalibnetFIL (t1) - 2nd SUCCESS (reaches cap)',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.SUCCESS,
+      waitBefore: 65, // Wait for cooldown from the main rate-limit tests to expire
+      walletCapErrorResponse: false,
+    },
+    {
+      name: 'CalibnetFIL (t1) - 3rd attempt (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 65, // Wait for cooldown from its own 2nd transaction
+      walletCapErrorResponse: true,
+    },
+
+    // === CalibnetFIL eth/t410 Wallet (fresh wallet for this faucet) ===
+    {
+      name: 'CalibnetFIL (eth) - 1st SUCCESS',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.SUCCESS,
+      waitBefore: 65, // Wait for cooldown from the previous test group
+      walletCapErrorResponse: false,
+    },
+    {
+      name: 'CalibnetFIL (eth) - 2nd SUCCESS (reaches cap)',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.SUCCESS,
+      waitBefore: 65, // Wait for its own cooldown
+      walletCapErrorResponse: false,
+    },
+    {
+      name: 'CalibnetFIL (eth) - 3rd attempt (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 65, // Wait for its own cooldown
+      walletCapErrorResponse: true,
+    },
+    {
+      name: 'CalibnetFIL (t410) - check equivalence (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.T410_ADDRESS,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 0, // No wait needed, should be capped, already from the previous step
+      walletCapErrorResponse: true,
+    },
+    {
+      name: 'CalibnetFIL (t0) - check equivalence (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.T0_ADDRESS,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 0, // No wait needed, should be capped, already from the previous step
+      walletCapErrorResponse: true,
+    },
+    {
+      name: 'CalibnetFIL (ID) - check equivalence (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 0, // No wait needed, should be capped, already from the previous step
+      walletCapErrorResponse: true,
+    },
+
+    // === CalibnetUSDFC eth/t410 Wallet (already has 1 transaction in RATE_LIMIT_TEST_COOLDOWN_CASES) ===
+    {
+      name: 'CalibnetUSDFC (eth) - 2nd SUCCESS (reaches cap)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.SUCCESS,
+      waitBefore: 65, // Wait for cooldown from the previous test group to expire
+      walletCapErrorResponse: false,
+    },
+    {
+      name: 'CalibnetUSDFC (eth) - 3rd attempt (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.ETH_FORMAT_ADDRESS,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 65, // Wait for cooldown from its own 2nd transaction
+      walletCapErrorResponse: true,
+    },
+    {
+      name: 'CalibnetUSDFC (t410) - check equivalence (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.T410_ADDRESS, // This is the same wallet as the ETH address
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 0, // No wait needed, should be capped, already from the previous step
+      walletCapErrorResponse: true,
+    },
+
+    // === CalibnetUSDFC ID Wallet (fresh wallet, 0 transactions) ===
+    {
+      name: 'CalibnetUSDFC (ID) - 1st SUCCESS (fresh wallet)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+      expectedStatus: STATUS_CODES.SUCCESS,
+      waitBefore: 65, // Wait for cooldown from the previous test group to expire
+      walletCapErrorResponse: false,
+    },
+    {
+      name: 'CalibnetUSDFC (ID) - 2nd SUCCESS (reaches cap)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+      expectedStatus: STATUS_CODES.SUCCESS,
+      waitBefore: 65, // Wait for cooldown from its own 1st transaction
+      walletCapErrorResponse: false,
+    },
+    {
+      name: 'CalibnetUSDFC (ID) - 3rd attempt (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 65, // Wait for cooldown from its own 2nd transaction
+      walletCapErrorResponse: true,
+    },
+    {
+      name: 'CalibnetUSDFC (t0) - check equivalence (WALLET CAPPED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.T0_ADDRESS, // This is the same wallet as the ID address
+      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+      waitBefore: 0, // No wait needed, should be capped already
+      walletCapErrorResponse: true,
+    },
   ]
 };
