@@ -20,9 +20,27 @@ env:
   RUSTC_WRAPPER: sccache
   CC: sccache clang
   CXX: sccache clang++
+
 jobs:
-  e2e:
+  e2e-tests:
     runs-on: ubuntu-latest
+    # Each 'include' entry will run as a separate job with its own parameters.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Browser Tests"
+            script: "e2e/script.js"
+            port: 8787
+            k6_browser_enabled: true
+            state_dir: "browser"
+          - name: "API Tests"
+            script: "e2e/test_claim_token_api.js"
+            port: 8788
+            k6_browser_enabled: false
+            state_dir: "api"
+
+    name: "E2E ${{ matrix.name }}"
     steps:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
@@ -32,11 +50,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+            ~/.npm
+          key: ${{ runner.os }}-deps-${{ hashFiles('**/yarn.lock', '**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-
+
       - name: Install wasm-pack
         run:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - uses: sigoden/install-binary@v1
+      - name: Install wasm-opt
+        uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
           name: wasm-opt
@@ -44,10 +77,10 @@ jobs:
       - name: Install worker-build
         run: cargo install --locked worker-build
 
-      - name: Set up k6 (with browser)
+      - name: Set up k6
         uses: grafana/setup-k6-action@v1
         with:
-          browser: true
+          browser: ${{ matrix.k6_browser_enabled }}
 
       - name: Set up secrets
         shell: bash
@@ -56,7 +89,7 @@ jobs:
           echo "SECRET_MAINNET_WALLET=${{ secrets.TEST_MAINNET_PRIVATE_KEY_HEX }}" >> .dev.vars
           echo "SECRET_CALIBNET_USDFC_WALLET=${{ secrets.TEST_CALIBNET_USDFC_PRIVATE_KEY_HEX }}" >> .dev.vars
 
-      - name: Run website
+      - name: Build and run website
         run: |
           # These might or might not be the same as used for deployment. They are used strictly for testing purposes.
           # Note: those can't be put directly as environment variables in GH Actions (without a default value) due to
@@ -69,17 +102,15 @@ jobs:
           corepack enable
           yarn --immutable
           yarn build
-          yarn start &
-          echo "waiting"
-          timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 8787
+          # Use separate state directories to isolate Durable Object storage between parallel runs
+          yarn wrangler dev --port ${{ matrix.port }} --persist-to .wrangler-state-${{ matrix.state_dir }}-${{ github.run_id }} &
+          echo "waiting for server on port ${{ matrix.port }}"
+          timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 ${{ matrix.port }}
 
-      - name: Run k6 E2E script
+      - name: Run k6 E2E Test
         uses: grafana/run-k6-action@v1
         with:
-          path: 'e2e/script.js'
-
-      - name: Run k6 test claim token api
-        uses: grafana/run-k6-action@v1
-        with:
-          path: 'e2e/test_claim_token_api.js'
-
+          path: ${{ matrix.script }}
+        env:
+          API_URL: "http://127.0.0.1:${{ matrix.port }}"
+          CALIBNET_RPC: "https://api.calibration.node.glif.io/rpc/v1"

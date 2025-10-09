@@ -7,19 +7,22 @@ export const API_CONFIG = {
   // Test timeouts
   REQUEST_TIMEOUT: '30s',
   MAX_RESPONSE_TIME: 5000, // 5 seconds
+  CONNECTION_TIMEOUT: '10s', // For connectivity checks
 
-  FAUCET_COOLDOWN_BUFFER_SECONDS: 65, // 65 seconds
+  FAUCET_COOLDOWN_BUFFER_SECONDS: 65,
 };
 
 export const TEST_ADDRESSES = {
-  F1_FORMAT_ADDRESS: 'f15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla',
-  T1_FORMAT_ADDRESS: 't15ydyu3d65gznpp2qxwpkjsgz4waubeunn6upvla',
-  T410_ADDRESS: 't410fw6vb5heeptnf6yhrvzxwlq7k4reerva7p667swi',
-  ETH_FORMAT_ADDRESS: '0xb7aA1e9c847CDA5F60f1AE6f65C3eae44848D41f',
-  T0_ADDRESS: 't0175013',
-  ETH_ID_CORRESPONDING: '0xff0000000000000000000000000000000002aba5',
+  // Primary test addresses for API tests
+  F1_FORMAT_ADDRESS: 'f1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq',
+  T1_FORMAT_ADDRESS: 't1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq',
+  T410_ADDRESS: 't410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki',
+  ETH_FORMAT_ADDRESS: '0xAe9C4b9508c929966ef37209b336E5796D632CDc',
+  T0_ADDRESS: 't0163355',
+  ETH_ID_CORRESPONDING: '0xff00000000000000000000000000000000027e1b',
 
   INVALID: [
+    // Basic invalid cases
     'invalidaddress',
     '0xinvalid',
     't1invalid',
@@ -30,6 +33,32 @@ export const TEST_ADDRESSES = {
     '0xABC',
     't1abc',
     'f1xyz',
+    
+    // Edge cases: Malformed Ethereum addresses
+    '0x',
+    '0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef12345', // 63 chars (too short)
+    '0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789', // 65 chars (too long)
+    '0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef12345G', // Invalid hex char 'G'
+    '0X123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF123456', // Uppercase 0X prefix
+    '123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456', // Missing 0x prefix
+    
+    // Edge cases: Malformed Filecoin addresses with invalid checksums
+    'f1invalidchecksumaddresshere1234567890',
+    't1invalidchecksumaddresshere1234567890',
+    'f3invalidchecksumaddresshere1234567890abcdef',
+    't3invalidchecksumaddresshere1234567890abcdef',
+    'f410invalidchecksumaddresshere1234567890abcdef123456',
+    't410invalidchecksumaddresshere1234567890abcdef123456',
+    
+    // Edge cases: Invalid Filecoin address formats
+    'f5unsupportedprotocol',
+    't999unsupported',
+    'f1',
+    't1',
+    'f1!@#$%^&*()',
+    't1!@#$%^&*()',
+    'f0',
+    'm1validlengthbutinvalidnetwork'
   ]
 };
 
