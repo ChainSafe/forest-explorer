@@ -164,7 +164,6 @@ function testWalletCap() {
 export default function () {
   console.log('🔗 Checking server connectivity...');
 
-  // Try up to 3 times with increasing delays (like browser tests do implicitly)
   let healthResponse;
   let attempts = 0;
   const maxAttempts = 3;
