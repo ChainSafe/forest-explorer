@@ -106,8 +106,8 @@ jobs:
           yarn wrangler dev --port ${{ matrix.port }} --persist-to .wrangler-state-${{ matrix.state_dir }}-${{ github.run_id }} &
           echo "waiting for server on port ${{ matrix.port }}"
           timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 ${{ matrix.port }}
-          echo "TCP port check passed, now testing HTTP endpoint..."
-          timeout 120 sh -c 'until curl -s --max-time 30 http://127.0.0.1:${{ matrix.port }} > /dev/null; do echo "Waiting for HTTP server (first request takes ~60s)..."; sleep 5; done'
+          echo "TCP port check passed, now waiting for HTTP server to be ready..."
+          timeout 120 sh -c 'until curl -s --max-time 30 http://127.0.0.1:${{ matrix.port }} > /dev/null; do echo "Waiting for HTTP server (first request may take 60-90s)..."; sleep 5; done'
           echo "Server is ready!"
 
       - name: Run k6 E2E Test

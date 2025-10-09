@@ -39,22 +39,27 @@ function runTestScenarios(scenarios, options = {}) {
 
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
 
-    const commonChecks = {
-      [`${testCase.name}: Expected status ${testCase.expectedStatus}`]: (r) =>
-        r.status === testCase.expectedStatus,
-      [`${testCase.name}: Valid transaction hash (if success)`]: (r) =>
-        r.status !== STATUS_CODES.SUCCESS || validateTransactionHash(r.body.trim())
-    };
+    // Primary status check - if this fails, skip additional validations
+    const statusCheckName = `${testCase.name}: Expected status ${testCase.expectedStatus}`;
+    const statusCheckResult = check(response, {
+      [statusCheckName]: (r) => r.status === testCase.expectedStatus
+    });
 
-    // Add any additional checks specific to the test type
-    const allChecks = additionalChecks
-      ? { ...commonChecks, ...additionalChecks(testCase) }
-      : commonChecks;
+    if (statusCheckResult) {
+      const additionalValidations = {
+        [`${testCase.name}: Valid transaction hash (if success)`]: (r) =>
+          r.status !== STATUS_CODES.SUCCESS || validateTransactionHash(r.body.trim())
+      };
 
-    check(response, allChecks);
+      // Add any test-specific additional checks
+      if (additionalChecks) {
+        Object.assign(additionalValidations, additionalChecks(testCase));
+      }
 
-    if (response.status !== testCase.expectedStatus) {
+      check(response, additionalValidations);
+    } else {
       console.log(`❌ ${testCase.name}: Expected ${testCase.expectedStatus}, got ${response.status} - ${response.body}`);
+      console.log(`⏭️  Skipping additional validations for this test due to status check failure`);
     }
 
     if (sleepBetween > 0) {
@@ -185,8 +190,6 @@ export default function () {
   }
 
   testInputValidation();
-  console.log(`⏰ Waiting ${API_CONFIG.FAUCET_COOLDOWN_BUFFER_SECONDS} seconds to ensure previous global faucet cooldowns have expired...`);
-  sleep(API_CONFIG.FAUCET_COOLDOWN_BUFFER_SECONDS);
   testRateLimiting();
   testWalletCap();
   console.log('\n✅ All tests passed successfully!');
