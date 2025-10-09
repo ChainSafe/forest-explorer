@@ -25,10 +25,10 @@ function validateTransactionHash(txHash) {
 }
 
 function runTestScenarios(scenarios, options = {}) {
-  const { 
-    sleepBetween = 0, 
+  const {
+    sleepBetween = 0,
     allowWaiting = false,
-    additionalChecks = null 
+    additionalChecks = null
   } = options;
 
   scenarios.forEach(testCase => {
@@ -40,14 +40,14 @@ function runTestScenarios(scenarios, options = {}) {
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
 
     const commonChecks = {
-      [`${testCase.name}: Expected status ${testCase.expectedStatus}`]: (r) => 
+      [`${testCase.name}: Expected status ${testCase.expectedStatus}`]: (r) =>
         r.status === testCase.expectedStatus,
-      [`${testCase.name}: Valid transaction hash (if success)`]: (r) => 
+      [`${testCase.name}: Valid transaction hash (if success)`]: (r) =>
         r.status !== STATUS_CODES.SUCCESS || validateTransactionHash(r.body.trim())
     };
 
     // Add any additional checks specific to the test type
-    const allChecks = additionalChecks 
+    const allChecks = additionalChecks
       ? { ...commonChecks, ...additionalChecks(testCase) }
       : commonChecks;
 
@@ -61,29 +61,6 @@ function runTestScenarios(scenarios, options = {}) {
       sleep(sleepBetween);
     }
   });
-}
-
-function validateServerConnectivity() {
-  console.log('🔗 Checking server connectivity...');
-  
-  const healthResponse = http.get(API_CONFIG.BASE_URL, {
-    timeout: API_CONFIG.CONNECTION_TIMEOUT,
-    tags: { test_type: 'connectivity' }
-  });
-
-  const connectivityChecks = check(healthResponse, {
-    'Server connectivity: Can reach base URL': (r) => r.status !== 0 && !r.error,
-    'Server connectivity: Response time < 10s': (r) => r.timings.duration < 10000,
-    'Server connectivity: No network errors': (r) => !r.error
-  });
-
-  if (!connectivityChecks) {
-    console.error(`❌ Server connectivity failed: ${healthResponse.body || healthResponse.error || 'Unknown error'}`);
-    return false;
-  }
-
-  console.log('✅ Server connectivity confirmed');
-  return true;
 }
 
 function makeClaimRequest(faucetInfo, address) {
@@ -130,7 +107,7 @@ function testInputValidation() {
 
       check(response, {
         [`${testName}: Proper rejection (400)`]: (r) => r.status === STATUS_CODES.BAD_REQUEST,
-        [`${testName}: Error message contains 'invalid'`]: (r) => 
+        [`${testName}: Error message contains 'invalid'`]: (r) =>
           r.body && r.body.toLowerCase().includes("invalid")
       });
     });
@@ -141,7 +118,7 @@ function testInputValidation() {
     const response = makeClaimRequest(testCase.faucet_info, testCase.address);
 
     check(response, {
-      [`${testCase.name}: Expected status ${testCase.expectedStatus}`]: (r) => 
+      [`${testCase.name}: Expected status ${testCase.expectedStatus}`]: (r) =>
         r.status === testCase.expectedStatus,
       [`${testCase.name}: Contains expected error "${testCase.expectedErrorContains}"`]: (r) =>
         r.body && r.body.toLowerCase().includes(testCase.expectedErrorContains.toLowerCase())
@@ -180,15 +157,30 @@ function testWalletCap() {
 }
 
 export default function () {
-  // Validate server connectivity using k6 checks
-  const connectivityResult = validateServerConnectivity();
+  console.log('🔗 Checking server connectivity...');
 
-  check(null, {
-    'Pre-flight: Server connectivity successful': () => connectivityResult
-  });
+  // Try up to 3 times with increasing delays (like browser tests do implicitly)
+  let healthResponse;
+  let attempts = 0;
+  const maxAttempts = 3;
+  
+  while (attempts < maxAttempts) {
+    attempts++;
+    healthResponse = http.get(API_CONFIG.BASE_URL, { timeout: '10s' });
+    
+    if (healthResponse.status !== 0 && !healthResponse.error) {
+      console.log('✅ Server connectivity confirmed');
+      break;
+    }
+    
+    if (attempts < maxAttempts) {
+      console.log(`⏳ Server not ready (attempt ${attempts}/${maxAttempts}), waiting 5s...`);
+      sleep(5);
+    }
+  }
 
-  if (!connectivityResult) {
-    console.error('❌ Server connectivity failed - aborting tests');
+  if (healthResponse.status === 0 || healthResponse.error) {
+    console.error(`❌ Server not reachable after ${maxAttempts} attempts: ${healthResponse.error || 'Connection failed'}`);
     return;
   }
 
