@@ -289,11 +289,11 @@ async fn handle_native_claim(
     {
         Ok(LotusJson(smsg)) => {
             let cid = rpc.mpool_push(smsg).await.map_err(ServerFnError::new)?;
-            let tx_hash = rpc
+            Ok(rpc
                 .eth_get_transaction_hash_by_cid(cid)
                 .await
-                .map_err(ServerFnError::new)?;
-            Ok(tx_hash.to_string())
+                .map(|tx_hash| tx_hash.to_string())
+                .unwrap_or_else(|_| cid.to_string()))
         }
         Err(err) => Err(handle_faucet_error(err)),
     }

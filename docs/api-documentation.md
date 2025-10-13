@@ -16,6 +16,9 @@ transaction hash confirming the token transfer.
 
 - Each address is subject to rate limiting to prevent abuse.
 - This API only distributes Calibnet `tFIL` and `tUSDFC` tokens.
+- For native token claims, the API returns the Ethereum transaction hash if
+  resolvable via `Filecoin.EthGetTransactionHashByCid`; otherwise, it returns
+  the CID.
 
 ---
 
