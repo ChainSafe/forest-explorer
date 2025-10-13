@@ -145,9 +145,14 @@ ServerError|I'm a teapot - mainnet tokens are not available.
 
 ## Faucet Top-Up Requests
 
-If you encounter a server error indicating that faucet is exhausted (e.g.,
-"ServerError|Faucet is empty, Request top-up"), you can request a refill here:
+If you encounter a server error indicating that faucet is exhausted.
 
-- [Request Faucet Top-Up](https://github.com/ChainSafe/forest-explorer/discussions/134)
+**Example:**
 
-This discussion thread is monitored for top-up requests.
+```bash
+ServerError|Faucet is empty, Request top-up
+```
+
+You can request for faucet top-up
+[Here](https://github.com/ChainSafe/forest-explorer/discussions/134). This
+discussion thread is monitored for top-up requests.
