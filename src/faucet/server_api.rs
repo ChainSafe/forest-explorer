@@ -219,6 +219,15 @@ pub async fn claim_token(
         .map_err(ServerFnError::new)?;
 
     SendWrapper::new(async move {
+        let faucet_balance = rpc
+            .wallet_balance(from, &faucet_info.token_type())
+            .await
+            .map_err(ServerFnError::new)?;
+        if faucet_balance < *faucet_info.drip_amount() {
+            return Err(ServerFnError::ServerError(
+                "Faucet is empty, Request top-up".to_string(),
+            ));
+        }
         match faucet_info {
             FaucetInfo::MainnetFIL => {
                 set_response_status(StatusCode::IM_A_TEAPOT);

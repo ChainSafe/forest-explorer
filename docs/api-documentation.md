@@ -140,3 +140,14 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=MainnetF
 ```bash
 ServerError|I'm a teapot - mainnet tokens are not available.
 ```
+
+---
+
+## Faucet Top-Up Requests
+
+If you encounter a server error indicating that faucet is exhausted (e.g.,
+"ServerError|Faucet is empty, Request top-up"), you can request a refill here:
+
+- [Request Faucet Top-Up](https://github.com/ChainSafe/forest-explorer/discussions/134)
+
+This discussion thread is monitored for top-up requests.
