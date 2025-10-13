@@ -293,7 +293,14 @@ async fn handle_native_claim(
                 .eth_get_transaction_hash_by_cid(cid)
                 .await
                 .map(|tx_hash| tx_hash.to_string())
-                .unwrap_or_else(|_| cid.to_string()))
+                .unwrap_or_else(|err| {
+                    log::warn!(
+                        "Failed to resolve tx hash for CID {}: {}. Returning CID instead.",
+                        cid,
+                        err
+                    );
+                    cid.to_string()
+                }))
         }
         Err(err) => Err(handle_faucet_error(err)),
     }
