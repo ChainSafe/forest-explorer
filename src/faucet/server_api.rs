@@ -295,9 +295,7 @@ async fn handle_native_claim(
                 .map(|tx_hash| tx_hash.to_string())
                 .unwrap_or_else(|err| {
                     log::warn!(
-                        "Failed to resolve tx hash for CID {}: {}. Returning CID instead.",
-                        cid,
-                        err
+                        "Failed to resolve tx hash for CID {cid}: {err}. Returning CID instead."
                     );
                     cid.to_string()
                 }))
