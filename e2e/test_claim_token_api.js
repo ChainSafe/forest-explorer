@@ -161,7 +161,7 @@ function testWalletCap() {
   });
 }
 
-export default function () {
+function validateServerConnectivity() {
   console.log('🔗 Checking server connectivity...');
 
   let healthResponse;
@@ -174,7 +174,7 @@ export default function () {
     
     if (healthResponse.status !== 0 && !healthResponse.error) {
       console.log('✅ Server connectivity confirmed');
-      break;
+      return true;
     }
     
     if (attempts < maxAttempts) {
@@ -183,8 +183,13 @@ export default function () {
     }
   }
 
-  if (healthResponse.status === 0 || healthResponse.error) {
-    console.error(`❌ Server not reachable after ${maxAttempts} attempts: ${healthResponse.error || 'Connection failed'}`);
+  console.error(`❌ Server not reachable after ${maxAttempts} attempts: ${healthResponse.error || 'Connection failed'}`);
+  return false;
+}
+
+export default function () {
+  if (!validateServerConnectivity()) {
+    console.error('❌ Aborting tests: Server not responsive');
     return;
   }
 
