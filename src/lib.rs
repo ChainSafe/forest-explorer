@@ -17,11 +17,11 @@ mod ssr_imports {
     use std::sync::Arc;
 
     use crate::{app::App, faucet};
-    use axum::{Extension, Router, routing::post};
+    use axum::{Extension, Router, http::Method, routing::post};
     use leptos::prelude::*;
     use leptos_axum::{LeptosRoutes, generate_route_list};
     use leptos_meta::*;
-    use tower_http::cors::CorsLayer;
+    use tower_http::cors::{Any, CorsLayer};
     use worker::{Context, Env, HttpRequest, Result, event};
 
     fn shell(options: LeptosOptions) -> impl IntoView {
@@ -52,6 +52,9 @@ mod ssr_imports {
             .site_pkg_dir("pkg")
             .build();
         let routes = generate_route_list(App);
+        let cors = CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Method::GET);
 
         // build our application with a route
         let app: axum::Router<()> = Router::new()
@@ -61,7 +64,7 @@ mod ssr_imports {
             })
             .route("/api/{*fn_name}", post(leptos_axum::handle_server_fns))
             .with_state(leptos_options)
-            .layer(CorsLayer::permissive())
+            .layer(cors)
             .layer(Extension(Arc::new(env)));
         app
     }
