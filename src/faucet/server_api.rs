@@ -219,6 +219,7 @@ pub async fn claim_token(
         .map_err(ServerFnError::new)?;
 
     SendWrapper::new(async move {
+        ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
         match faucet_info {
             FaucetInfo::MainnetFIL => {
                 set_response_status(StatusCode::IM_A_TEAPOT);
@@ -251,6 +252,25 @@ fn parse_and_validate_address(
             )))
         }
     }
+}
+
+#[cfg(feature = "ssr")]
+async fn ensure_faucet_has_funds(
+    rpc: &crate::utils::rpc_context::Provider,
+    from: &Address,
+    faucet_info: &FaucetInfo,
+) -> Result<(), ServerFnError> {
+    let faucet_balance = rpc
+        .wallet_balance(*from, &faucet_info.token_type())
+        .await
+        .map_err(ServerFnError::new)?;
+    let max_gas_estimate = faucet_info.max_gas_limit() * faucet_info.max_gas_fee_cap();
+    if faucet_balance < (faucet_info.drip_amount() + max_gas_estimate) {
+        return Err(ServerFnError::ServerError(
+            "Faucet is empty, Request top-up".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 #[cfg(feature = "ssr")]
