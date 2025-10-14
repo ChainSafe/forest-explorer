@@ -21,6 +21,7 @@ mod ssr_imports {
     use leptos::prelude::*;
     use leptos_axum::{LeptosRoutes, generate_route_list};
     use leptos_meta::*;
+    use tower_http::cors::CorsLayer;
     use worker::{Context, Env, HttpRequest, Result, event};
 
     fn shell(options: LeptosOptions) -> impl IntoView {
@@ -60,6 +61,7 @@ mod ssr_imports {
             })
             .route("/api/{*fn_name}", post(leptos_axum::handle_server_fns))
             .with_state(leptos_options)
+            .layer(CorsLayer::permissive())
             .layer(Extension(Arc::new(env)));
         app
     }
