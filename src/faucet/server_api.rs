@@ -254,7 +254,6 @@ fn parse_and_validate_address(
     }
 }
 
-
 #[cfg(feature = "ssr")]
 async fn ensure_faucet_has_funds(
     rpc: &crate::utils::rpc_context::Provider,
