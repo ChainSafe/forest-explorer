@@ -221,7 +221,7 @@ impl FaucetController {
                         faucet.send_disabled.set(true);
 
                         let rpc = Provider::from_network(network);
-                        let id_address = rpc.lookup_id(recipient).await?;
+                        let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
                         let from = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
