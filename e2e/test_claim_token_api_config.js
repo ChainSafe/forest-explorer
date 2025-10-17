@@ -297,8 +297,11 @@ export const TEST_SCENARIOS = {
       walletCapErrorResponse: true,
     },
 
+    // TODO(forest-explorer): https://github.com/ChainSafe/forest-explorer/issues/335
+    //                       Token sent to the t0 and it's eth mapping address 0x
+    //                       are not accessible. Hence commenting out the following
+    //                       test cases.
     // === CalibnetUSDFC ID Wallet (fresh wallet, 0 transactions) ===
-    // Commented out because we are not sure how to get the token back from the ID address
     // {
     //   name: 'CalibnetUSDFC (ID) - 1st SUCCESS (fresh wallet)',
     //   faucet_info: FaucetTypes.CalibnetUSDFC,

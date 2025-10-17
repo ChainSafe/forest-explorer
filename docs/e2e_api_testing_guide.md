@@ -127,13 +127,6 @@ with wallet cap validation.
 2. Wait 65s → `3rd attempt WALLET CAPPED` (429, >1h retry time)
 3. Test equivalent address (`t410`) → 429 (same wallet)
 
-**CalibnetUSDFC ID wallet (fresh wallet, 0 transactions):**
-
-1. Wait 65s → `1st SUCCESS` (200)
-2. Wait 65s → `2nd SUCCESS` (200, reaches cap)
-3. Wait 65s → `3rd attempt WALLET CAPPED` (429, >1h retry time)
-4. Test equivalent address (`t0`) → 429 (same wallet)
-
 ### 5. Common Helper Functions
 
 **`makeClaimRequest(faucetInfo, address)`**: A centralized API call that handles
