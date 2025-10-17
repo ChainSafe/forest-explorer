@@ -37,8 +37,13 @@ jobs:
           - name: "API Tests"
             script: "e2e/test_claim_token_api.js"
             port: 8787
-            k6_browser_enabled: true
+            k6_browser_enabled: false
             state_dir: "api"
+          - name: "Claim Token API CORS Tests"
+            script: "e2e/test_cors.js"
+            port: 8787
+            k6_browser_enabled: false
+            state_dir: "cors"
 
     name: "E2E ${{ matrix.name }}"
     steps:

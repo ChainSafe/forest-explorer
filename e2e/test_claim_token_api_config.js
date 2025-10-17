@@ -298,37 +298,38 @@ export const TEST_SCENARIOS = {
     },
 
     // === CalibnetUSDFC ID Wallet (fresh wallet, 0 transactions) ===
-    {
-      name: 'CalibnetUSDFC (ID) - 1st SUCCESS (fresh wallet)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-      expectedStatus: STATUS_CODES.SUCCESS,
-      waitBefore: 65, // Wait for cooldown from the previous test group to expire
-      walletCapErrorResponse: false,
-    },
-    {
-      name: 'CalibnetUSDFC (ID) - 2nd SUCCESS (reaches cap)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-      expectedStatus: STATUS_CODES.SUCCESS,
-      waitBefore: 65, // Wait for cooldown from its own 1st transaction
-      walletCapErrorResponse: false,
-    },
-    {
-      name: 'CalibnetUSDFC (ID) - 3rd attempt (WALLET CAPPED)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
-      waitBefore: 65, // Wait for cooldown from its own 2nd transaction
-      walletCapErrorResponse: true,
-    },
-    {
-      name: 'CalibnetUSDFC (t0) - check equivalence (WALLET CAPPED)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.T0_ADDRESS, // This is the same wallet as the ID address
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
-      waitBefore: 0, // No wait needed, should be capped already
-      walletCapErrorResponse: true,
-    },
+    // Commented out because we are not sure how to get the token back from the ID address
+    // {
+    //   name: 'CalibnetUSDFC (ID) - 1st SUCCESS (fresh wallet)',
+    //   faucet_info: FaucetTypes.CalibnetUSDFC,
+    //   address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+    //   expectedStatus: STATUS_CODES.SUCCESS,
+    //   waitBefore: 65, // Wait for cooldown from the previous test group to expire
+    //   walletCapErrorResponse: false,
+    // },
+    // {
+    //   name: 'CalibnetUSDFC (ID) - 2nd SUCCESS (reaches cap)',
+    //   faucet_info: FaucetTypes.CalibnetUSDFC,
+    //   address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+    //   expectedStatus: STATUS_CODES.SUCCESS,
+    //   waitBefore: 65, // Wait for cooldown from its own 1st transaction
+    //   walletCapErrorResponse: false,
+    // },
+    // {
+    //   name: 'CalibnetUSDFC (ID) - 3rd attempt (WALLET CAPPED)',
+    //   faucet_info: FaucetTypes.CalibnetUSDFC,
+    //   address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+    //   expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+    //   waitBefore: 65, // Wait for cooldown from its own 2nd transaction
+    //   walletCapErrorResponse: true,
+    // },
+    // {
+    //   name: 'CalibnetUSDFC (t0) - check equivalence (WALLET CAPPED)',
+    //   faucet_info: FaucetTypes.CalibnetUSDFC,
+    //   address: TEST_ADDRESSES.T0_ADDRESS, // This is the same wallet as the ID address
+    //   expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
+    //   waitBefore: 0, // No wait needed, should be capped already
+    //   walletCapErrorResponse: true,
+    // },
   ]
 };
