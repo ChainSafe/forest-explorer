@@ -10,7 +10,7 @@ The Claim Token API provides a simple way to request calibnet tokens from the
 faucet. This is primarily intended for developers and testers who need tokens to
 interact with the network. Users provide a valid wallet address and specify the
 token type (`faucet_info`) they wish to receive. On success, the API returns a
-JSON object with `faucet_info` and `tx_hash` confirming the token transfer.
+transaction hash confirming the token transfer.
 
 ---
 
@@ -42,7 +42,7 @@ JSON object with `faucet_info` and `tx_hash` confirming the token transfer.
 #### Success claim for `CalibnetFIL`
 
 - **Status:** `200 OK`
-- **Content:** JSON with faucet info and transaction hash.
+- **Content:** Plain text string containing the transaction hash.
 
 **Example:**
 
@@ -52,17 +52,14 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 
 **Response:**
 
-```json
-{
-  "faucet_info": "CalibnetFIL",
-  "tx_hash": "0x06784dd239f7f0e01baa19a82877e17b7fcd6e1dd725913fd6f741a2a6c56ce5"
-}
+```bash
+0x06784dd239f7f0e01baa19a82877e17b7fcd6e1dd725913fd6f741a2a6c56ce5
 ```
 
 #### Success claim for `CalibnetUSDFC`
 
 - **Status:** `200 OK`
-- **Content:** JSON with faucet info and transaction hash.
+- **Content:** Plain text string containing the transaction hash.
 
 ```bash
 curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=CalibnetUSDFC&address=0xae9c4b9508c929966ef37209b336e5796d632cdc"
@@ -70,11 +67,8 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 
 **Response:**
 
-```json
-{
-  "faucet_info": "CalibnetUSDFC",
-  "tx_hash": "0x8d75e2394dcf829ab9353370069b6d6afb04c88ea38c765ab4443a1587e12922"
-}
+```bash
+0x8d75e2394dcf829ab9353370069b6d6afb04c88ea38c765ab4443a1587e12922
 ```
 
 ### Failure

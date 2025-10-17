@@ -215,7 +215,7 @@ pub struct ClaimResponse {
 pub async fn claim_token(
     faucet_info: FaucetInfo,
     address: String,
-) -> Result<ClaimResponse, ServerFnError> {
+) -> Result<TxHash, ServerFnError> {
     use crate::utils::rpc_context::Provider;
     use fvm_shared::address::set_current_network;
     use send_wrapper::SendWrapper;
@@ -249,24 +249,23 @@ pub async fn claim_token(
 
 #[server(endpoint = "claim_token_all", input = GetUrl)]
 pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, ServerFnError> {
-    let mut results = Vec::with_capacity(2);
+    let faucets = [FaucetInfo::CalibnetUSDFC, FaucetInfo::CalibnetFIL];
+    let mut results = Vec::with_capacity(faucets.len());
 
-    match claim_token(FaucetInfo::CalibnetUSDFC, address.clone()).await {
-        Ok(resp) => results.push(resp),
-        Err(e) => results.push(ClaimResponse {
-            faucet_info: FaucetInfo::CalibnetUSDFC,
-            tx_hash: None,
-            error: Some(e),
-        }),
-    }
-
-    match claim_token(FaucetInfo::CalibnetFIL, address).await {
-        Ok(resp) => results.push(resp),
-        Err(e) => results.push(ClaimResponse {
-            faucet_info: FaucetInfo::CalibnetFIL,
-            tx_hash: None,
-            error: Some(e),
-        }),
+    for faucet in faucets {
+        let response = match claim_token(faucet, address.clone()).await {
+            Ok(tx_hash) => ClaimResponse {
+                faucet_info: faucet,
+                tx_hash: Some(tx_hash),
+                error: None,
+            },
+            Err(e) => ClaimResponse {
+                faucet_info: faucet,
+                tx_hash: None,
+                error: Some(e),
+            },
+        };
+        results.push(response);
     }
 
     Ok(results)
@@ -315,7 +314,7 @@ async fn handle_native_claim(
     recipient: Address,
     from: Address,
     rpc: crate::utils::rpc_context::Provider,
-) -> Result<ClaimResponse, ServerFnError> {
+) -> Result<TxHash, ServerFnError> {
     use crate::utils::message::message_transfer;
 
     let id_address = rpc.lookup_id(recipient).await.unwrap_or_else(|_| {
@@ -349,11 +348,7 @@ async fn handle_native_claim(
                 .eth_get_transaction_hash_by_cid(cid)
                 .await
                 .map_err(ServerFnError::new)?;
-            Ok(ClaimResponse {
-                faucet_info,
-                tx_hash: Some(tx_hash),
-                error: None,
-            })
+            Ok(tx_hash)
         }
         Err(err) => Err(handle_faucet_error(err)),
     }
@@ -365,7 +360,7 @@ async fn handle_erc20_claim(
     recipient: Address,
     from: Address,
     rpc: crate::utils::rpc_context::Provider,
-) -> Result<ClaimResponse, ServerFnError> {
+) -> Result<TxHash, ServerFnError> {
     use crate::utils::address::AddressAlloyExt;
 
     let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
@@ -381,11 +376,7 @@ async fn handle_erc20_claim(
                 .send_eth_transaction_signed(&signed)
                 .await
                 .map_err(ServerFnError::new)?;
-            Ok(ClaimResponse {
-                faucet_info,
-                tx_hash: Some(tx_hash),
-                error: None,
-            })
+            Ok(tx_hash)
         }
         Err(err) => Err(handle_faucet_error(err)),
     }
