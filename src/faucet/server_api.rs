@@ -350,7 +350,7 @@ async fn handle_native_claim(
                 .await
                 .map_err(ServerFnError::new)?;
             Ok(ClaimResponse {
-                faucet_info: faucet_info,
+                faucet_info,
                 tx_hash: Some(tx_hash),
                 error: None,
             })
@@ -382,7 +382,7 @@ async fn handle_erc20_claim(
                 .await
                 .map_err(ServerFnError::new)?;
             Ok(ClaimResponse {
-                faucet_info: faucet_info,
+                faucet_info,
                 tx_hash: Some(tx_hash),
                 error: None,
             })
