@@ -236,20 +236,20 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?address=invalida
 
 **Response:**
 
-```bash
+```json
 [
-    {
-        "faucet_info": "CalibnetUSDFC",
-        "error": {
-            "ServerError": "Invalid address: Not a valid Testnet address"
-        }
-    },
-    {
-        "faucet_info": "CalibnetFIL",
-        "error": {
-            "ServerError": "Invalid address: Not a valid Testnet address"
-        }
+  {
+    "faucet_info": "CalibnetUSDFC",
+    "error": {
+      "ServerError": "Invalid address: Not a valid Testnet address"
     }
+  },
+  {
+    "faucet_info": "CalibnetFIL",
+    "error": {
+      "ServerError": "Invalid address: Not a valid Testnet address"
+    }
+  }
 ]
 ```
 
@@ -268,20 +268,20 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?address=0xAe9C4b
 
 **Response:**
 
-```bash
+```json
 [
-    {
-        "faucet_info": "CalibnetUSDFC",
-        "error": {
-            "ServerError": "Too many requests: Rate limited. Try again in 46 seconds."
-        }
-    },
-    {
-        "faucet_info": "CalibnetFIL",
-        "error": {
-            "ServerError": "Too many requests: Rate limited. Try again in 12 seconds."
-        }
+  {
+    "faucet_info": "CalibnetUSDFC",
+    "error": {
+      "ServerError": "Too many requests: Rate limited. Try again in 46 seconds."
     }
+  },
+  {
+    "faucet_info": "CalibnetFIL",
+    "error": {
+      "ServerError": "Too many requests: Rate limited. Try again in 12 seconds."
+    }
+  }
 ]
 ```
 
