@@ -108,7 +108,7 @@ impl AddressAlloyExt for Address {
                 error!(
                     "Cannot convert address {self} to Ethereum address. Only ID and Delegated addresses are supported."
                 );
-                bail!("invalid address {self}");
+                bail!("Invalid address {self}, Only ID and Delegated addresses are supported.");
             }
         }
     }

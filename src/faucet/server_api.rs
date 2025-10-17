@@ -5,10 +5,12 @@ use crate::utils::{
     address::AnyAddress,
     lotus_json::{LotusJson, signed_message::SignedMessage},
 };
+use alloy::primitives::TxHash;
 use anyhow::Result;
 use fvm_shared::address::Address;
 use fvm_shared::econ::TokenAmount;
 use leptos::{prelude::ServerFnError, server, server_fn::codec::GetUrl};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ssr")]
 use axum::http::StatusCode;
@@ -196,6 +198,15 @@ pub async fn signed_erc20_transfer(
     Ok(signed)
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct ClaimResponse {
+    pub faucet_info: FaucetInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tx_hash: Option<TxHash>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<ServerFnError>,
+}
+
 /// Server API endpoint for claiming calibnet tokens from the faucet.
 /// Returns a transaction ID on successful token claim.
 /// Supports distribution of `CalibnetFIL` and `CalibnetUSDFC` tokens.
@@ -204,7 +215,7 @@ pub async fn signed_erc20_transfer(
 pub async fn claim_token(
     faucet_info: FaucetInfo,
     address: String,
-) -> Result<String, ServerFnError> {
+) -> Result<TxHash, ServerFnError> {
     use crate::utils::rpc_context::Provider;
     use fvm_shared::address::set_current_network;
     use send_wrapper::SendWrapper;
@@ -234,6 +245,30 @@ pub async fn claim_token(
         }
     })
     .await
+}
+
+#[server(endpoint = "claim_token_all", input = GetUrl)]
+pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, ServerFnError> {
+    let faucets = [FaucetInfo::CalibnetUSDFC, FaucetInfo::CalibnetFIL];
+    let mut results = Vec::with_capacity(faucets.len());
+
+    for faucet in faucets {
+        let response = match claim_token(faucet, address.clone()).await {
+            Ok(tx_hash) => ClaimResponse {
+                faucet_info: faucet,
+                tx_hash: Some(tx_hash),
+                error: None,
+            },
+            Err(e) => ClaimResponse {
+                faucet_info: faucet,
+                tx_hash: None,
+                error: Some(e),
+            },
+        };
+        results.push(response);
+    }
+
+    Ok(results)
 }
 
 #[cfg(feature = "ssr")]
@@ -279,7 +314,7 @@ async fn handle_native_claim(
     recipient: Address,
     from: Address,
     rpc: crate::utils::rpc_context::Provider,
-) -> Result<String, ServerFnError> {
+) -> Result<TxHash, ServerFnError> {
     use crate::utils::message::message_transfer;
 
     let id_address = rpc.lookup_id(recipient).await.unwrap_or_else(|_| {
@@ -313,7 +348,7 @@ async fn handle_native_claim(
                 .eth_get_transaction_hash_by_cid(cid)
                 .await
                 .map_err(ServerFnError::new)?;
-            Ok(tx_hash.to_string())
+            Ok(tx_hash)
         }
         Err(err) => Err(handle_faucet_error(err)),
     }
@@ -325,7 +360,7 @@ async fn handle_erc20_claim(
     recipient: Address,
     from: Address,
     rpc: crate::utils::rpc_context::Provider,
-) -> Result<String, ServerFnError> {
+) -> Result<TxHash, ServerFnError> {
     use crate::utils::address::AddressAlloyExt;
 
     let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
@@ -341,7 +376,7 @@ async fn handle_erc20_claim(
                 .send_eth_transaction_signed(&signed)
                 .await
                 .map_err(ServerFnError::new)?;
-            Ok(tx_hash.to_string())
+            Ok(tx_hash)
         }
         Err(err) => Err(handle_faucet_error(err)),
     }
