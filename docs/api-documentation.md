@@ -231,7 +231,7 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?address=0xAe9C4b
 **Example:**
 
 ```bash
-curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=CalibnetFIL&address=invalidaddress"
+curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?faucet_info=CalibnetFIL&address=invalidaddress"
 ```
 
 **Response:**
@@ -263,7 +263,7 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 **Example:**
 
 ```bash
-curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=CalibnetFIL&address=0xAe9C4b9508c929966ef37209b336E5796D632CDc"
+curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?faucet_info=CalibnetFIL&address=0xAe9C4b9508c929966ef37209b336E5796D632CDc"
 ```
 
 **Response:**
