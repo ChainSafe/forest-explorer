@@ -200,7 +200,7 @@ pub async fn signed_erc20_transfer(
 
 #[derive(Serialize, Deserialize)]
 pub struct ClaimResponse {
-    pub faucet: FaucetInfo,
+    pub faucet_info: FaucetInfo,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tx_hash: Option<TxHash>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -254,7 +254,7 @@ pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, Serv
     match claim_token(FaucetInfo::CalibnetUSDFC, address.clone()).await {
         Ok(resp) => results.push(resp),
         Err(e) => results.push(ClaimResponse {
-            faucet: FaucetInfo::CalibnetUSDFC,
+            faucet_info: FaucetInfo::CalibnetUSDFC,
             tx_hash: None,
             error: Some(e),
         }),
@@ -263,7 +263,7 @@ pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, Serv
     match claim_token(FaucetInfo::CalibnetFIL, address).await {
         Ok(resp) => results.push(resp),
         Err(e) => results.push(ClaimResponse {
-            faucet: FaucetInfo::CalibnetFIL,
+            faucet_info: FaucetInfo::CalibnetFIL,
             tx_hash: None,
             error: Some(e),
         }),
@@ -350,7 +350,7 @@ async fn handle_native_claim(
                 .await
                 .map_err(ServerFnError::new)?;
             Ok(ClaimResponse {
-                faucet: faucet_info,
+                faucet_info: faucet_info,
                 tx_hash: Some(tx_hash),
                 error: None,
             })
@@ -382,7 +382,7 @@ async fn handle_erc20_claim(
                 .await
                 .map_err(ServerFnError::new)?;
             Ok(ClaimResponse {
-                faucet: faucet_info,
+                faucet_info: faucet_info,
                 tx_hash: Some(tx_hash),
                 error: None,
             })
