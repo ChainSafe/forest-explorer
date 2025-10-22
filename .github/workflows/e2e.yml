@@ -1,4 +1,4 @@
-name: E2E Test
+name: e2e
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -22,7 +22,7 @@ env:
   CXX: sccache clang++
 
 jobs:
-  e2e-tests:
+  e2e:
     runs-on: ubuntu-latest
     # Each 'include' entry will run as a separate job with its own parameters.
     strategy:
