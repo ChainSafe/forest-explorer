@@ -18,7 +18,7 @@ export const options = {
   },
 };
 
-const BASE_URL = "http://127.0.0.1:8787";
+const BASE_URL = __ENV.API_URL ||"http://127.0.0.1:8787";
 
 // Check if the path is reachable
 async function checkPath(page, path) {
