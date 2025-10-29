@@ -121,3 +121,12 @@ jobs:
           path: ${{ matrix.script }}
         env:
           API_URL: "http://127.0.0.1:${{ matrix.port }}"
+
+      - name: Setup FilForwarder and Recover Test Tokens
+        run: |
+          git clone https://github.com/FilOzone/FilForwarder.git
+          cd FilForwarder
+          export PRIVATE_KEY=${{ secrets.TEST_CALIBNET_USDFC_PRIVATE_KEY_HEX }}
+          yarn hardhat forward --network calibration --destination t1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq --amount 10
+        env:
+          NODE_ENV: production
