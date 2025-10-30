@@ -103,6 +103,8 @@ jobs:
           export FAUCET_TOPUP_REQ_URL="https://github.com/ChainSafe/forest-explorer/discussions/134"
           export FAUCET_TX_URL_CALIBNET="https://beryx.io/fil/calibration/"
           export FAUCET_TX_URL_MAINNET="https://beryx.io/fil/mainnet/"
+          # Set to ~0.000000001 tFIL for e2e tests
+          export CALIBNET_DRIP_AMOUNT=1
 
           corepack enable
           yarn --immutable

@@ -5,15 +5,31 @@ use std::{str::FromStr as _, sync::LazyLock};
 use strum::EnumString;
 
 /// The amount of calibnet FIL to be dripped to the user.
-static CALIBNET_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| TokenAmount::from_whole(5));
+static CALIBNET_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| {
+    TokenAmount::from_nano(
+        option_env!("CALIBNET_DRIP_AMOUNT")
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(5_000_000_000),
+    )
+});
 
 /// The amount of mainnet FIL to be dripped to the user. This corresponds to 0.01 FIL.
-static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> =
-    LazyLock::new(|| TokenAmount::from_nano(10_000_000));
+static MAINNET_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| {
+    TokenAmount::from_nano(
+        option_env!("MAINNET_DRIP_AMOUNT")
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(10_000_000),
+    )
+});
 
 /// The amount of calibnet `USDFC` to be dripped to the user.
-static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> =
-    LazyLock::new(|| TokenAmount::from_whole(5));
+static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| {
+    TokenAmount::from_nano(
+        option_env!("CALIBNET_USDFC_DRIP_AMOUNT")
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(5_000_000_000),
+    )
+});
 
 /// Multiplier to determine the maximum amount of tokens that can be dripped per wallet every [`FaucetInfo::reset_limiter_seconds`].
 const MAINNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 1;
