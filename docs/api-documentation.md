@@ -291,6 +291,8 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?address=0xAe9C4b
 
 - Each address is subject to rate limiting to prevent abuse.
 - This API only distributes Calibnet `tFIL` and `tUSDFC` tokens.
+- ID address or its corresponding eth style `0xff…ID` address are restricted to
+  claim `tUSDFC` tokens.
 
 ## Rate Limits
 

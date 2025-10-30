@@ -222,7 +222,7 @@ pub async fn claim_token(
 
     let network = faucet_info.network();
     set_current_network(network);
-    let recipient = parse_and_validate_address(&address, network)?;
+    let recipient = parse_and_validate_address(&address, faucet_info)?;
     let rpc = Provider::from_network(network);
     let from = faucet_address(faucet_info)
         .await?
@@ -272,11 +272,22 @@ pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, Serv
 }
 
 #[cfg(feature = "ssr")]
+fn is_address_restricted(address: &str, faucet_info: FaucetInfo) -> bool {
+    matches!(faucet_info, FaucetInfo::CalibnetUSDFC)
+        && (address.starts_with("0xff000000000000000000000000") || address.starts_with("t0"))
+}
+
+#[cfg(feature = "ssr")]
 fn parse_and_validate_address(
     address: &str,
-    network: fvm_shared::address::Network,
+    faucet_info: FaucetInfo,
 ) -> Result<Address, ServerFnError> {
-    match crate::utils::address::parse_address(address, network) {
+    if is_address_restricted(address, faucet_info) {
+        log::error!("Restricted address: {}", address);
+        set_response_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::ServerError("Use of ID address or it's corresponding Ethereum style 0xff...ID address is restricted to claim tokens from CalibnetUSFC faucet.".to_string()));
+    }
+    match crate::utils::address::parse_address(address, faucet_info.network()) {
         Ok(addr) => Ok(addr),
         Err(e) => {
             log::error!("Invalid address: {}", e);
