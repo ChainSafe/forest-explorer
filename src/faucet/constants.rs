@@ -37,7 +37,7 @@ const MAX_CALIBNET_GAS_LIMIT: u64 = 30_000_000;
 
 /// Maximum gas fee cap for mainnet including buffer.
 static MAX_MAINNET_GAS_FEE_CAP: LazyLock<TokenAmount> =
-    LazyLock::new(|| TokenAmount::from_atto(1_000_000));
+    LazyLock::new(|| TokenAmount::from_atto(100_000_000));
 /// Maximum gas fee cap for calibnet including buffer.
 static MAX_CALIBNET_GAS_FEE_CAP: LazyLock<TokenAmount> =
     LazyLock::new(|| TokenAmount::from_atto(200_000));
@@ -230,7 +230,7 @@ mod tests {
         assert_eq!(mainnet_faucet.max_gas_limit(), 10_000_000);
         assert_eq!(
             mainnet_faucet.max_gas_fee_cap(),
-            TokenAmount::from_atto(1_000_000)
+            TokenAmount::from_atto(100_000_000)
         );
         assert_eq!(
             mainnet_faucet.max_gas_premium(),
