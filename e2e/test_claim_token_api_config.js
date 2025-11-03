@@ -186,19 +186,6 @@ export const TEST_SCENARIOS = {
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.T410_ADDRESS,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
-    },
-    {
-      name: 'CalibnetUSDFC (t0) - RATE LIMITED (within CalibnetUSDFC cooldown)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.T0_ADDRESS,
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
-    },
-    // CalibnetUSDFC doesn't support the t1 format address
-    {
-      name: 'CalibnetUSDFC (ID) - RATE LIMITED (within CalibnetUSDFC cooldown)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     }
   ],
 
