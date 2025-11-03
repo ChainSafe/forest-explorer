@@ -230,7 +230,7 @@ mod tests {
         assert_eq!(mainnet_faucet.max_gas_limit(), 10_000_000);
         assert_eq!(
             mainnet_faucet.max_gas_fee_cap(),
-            TokenAmount::from_atto(1_000_000)
+            TokenAmount::from_atto(100_000_000)
         );
         assert_eq!(
             mainnet_faucet.max_gas_premium(),
