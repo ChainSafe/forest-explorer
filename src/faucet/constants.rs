@@ -159,18 +159,19 @@ impl FaucetInfo {
     /// Returns the base URL for transactions on the given faucet. This is used to link to
     /// transaction details in the block explorer.
     pub fn transaction_base_url(&self) -> Option<url::Url> {
-        match self {
+        let url_str = match self {
             FaucetInfo::MainnetFIL => {
-                option_env!("FAUCET_TX_URL_MAINNET").and_then(|url| url::Url::parse(url).ok())
+                option_env!("FAUCET_TX_URL_MAINNET").unwrap_or("https://beryx.io/fil/mainnet/")
             }
             FaucetInfo::CalibnetFIL => {
-                option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| url::Url::parse(url).ok())
+                option_env!("FAUCET_TX_URL_CALIBNET").unwrap_or("https://beryx.io/fil/calibration/")
             }
             FaucetInfo::CalibnetUSDFC => {
-                option_env!("FAUCET_TX_URL_CALIBNET").and_then(|url| url::Url::parse(url).ok())
                 //None // USDFC does not have a transaction base URL for now - to investigate later.
+                option_env!("FAUCET_TX_URL_CALIBNET").unwrap_or("https://beryx.io/fil/calibration/")
             }
-        }
+        };
+        url::Url::parse(url_str).ok()
     }
 
     /// Returns the type of token for the given faucet. This is used to determine how the token
@@ -240,7 +241,7 @@ mod tests {
         assert_eq!(mainnet_faucet.unit(), "FIL");
         assert_eq!(mainnet_faucet.network(), Network::Mainnet);
         assert_eq!(mainnet_faucet.secret_key_name(), "SECRET_MAINNET_WALLET");
-        assert!(mainnet_faucet.transaction_base_url().is_none());
+        assert!(mainnet_faucet.transaction_base_url().is_some());
         assert_eq!(mainnet_faucet.token_type(), TokenType::Native);
         assert_eq!(mainnet_faucet.chain_id(), 314);
         assert_eq!(mainnet_faucet.max_gas_limit(), 10_000_000);
@@ -267,7 +268,7 @@ mod tests {
         assert_eq!(calibnet_fil_faucet.unit(), "tFIL");
         assert_eq!(calibnet_fil_faucet.network(), Network::Testnet);
         assert_eq!(calibnet_fil_faucet.secret_key_name(), "SECRET_WALLET");
-        assert!(calibnet_fil_faucet.transaction_base_url().is_none());
+        assert!(calibnet_fil_faucet.transaction_base_url().is_some());
         assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
         assert_eq!(calibnet_fil_faucet.max_gas_limit(), 30_000_000);
@@ -300,7 +301,7 @@ mod tests {
             calibnet_usdfc_faucet.secret_key_name(),
             "SECRET_CALIBNET_USDFC_WALLET"
         );
-        assert!(calibnet_usdfc_faucet.transaction_base_url().is_none());
+        assert!(calibnet_usdfc_faucet.transaction_base_url().is_some());
         assert_eq!(
             calibnet_usdfc_faucet.token_type(),
             TokenType::Erc20(
