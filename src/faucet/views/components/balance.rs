@@ -14,7 +14,8 @@ pub fn FaucetBalance(faucet: RwSignal<FaucetController>) -> impl IntoView {
             }>
                 {move || {
                     if faucet.get().is_low_balance() {
-                        let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL");
+                        let topup_req_url = option_env!("FAUCET_TOPUP_REQ_URL")
+                            .unwrap_or("https://github.com/ChainSafe/forest-explorer/discussions/134");
                         view! {
                             <a class="btn-topup" target="_blank" rel="noopener noreferrer" href=topup_req_url>
                                 "Request Faucet Top-up"
