@@ -271,7 +271,7 @@ pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, Serv
     Ok(results)
 }
 
-/// Checks if the provided address is valid for the faucet, ensuring restricted addresses are not used.
+/// Checks if the provided address is valid for the faucet, ensuring invalid addresses are rejected.
 #[cfg(feature = "ssr")]
 fn check_valid_address(address: Address, faucet_info: FaucetInfo) -> Result<(), ServerFnError> {
     use crate::utils::address::AddressAlloyExt;
@@ -281,8 +281,9 @@ fn check_valid_address(address: Address, faucet_info: FaucetInfo) -> Result<(), 
         && (address.protocol() == Protocol::ID || address.into_eth_address().is_err())
     {
         log::error!("Invalid address: {:?}", address);
-        leptos::context::use_context::<ResponseOptions>()
-            .map(|_| set_response_status(StatusCode::BAD_REQUEST));
+        if leptos::context::use_context::<ResponseOptions>().is_some() {
+            set_response_status(StatusCode::BAD_REQUEST);
+        }
         return Err(ServerFnError::ServerError("Use of ID addresses or their corresponding Ethereum style 0xff...ID addresses is restricted when claiming tokens from the CalibnetUSDFC faucet.".to_string()));
     }
     Ok(())
@@ -428,208 +429,76 @@ fn set_response_status(status: StatusCode) {
 
 #[cfg(feature = "ssr")]
 mod tests {
-    use super::*;
-    use crate::utils::address::parse_address;
-    use fvm_shared::address::Network;
+    #[allow(unused_macros)]
+    macro_rules! assert_address {
+        ($address:expr, $faucet:expr) => {{
+            let network = $faucet.network();
+            let addr = crate::utils::address::parse_address($address, network).unwrap();
+            assert!(crate::faucet::server_api::check_valid_address(addr, $faucet).is_ok());
+        }};
+        ($address:expr, $faucet:expr, false) => {{
+            let network = $faucet.network();
+            let addr = crate::utils::address::parse_address($address, network).unwrap();
+            assert!(crate::faucet::server_api::check_valid_address(addr, $faucet).is_err());
+        }};
+    }
 
     #[test]
     fn test_check_valid_address_mainnet() {
-        assert!(
-            check_valid_address(
-                parse_address("f03603846", Network::Mainnet).unwrap(),
-                FaucetInfo::MainnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "f1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy",
-                    Network::Mainnet
-                )
-                .unwrap(),
-                FaucetInfo::MainnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "f2yjb6dq3jggychgnuhevcwe7ehv3ot2rkhkbk4qy",
-                    Network::Mainnet
-                )
-                .unwrap(),
-                FaucetInfo::MainnetFIL
-            )
-            .is_ok()
-        );
-        assert!(check_valid_address(parse_address("f3s5kg6rehbbmgvngpec6b7m4uxmwbscdafn2pvtrrp65wbgjuymrr2z6qbkqiunkyjul6b62buqk76q47cjeq", Network::Mainnet).unwrap(), FaucetInfo::MainnetFIL).is_ok());
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "f410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki",
-                    Network::Mainnet
-                )
-                .unwrap(),
-                FaucetInfo::MainnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "0xff0000000000000000000000000000000036fd86",
-                    Network::Mainnet
-                )
-                .unwrap(),
-                FaucetInfo::MainnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
-                    Network::Mainnet
-                )
-                .unwrap(),
-                FaucetInfo::MainnetFIL
-            )
-            .is_ok()
-        );
+        let addresses = [
+            "f03603846",
+            "f1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy",
+            "f2yjb6dq3jggychgnuhevcwe7ehv3ot2rkhkbk4qy",
+            "f3s5kg6rehbbmgvngpec6b7m4uxmwbscdafn2pvtrrp65wbgjuymrr2z6qbkqiunkyjul6b62buqk76q47cjeq",
+            "f410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki",
+            "0xff0000000000000000000000000000000036fd86",
+            "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
+        ];
+        for addr in addresses.iter() {
+            assert_address!(*addr, crate::faucet::server_api::FaucetInfo::MainnetFIL);
+        }
     }
 
     #[test]
     fn test_check_valid_address_calibnet() {
-        assert!(
-            check_valid_address(
-                parse_address("t03603846", Network::Testnet).unwrap(),
-                FaucetInfo::CalibnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "t1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "t2yjb6dq3jggychgnuhevcwe7ehv3ot2rkhkbk4qy",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetFIL
-            )
-            .is_ok()
-        );
-        assert!(check_valid_address(parse_address("t3s5kg6rehbbmgvngpec6b7m4uxmwbscdafn2pvtrrp65wbgjuymrr2z6qbkqiunkyjul6b62buqk76q47cjeq", Network::Testnet).unwrap(), FaucetInfo::CalibnetFIL).is_ok());
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "t410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "0xff0000000000000000000000000000000036f672",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetFIL
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetFIL
-            )
-            .is_ok()
-        );
+        let addresses = [
+            "t03603846",
+            "t1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy",
+            "t2yjb6dq3jggychgnuhevcwe7ehv3ot2rkhkbk4qy",
+            "t3s5kg6rehbbmgvngpec6b7m4uxmwbscdafn2pvtrrp65wbgjuymrr2z6qbkqiunkyjul6b62buqk76q47cjeq",
+            "t410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki",
+            "0xff0000000000000000000000000000000036f672",
+            "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
+        ];
+        for addr in addresses.iter() {
+            assert_address!(*addr, crate::faucet::server_api::FaucetInfo::CalibnetFIL);
+        }
     }
 
     #[test]
     fn test_check_valid_address_calibnet_usdfc() {
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetUSDFC
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "t410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetUSDFC
-            )
-            .is_ok()
-        );
-        assert!(
-            check_valid_address(
-                parse_address("t03603846", Network::Testnet).unwrap(),
-                FaucetInfo::CalibnetUSDFC
-            )
-            .is_err()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "t1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetUSDFC
-            )
-            .is_err()
-        );
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "t2yjb6dq3jggychgnuhevcwe7ehv3ot2rkhkbk4qy",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetUSDFC
-            )
-            .is_err()
-        );
-        assert!(check_valid_address(parse_address("t3s5kg6rehbbmgvngpec6b7m4uxmwbscdafn2pvtrrp65wbgjuymrr2z6qbkqiunkyjul6b62buqk76q47cjeq", Network::Testnet).unwrap(), FaucetInfo::CalibnetUSDFC).is_err());
-        assert!(
-            check_valid_address(
-                parse_address(
-                    "0xff0000000000000000000000000000000036f672",
-                    Network::Testnet
-                )
-                .unwrap(),
-                FaucetInfo::CalibnetUSDFC
-            )
-            .is_err()
-        );
+        let valid_addresses = [
+            "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
+            "t410fv2oexfiizeuzm3xtoie3gnxfpfwwglg4q3dgxki",
+        ];
+        let invalid_addresses = [
+            "t03603846",
+            "t1rgci272nfk4k6cpyejepzv4xstpejjckldlzidy",
+            "t2yjb6dq3jggychgnuhevcwe7ehv3ot2rkhkbk4qy",
+            "t3s5kg6rehbbmgvngpec6b7m4uxmwbscdafn2pvtrrp65wbgjuymrr2z6qbkqiunkyjul6b62buqk76q47cjeq",
+            "0xff0000000000000000000000000000000036f672",
+        ];
+
+        for addr in valid_addresses.iter() {
+            assert_address!(*addr, crate::faucet::server_api::FaucetInfo::CalibnetUSDFC);
+        }
+
+        for addr in invalid_addresses.iter() {
+            assert_address!(
+                *addr,
+                crate::faucet::server_api::FaucetInfo::CalibnetUSDFC,
+                false
+            );
+        }
     }
 }
