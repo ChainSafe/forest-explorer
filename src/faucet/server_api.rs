@@ -284,7 +284,7 @@ fn check_valid_address(address: Address, faucet_info: FaucetInfo) -> Result<(), 
         if leptos::context::use_context::<ResponseOptions>().is_some() {
             set_response_status(StatusCode::BAD_REQUEST);
         }
-        return Err(ServerFnError::ServerError("Invalid address: ID and 0xff...ID address formats are restricted for Calibnet USDFC token claims.".to_string()));
+        return Err(ServerFnError::ServerError("Invalid address: Only Ethereum-compatible addresses (delegated t4 addresses or native Ethereum 0x addresses) are allowed for Calibnet USDFC token claims.".to_string()));
     }
     Ok(())
 }
