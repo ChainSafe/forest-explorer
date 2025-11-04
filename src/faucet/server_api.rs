@@ -272,10 +272,16 @@ pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, Serv
 }
 
 #[cfg(feature = "ssr")]
-fn is_address_restricted(address: &str, faucet_info: FaucetInfo) -> bool {
+fn check_valid_address(address: &str, faucet_info: FaucetInfo) -> Result<(), ServerFnError> {
     let address = address.trim().to_lowercase();
-    matches!(faucet_info, FaucetInfo::CalibnetUSDFC)
+    if matches!(faucet_info, FaucetInfo::CalibnetUSDFC)
         && (address.starts_with("0xff000000000000000000000000") || address.starts_with("t0"))
+    {
+        log::error!("Restricted address: {}", address);
+        set_response_status(StatusCode::BAD_REQUEST);
+        return Err(ServerFnError::ServerError("Use of ID addresses or their corresponding Ethereum style 0xff...ID addresses is restricted when claiming tokens from the CalibnetUSDFC faucet.".to_string()));
+    }
+    Ok(())
 }
 
 #[cfg(feature = "ssr")]
@@ -283,11 +289,7 @@ fn parse_and_validate_address(
     address: &str,
     faucet_info: FaucetInfo,
 ) -> Result<Address, ServerFnError> {
-    if is_address_restricted(address, faucet_info) {
-        log::error!("Restricted address: {}", address);
-        set_response_status(StatusCode::BAD_REQUEST);
-        return Err(ServerFnError::ServerError("Use of ID addresses or their corresponding Ethereum style 0xff...ID addresses is restricted when claiming tokens from the CalibnetUSDFC faucet.".to_string()));
-    }
+    check_valid_address(address, faucet_info)?;
     match crate::utils::address::parse_address(address, faucet_info.network()) {
         Ok(addr) => Ok(addr),
         Err(e) => {
