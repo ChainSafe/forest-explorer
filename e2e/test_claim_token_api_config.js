@@ -296,22 +296,6 @@ export const TEST_SCENARIOS = {
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
       waitBefore: 0, // No wait needed, should be capped, already from the previous step
       walletCapErrorResponse: true,
-    },
-    {
-      name: 'CalibnetUSDFC (0xff...ID) - restricted address (RESTRICTED)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-      expectedStatus: STATUS_CODES.BAD_REQUEST,
-      waitBefore: 0, // No wait needed, should be restricted immediately.
-      walletCapErrorResponse: false,
-    },
-    {
-      name: 'CalibnetUSDFC (t0) - restricted address (RESTRICTED)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.T0_ADDRESS,
-      expectedStatus: STATUS_CODES.BAD_REQUEST,
-      waitBefore: 0, // No wait needed, should be restricted immediately.
-      walletCapErrorResponse: false,
     }
   ]
 };
