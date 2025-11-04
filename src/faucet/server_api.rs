@@ -284,7 +284,7 @@ fn check_valid_address(address: Address, faucet_info: FaucetInfo) -> Result<(), 
         if leptos::context::use_context::<ResponseOptions>().is_some() {
             set_response_status(StatusCode::BAD_REQUEST);
         }
-        return Err(ServerFnError::ServerError("Use of ID addresses or their corresponding Ethereum style 0xff...ID addresses is restricted when claiming tokens from the CalibnetUSDFC faucet.".to_string()));
+        return Err(ServerFnError::ServerError("Invalid address: ID and 0xff...ID address formats are restricted for Calibnet USDFC token claims.".to_string()));
     }
     Ok(())
 }
@@ -300,10 +300,10 @@ fn parse_and_validate_address(
             Ok(addr)
         }
         Err(e) => {
-            log::error!("Failed to parse address: {}", e);
+            log::error!("Invalid address - failed to parse: {}", e);
             set_response_status(StatusCode::BAD_REQUEST);
             Err(ServerFnError::ServerError(format!(
-                "Failed to parse address: {}",
+                "Invalid address - failed to parse: {}",
                 e
             )))
         }

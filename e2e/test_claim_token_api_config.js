@@ -136,7 +136,21 @@ export const TEST_SCENARIOS = {
       name: 'Invalid address format for CalibnetUSDFC',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
-      expectedStatus: STATUS_CODES.INTERNAL_SERVER_ERROR,
+      expectedStatus: STATUS_CODES.BAD_REQUEST,
+      expectedErrorContains: 'invalid address'
+    },
+    {
+      name: 'CalibnetUSDFC (0xff...ID) - restricted address (RESTRICTED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+      expectedStatus: STATUS_CODES.BAD_REQUEST,
+      expectedErrorContains: 'invalid address'
+    },
+    {
+      name: 'CalibnetUSDFC (t0) - restricted address (RESTRICTED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.T0_ADDRESS,
+      expectedStatus: STATUS_CODES.BAD_REQUEST,
       expectedErrorContains: 'invalid address'
     }
   ],
@@ -298,6 +312,6 @@ export const TEST_SCENARIOS = {
       expectedStatus: STATUS_CODES.BAD_REQUEST,
       waitBefore: 0, // No wait needed, should be restricted immediately.
       walletCapErrorResponse: false,
-    },
+    }
   ]
 };

@@ -87,7 +87,7 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token?faucet_info=Calibnet
 **Response:**
 
 ```bash
-ServerError|Invalid address: Not a valid Testnet address
+ServerError|Invalid address - failed to parse: Not a valid Testnet address
 ```
 
 #### 429 Too Many Requests
@@ -241,13 +241,13 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?address=invalida
   {
     "faucet_info": "CalibnetUSDFC",
     "error": {
-      "ServerError": "Invalid address: Not a valid Testnet address"
+      "ServerError": "Invalid address - failed to parse: Not a valid Testnet address"
     }
   },
   {
     "faucet_info": "CalibnetFIL",
     "error": {
-      "ServerError": "Invalid address: Not a valid Testnet address"
+      "ServerError": "Invalid address - failed to parse: Not a valid Testnet address"
     }
   }
 ]
