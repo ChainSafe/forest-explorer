@@ -435,11 +435,17 @@ mod tests {
             let network = $faucet.network();
             let addr = crate::utils::address::parse_address($address, network).unwrap();
             assert!(crate::faucet::server_api::check_valid_address(addr, $faucet).is_ok());
+            assert!(
+                crate::faucet::server_api::parse_and_validate_address($address, $faucet).is_ok()
+            );
         }};
         ($address:expr, $faucet:expr, false) => {{
             let network = $faucet.network();
             let addr = crate::utils::address::parse_address($address, network).unwrap();
             assert!(crate::faucet::server_api::check_valid_address(addr, $faucet).is_err());
+            assert!(
+                crate::faucet::server_api::parse_and_validate_address($address, $faucet).is_err()
+            );
         }};
     }
 
