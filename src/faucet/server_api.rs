@@ -281,9 +281,7 @@ fn check_valid_address(address: Address, faucet_info: FaucetInfo) -> Result<(), 
         && (address.protocol() == Protocol::ID || address.into_eth_address().is_err())
     {
         log::error!("Invalid address: {:?}", address);
-        if leptos::context::use_context::<ResponseOptions>().is_some() {
-            set_response_status(StatusCode::BAD_REQUEST);
-        }
+        set_response_status(StatusCode::BAD_REQUEST);
         return Err(ServerFnError::ServerError("Invalid address: Only Ethereum-compatible addresses (delegated t4 addresses or native Ethereum 0x addresses) are allowed for Calibnet USDFC token claims.".to_string()));
     }
     Ok(())
@@ -424,7 +422,7 @@ fn handle_faucet_error(err: FaucetError) -> ServerFnError {
 
 #[cfg(feature = "ssr")]
 fn set_response_status(status: StatusCode) {
-    leptos::prelude::expect_context::<ResponseOptions>().set_status(status);
+    leptos::context::use_context::<ResponseOptions>().map(|res| res.set_status(status));
 }
 
 #[cfg(all(test, feature = "ssr"))]
