@@ -427,7 +427,7 @@ fn set_response_status(status: StatusCode) {
     leptos::prelude::expect_context::<ResponseOptions>().set_status(status);
 }
 
-#[cfg(feature = "ssr")]
+#[cfg(all(test, feature = "ssr"))]
 mod tests {
     #[allow(unused_macros)]
     macro_rules! assert_address {
