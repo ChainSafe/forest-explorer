@@ -422,12 +422,13 @@ fn handle_faucet_error(err: FaucetError) -> ServerFnError {
 
 #[cfg(feature = "ssr")]
 fn set_response_status(status: StatusCode) {
-    leptos::context::use_context::<ResponseOptions>().map(|res| res.set_status(status));
+    if let Some(res) = leptos::context::use_context::<ResponseOptions>() {
+        res.set_status(status)
+    }
 }
 
 #[cfg(all(test, feature = "ssr"))]
 mod tests {
-    #[allow(unused_macros)]
     macro_rules! assert_address {
         ($address:expr, $faucet:expr) => {{
             let network = $faucet.network();
