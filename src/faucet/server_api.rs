@@ -457,7 +457,7 @@ mod tests {
             "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
         ];
         for addr in addresses.iter() {
-            assert_valid_address(*addr, FaucetInfo::MainnetFIL);
+            assert_valid_address(addr, FaucetInfo::MainnetFIL);
         }
     }
 
@@ -473,7 +473,7 @@ mod tests {
             "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
         ];
         for addr in addresses.iter() {
-            assert_valid_address(*addr, FaucetInfo::CalibnetFIL);
+            assert_valid_address(addr, FaucetInfo::CalibnetFIL);
         }
     }
 
@@ -492,11 +492,11 @@ mod tests {
         ];
 
         for addr in valid_addresses.iter() {
-            assert_valid_address(*addr, FaucetInfo::CalibnetUSDFC);
+            assert_valid_address(addr, FaucetInfo::CalibnetUSDFC);
         }
 
         for addr in invalid_addresses.iter() {
-            assert_invalid_address(*addr, FaucetInfo::CalibnetUSDFC);
+            assert_invalid_address(addr, FaucetInfo::CalibnetUSDFC);
         }
     }
 }
