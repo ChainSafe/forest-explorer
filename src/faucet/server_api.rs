@@ -429,23 +429,20 @@ fn set_response_status(status: StatusCode) {
 
 #[cfg(all(test, feature = "ssr"))]
 mod tests {
-    macro_rules! assert_address {
-        ($address:expr, $faucet:expr) => {{
-            let network = $faucet.network();
-            let addr = crate::utils::address::parse_address($address, network).unwrap();
-            assert!(crate::faucet::server_api::check_valid_address(addr, $faucet).is_ok());
-            assert!(
-                crate::faucet::server_api::parse_and_validate_address($address, $faucet).is_ok()
-            );
-        }};
-        ($address:expr, $faucet:expr, false) => {{
-            let network = $faucet.network();
-            let addr = crate::utils::address::parse_address($address, network).unwrap();
-            assert!(crate::faucet::server_api::check_valid_address(addr, $faucet).is_err());
-            assert!(
-                crate::faucet::server_api::parse_and_validate_address($address, $faucet).is_err()
-            );
-        }};
+    use crate::faucet::server_api::*;
+
+    fn assert_valid_address(address: &str, faucet: FaucetInfo) {
+        let network = faucet.network();
+        let addr = crate::utils::address::parse_address(address, network).unwrap();
+        assert!(check_valid_address(addr, faucet).is_ok());
+        assert!(parse_and_validate_address(address, faucet).is_ok());
+    }
+
+    fn assert_invalid_address(address: &str, faucet: FaucetInfo) {
+        let network = faucet.network();
+        let addr = crate::utils::address::parse_address(address, network).unwrap();
+        assert!(check_valid_address(addr, faucet).is_err());
+        assert!(parse_and_validate_address(address, faucet).is_err());
     }
 
     #[test]
@@ -460,7 +457,7 @@ mod tests {
             "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
         ];
         for addr in addresses.iter() {
-            assert_address!(*addr, crate::faucet::server_api::FaucetInfo::MainnetFIL);
+            assert_valid_address(*addr, FaucetInfo::MainnetFIL);
         }
     }
 
@@ -476,7 +473,7 @@ mod tests {
             "0xAe9C4b9508c929966ef37209b336E5796D632CDc",
         ];
         for addr in addresses.iter() {
-            assert_address!(*addr, crate::faucet::server_api::FaucetInfo::CalibnetFIL);
+            assert_valid_address(*addr, FaucetInfo::CalibnetFIL);
         }
     }
 
@@ -495,15 +492,11 @@ mod tests {
         ];
 
         for addr in valid_addresses.iter() {
-            assert_address!(*addr, crate::faucet::server_api::FaucetInfo::CalibnetUSDFC);
+            assert_valid_address(*addr, FaucetInfo::CalibnetUSDFC);
         }
 
         for addr in invalid_addresses.iter() {
-            assert_address!(
-                *addr,
-                crate::faucet::server_api::FaucetInfo::CalibnetUSDFC,
-                false
-            );
+            assert_invalid_address(*addr, FaucetInfo::CalibnetUSDFC);
         }
     }
 }
