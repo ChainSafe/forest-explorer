@@ -136,7 +136,21 @@ export const TEST_SCENARIOS = {
       name: 'Invalid address format for CalibnetUSDFC',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
-      expectedStatus: STATUS_CODES.INTERNAL_SERVER_ERROR,
+      expectedStatus: STATUS_CODES.BAD_REQUEST,
+      expectedErrorContains: 'invalid address'
+    },
+    {
+      name: 'CalibnetUSDFC (0xff...ID) - restricted address (RESTRICTED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
+      expectedStatus: STATUS_CODES.BAD_REQUEST,
+      expectedErrorContains: 'invalid address'
+    },
+    {
+      name: 'CalibnetUSDFC (t0) - restricted address (RESTRICTED)',
+      faucet_info: FaucetTypes.CalibnetUSDFC,
+      address: TEST_ADDRESSES.T0_ADDRESS,
+      expectedStatus: STATUS_CODES.BAD_REQUEST,
       expectedErrorContains: 'invalid address'
     }
   ],
@@ -185,19 +199,6 @@ export const TEST_SCENARIOS = {
       name: 'CalibnetUSDFC (t410) - RATE LIMITED (within CalibnetUSDFC cooldown)',
       faucet_info: FaucetTypes.CalibnetUSDFC,
       address: TEST_ADDRESSES.T410_ADDRESS,
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
-    },
-    {
-      name: 'CalibnetUSDFC (t0) - RATE LIMITED (within CalibnetUSDFC cooldown)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.T0_ADDRESS,
-      expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
-    },
-    // CalibnetUSDFC doesn't support the t1 format address
-    {
-      name: 'CalibnetUSDFC (ID) - RATE LIMITED (within CalibnetUSDFC cooldown)',
-      faucet_info: FaucetTypes.CalibnetUSDFC,
-      address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS
     }
   ],
@@ -295,44 +296,6 @@ export const TEST_SCENARIOS = {
       expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
       waitBefore: 0, // No wait needed, should be capped, already from the previous step
       walletCapErrorResponse: true,
-    },
-
-    // TODO(forest-explorer): https://github.com/ChainSafe/forest-explorer/issues/335
-    //                       Token sent to the t0 and it's eth mapping address 0x
-    //                       are not accessible. Hence commenting out the following
-    //                       test cases.
-    // === CalibnetUSDFC ID Wallet (fresh wallet, 0 transactions) ===
-    // {
-    //   name: 'CalibnetUSDFC (ID) - 1st SUCCESS (fresh wallet)',
-    //   faucet_info: FaucetTypes.CalibnetUSDFC,
-    //   address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-    //   expectedStatus: STATUS_CODES.SUCCESS,
-    //   waitBefore: 65, // Wait for cooldown from the previous test group to expire
-    //   walletCapErrorResponse: false,
-    // },
-    // {
-    //   name: 'CalibnetUSDFC (ID) - 2nd SUCCESS (reaches cap)',
-    //   faucet_info: FaucetTypes.CalibnetUSDFC,
-    //   address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-    //   expectedStatus: STATUS_CODES.SUCCESS,
-    //   waitBefore: 65, // Wait for cooldown from its own 1st transaction
-    //   walletCapErrorResponse: false,
-    // },
-    // {
-    //   name: 'CalibnetUSDFC (ID) - 3rd attempt (WALLET CAPPED)',
-    //   faucet_info: FaucetTypes.CalibnetUSDFC,
-    //   address: TEST_ADDRESSES.ETH_ID_CORRESPONDING,
-    //   expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
-    //   waitBefore: 65, // Wait for cooldown from its own 2nd transaction
-    //   walletCapErrorResponse: true,
-    // },
-    // {
-    //   name: 'CalibnetUSDFC (t0) - check equivalence (WALLET CAPPED)',
-    //   faucet_info: FaucetTypes.CalibnetUSDFC,
-    //   address: TEST_ADDRESSES.T0_ADDRESS, // This is the same wallet as the ID address
-    //   expectedStatus: STATUS_CODES.TOO_MANY_REQUESTS,
-    //   waitBefore: 0, // No wait needed, should be capped already
-    //   walletCapErrorResponse: true,
-    // },
+    }
   ]
 };
