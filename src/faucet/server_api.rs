@@ -274,11 +274,10 @@ pub async fn claim_token_all(address: String) -> Result<Vec<ClaimResponse>, Serv
 /// Checks if the provided address is valid for the faucet, ensuring invalid addresses are rejected.
 #[cfg(feature = "ssr")]
 fn check_valid_address(address: Address, faucet_info: FaucetInfo) -> Result<(), ServerFnError> {
-    use crate::utils::address::AddressAlloyExt;
     use fvm_shared::address::Protocol;
 
     if matches!(faucet_info, FaucetInfo::CalibnetUSDFC)
-        && (address.protocol() == Protocol::ID || address.into_eth_address().is_err())
+        && (address.protocol() != Protocol::Delegated)
     {
         log::error!("Invalid address: {:?}", address);
         set_response_status(StatusCode::BAD_REQUEST);
