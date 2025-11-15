@@ -49,7 +49,7 @@ const DRIP_CAP_RESET_SECONDS: i64 = 86400; // 24 hours
 /// Maximum gas limit for mainnet including buffer.
 const MAX_MAINNET_GAS_LIMIT: u64 = 10_000_000;
 /// Maximum gas limit for calibnet including buffer.
-const MAX_CALIBNET_GAS_LIMIT: u64 = 30_000_000;
+const MAX_CALIBNET_GAS_LIMIT: u64 = 100_000_000;
 
 /// Maximum gas fee cap for mainnet including buffer.
 static MAX_MAINNET_GAS_FEE_CAP: LazyLock<TokenAmount> =
@@ -271,7 +271,7 @@ mod tests {
         assert!(calibnet_fil_faucet.transaction_base_url().is_some());
         assert_eq!(calibnet_fil_faucet.token_type(), TokenType::Native);
         assert_eq!(calibnet_fil_faucet.chain_id(), 314159);
-        assert_eq!(calibnet_fil_faucet.max_gas_limit(), 30_000_000);
+        assert_eq!(calibnet_fil_faucet.max_gas_limit(), MAX_CALIBNET_GAS_LIMIT);
         assert_eq!(
             calibnet_fil_faucet.max_gas_fee_cap(),
             TokenAmount::from_atto(200_000)
@@ -310,7 +310,10 @@ mod tests {
             )
         );
         assert_eq!(calibnet_usdfc_faucet.chain_id(), 314159);
-        assert_eq!(calibnet_usdfc_faucet.max_gas_limit(), 30_000_000);
+        assert_eq!(
+            calibnet_usdfc_faucet.max_gas_limit(),
+            MAX_CALIBNET_GAS_LIMIT
+        );
         assert_eq!(
             calibnet_usdfc_faucet.max_gas_premium(),
             TokenAmount::from_atto(200_000)
