@@ -77,6 +77,14 @@ ssr = [
   "dep:worker-macros",
 ]
 
+# https://doc.rust-lang.org/stable/cargo/guide/build-performance.html#reduce-amount-of-generated-debug-information
+[profile.dev]
+debug = "line-tables-only"
+
+# Avoid generating any debug information for dependencies
+[profile.dev.package."*"]
+debug = false
+
 [profile.release]
 lto = true
 opt-level = 's'
