@@ -37,7 +37,7 @@ libsecp256k1 = "0.7"
 log = "0.4"
 multihash-codetable = "0.1.4"
 num-traits = "0.2"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.13", features = ["json"] }
 send_wrapper = "0.6"
 serde = "1"
 serde_json = "1"
