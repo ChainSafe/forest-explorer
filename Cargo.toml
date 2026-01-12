@@ -29,7 +29,7 @@ fvm_shared = { version = "~4.7" }
 hex = "0.4"
 http = { version = "1", optional = true }
 leptos = "0.8"
-leptos-use = "0.17"
+leptos-use = "0.18"
 leptos_axum = { version = "0.8", default-features = false, optional = true }
 leptos_meta = "0.8"
 leptos_router = "0.8"
