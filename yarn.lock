@@ -613,11 +613,11 @@ __metadata:
   linkType: hard
 
 "@poppinss/colors@npm:^4.1.5":
-  version: 4.1.5
-  resolution: "@poppinss/colors@npm:4.1.5"
+  version: 4.1.6
+  resolution: "@poppinss/colors@npm:4.1.6"
   dependencies:
     kleur: "npm:^4.1.5"
-  checksum: 10c0/e9d5c9e9a8c1eb7cd37e9b431bda7b7573476be7395123b26815d758f38ca93db0ba62bb2831281f4f04a6e1620b4d4f9377268d32c61c2c9f6599a02c2112b7
+  checksum: 10c0/5c2cec5393e33294465873002f4c570adf36b5405b9f06551485162a6fb422d01de90ac20cb00800be6ab2f0d93da26e67302e95691dff2e0aa339cf93e5bf7f
   languageName: node
   linkType: hard
 
@@ -633,23 +633,23 @@ __metadata:
   linkType: hard
 
 "@poppinss/exception@npm:^1.2.2":
-  version: 1.2.2
-  resolution: "@poppinss/exception@npm:1.2.2"
-  checksum: 10c0/b14d1e3d532230f58238231fce6ba3bf51dab50d4ec015f3192f04320be1d692eadd831a8d437e2fc345787c96350104149fd9920264362bca143d04ec03bc4e
+  version: 1.2.3
+  resolution: "@poppinss/exception@npm:1.2.3"
+  checksum: 10c0/44e48400c9f2d33a4904bee99321b89239774bb9210049f1c55864725fd524ff55bc78a5a94a13d5edea93b84e13023c229c88ebba8c2dc717fb4b2205e42ac7
   languageName: node
   linkType: hard
 
 "@sindresorhus/is@npm:^7.0.2":
-  version: 7.1.1
-  resolution: "@sindresorhus/is@npm:7.1.1"
-  checksum: 10c0/96f021b8c5680e0687ceba5619c2e56fe6b089b190b3149280a1e418e6315c66839e3f1519cf1c89f7a888b5a0017a0ef1db17436d783ee398b7d5a515caa3ef
+  version: 7.2.0
+  resolution: "@sindresorhus/is@npm:7.2.0"
+  checksum: 10c0/0040c17d7826414363f99f5d56077c200789d51e6dfe5542920bfb29ab3828ec0ebf2845e8bae796bee461debb646b5e4c0a623140131cf3143471e915b50b54
   languageName: node
   linkType: hard
 
 "@speed-highlight/core@npm:^1.2.7":
-  version: 1.2.12
-  resolution: "@speed-highlight/core@npm:1.2.12"
-  checksum: 10c0/37613c7a031af3b239282cc09211cefc1c9e164df07110520d2116ae7b4741512c1905bf1e011706ee2e652cef24df834f2068c4c4fff71e0257ec22fa655ff2
+  version: 1.2.14
+  resolution: "@speed-highlight/core@npm:1.2.14"
+  checksum: 10c0/8391bbfa04e9ea1677119b463f9a1413024a83319d271f5eacbc64dcd6d05394f092b876a5e47612eb98b4b55c1abe6c1b16270462ad4ac0f21311a1736e540f
   languageName: node
   linkType: hard
 
@@ -962,11 +962,11 @@ __metadata:
   linkType: hard
 
 "fastq@npm:^1.6.0":
-  version: 1.19.1
-  resolution: "fastq@npm:1.19.1"
+  version: 1.20.1
+  resolution: "fastq@npm:1.20.1"
   dependencies:
     reusify: "npm:^1.0.4"
-  checksum: 10c0/ebc6e50ac7048daaeb8e64522a1ea7a26e92b3cee5cd1c7f2316cdca81ba543aa40a136b53891446ea5c3a67ec215fbaca87ad405f102dd97012f62916905630
+  checksum: 10c0/e5dd725884decb1f11e5c822221d76136f239d0236f176fab80b7b8f9e7619ae57e6b4e5b73defc21e6b9ef99437ee7b545cff8e6c2c337819633712fa9d352e
   languageName: node
   linkType: hard
 
@@ -1876,8 +1876,8 @@ __metadata:
   linkType: hard
 
 "tailwindcss@npm:^3.4.17":
-  version: 3.4.18
-  resolution: "tailwindcss@npm:3.4.18"
+  version: 3.4.19
+  resolution: "tailwindcss@npm:3.4.19"
   dependencies:
     "@alloc/quick-lru": "npm:^5.2.0"
     arg: "npm:^5.0.2"
@@ -1904,7 +1904,7 @@ __metadata:
   bin:
     tailwind: lib/cli.js
     tailwindcss: lib/cli.js
-  checksum: 10c0/230c0815d0b981f4952d1902e025d7571929e5fc133b4bb4fcbbc3b642e7ab0cecb9687f80f311afd0db07df8f383ce4317b3ca75ae93156c2ddc777e59fc31b
+  checksum: 10c0/e1063daccb9e5a508b357ec73b0011354204b2366b56496d6f0cc822733a55a0551502cb85856a2257ef9b676d0026616daaaa176d391f3216df57fbd693c581
   languageName: node
   linkType: hard
 
