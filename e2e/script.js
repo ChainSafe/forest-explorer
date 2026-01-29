@@ -186,7 +186,9 @@ async function runClaimTests(page, { path, button, addresses, expectSuccess }) {
     const shouldSucceed = Array.isArray(expectSuccess)
       ? expectSuccess[i]
       : expectSuccess;
-    const input = await page.$("input.input");
+    const input = await page.waitForSelector("input.input", {
+      timeout: 10000,
+    });
     check(!!input, { [`Input exists on ${path}`]: () => !!input });
     if (!input) continue;
     await input.click({ clickCount: 3 });
