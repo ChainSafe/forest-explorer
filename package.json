@@ -7,7 +7,7 @@
   "devDependencies": {
     "prettier": "^3.8.1",
     "tailwindcss": "^3.4.17",
-    "wrangler": "^4.61.1"
+    "wrangler": "^4.63.0"
   },
   "scripts": {
     "prettier-version": "prettier --version",
