@@ -54,7 +54,7 @@ async fn faucet_fil_address(faucet_info: FaucetInfo) -> Result<LotusJson<Address
 pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<AnyAddress, ServerFnError> {
     use fvm_shared::address;
     match faucet_info.token_type() {
-        TokenType::Native | TokenType::DataCap => {
+        TokenType::Native | TokenType::Datacap => {
             match faucet_info.network() {
                 address::Network::Mainnet => {
                     address::set_current_network(address::Network::Mainnet);
@@ -203,12 +203,12 @@ pub async fn signed_erc20_transfer(
     Ok(signed)
 }
 
-/// Signs a DataCap allocation message to the verifreg address with the given parameters.
+/// Signs a Datacap allocation message to the verifreg address with the given parameters.
 /// The required params are needed so that the server doesn't have to call the provider.
 /// Note: it's important that the message is constructed server-side to avoid exposing the
 /// `message` to the client, which could lead to security issues if the client were to
 /// manipulate the message data.
-/// This function is used for granting DataCap to a verified client address.
+/// This function is used for granting Datacap to a verified client address.
 #[server]
 pub async fn signed_datacap_transfer(
     to: LotusJson<Address>,
@@ -253,9 +253,7 @@ pub async fn signed_datacap_transfer(
     let unsigned_msg = message_grant_datacap_native(
         from,
         RawBytes::new(
-            fvm_ipld_encoding::to_vec(&params)
-                .map_err(|e| FaucetError::Server(e.to_string()))?
-                .into(),
+            fvm_ipld_encoding::to_vec(&params).map_err(|e| FaucetError::Server(e.to_string()))?,
         ),
         gas_limit,
         gas_fee_cap,
@@ -300,7 +298,7 @@ pub async fn claim_token(
     SendWrapper::new(async move {
         ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
         match faucet_info {
-            FaucetInfo::MainnetFIL | FaucetInfo::CalibnetDataCap => {
+            FaucetInfo::MainnetFIL | FaucetInfo::CalibnetDatacap => {
                 set_response_status(StatusCode::IM_A_TEAPOT);
                 Err(ServerFnError::ServerError(
                     "I'm a teapot - mainnet tokens are not available.".to_string(),

@@ -1,5 +1,5 @@
 use crate::faucet::views::faucets::{
-    Faucets, calibnet::Faucet_Calibnet, calibnet_datacap::Faucet_Calibnet_DataCap,
+    Faucets, calibnet::Faucet_Calibnet, calibnet_datacap::Faucet_Calibnet_Datacap,
     calibnet_usdfc::Faucet_Calibnet_USDFC, mainnet::Faucet_Mainnet,
 };
 use crate::faucet::views::{components::layout::Footer, home::Explorer};
@@ -26,7 +26,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/faucet/calibnet") view=Faucet_Calibnet />
                     <Route path=path!("/faucet/mainnet") view=Faucet_Mainnet />
                     <Route path=path!("/faucet/calibnet_usdfc") view=Faucet_Calibnet_USDFC />
-                    <Route path=path!("/faucet/calibnet_datacap") view=Faucet_Calibnet_DataCap />
+                    <Route path=path!("/faucet/calibnet_datacap") view=Faucet_Calibnet_Datacap />
                 </Routes>
                 <Footer />
             </div>

@@ -14,8 +14,8 @@ pub enum TokenType {
     Native,
     /// ERC-20 token, e.g., `USDFC`
     Erc20(ContractAddress),
-    /// DataCap token, e.g., `MiB`
-    DataCap,
+    /// Datacap token, e.g., `MiB`
+    Datacap,
 }
 
 pub type ContractAddress = alloy::primitives::Address;
@@ -25,7 +25,7 @@ impl DripAmount {
     pub fn default(token_type: TokenType) -> DripAmount {
         match token_type {
             TokenType::Native | TokenType::Erc20(_) => DripAmount::Token(TokenAmount::default()),
-            TokenType::DataCap => DripAmount::Storage(StoragePower::default()),
+            TokenType::Datacap => DripAmount::Storage(StoragePower::default()),
         }
     }
 }

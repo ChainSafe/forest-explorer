@@ -164,7 +164,7 @@ impl Provider {
                     .await?;
                 Ok(DripAmount::Token(balance))
             }
-            TokenType::DataCap => {
+            TokenType::Datacap => {
                 let balance = match self.wallet_balance_verifier_datacap(wallet_address).await {
                     Ok(val) => val,
                     Err(_) => {

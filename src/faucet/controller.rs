@@ -224,7 +224,7 @@ impl FaucetController {
         match self.info.token_type() {
             TokenType::Native => self.drip_native_token(),
             TokenType::Erc20(_) => self.drip_erc20_token(),
-            TokenType::DataCap => self.drip_datacap(),
+            TokenType::Datacap => self.drip_datacap(),
         }
     }
 
@@ -365,7 +365,7 @@ impl FaucetController {
                         };
                         let raw_msg = message_grant_datacap(
                             from,
-                            RawBytes::new(fvm_ipld_encoding::to_vec(&params)?.into()),
+                            RawBytes::new(fvm_ipld_encoding::to_vec(&params)?),
                         );
                         let msg = rpc.estimate_gas(raw_msg).await?;
                         match signed_datacap_transfer(

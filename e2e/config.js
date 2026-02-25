@@ -14,7 +14,7 @@ export const PAGES = [
     links: [
       "💰 Calibration Network USDFC Faucet",
       "🧪 Calibration Network Faucet",
-      "⚡️ Calibration Network DataCap Faucet",
+      "⚡️ Calibration Network Datacap Faucet",
       "🌐 Mainnet Network Faucet",
     ],
   },

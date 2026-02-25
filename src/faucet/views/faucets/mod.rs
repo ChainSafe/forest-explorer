@@ -170,7 +170,7 @@ pub fn Faucets() -> impl IntoView {
                     "🧪 Calibration Network Faucet"
                 </a>
                 <a class="link-text" href="/faucet/calibnet_datacap">
-                    "⚡️ Calibration Network DataCap Faucet"
+                    "⚡️ Calibration Network Datacap Faucet"
                 </a>
                 <a class="link-text" href="/faucet/mainnet">
                     "🌐 Mainnet Network Faucet"

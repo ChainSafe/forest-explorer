@@ -7,7 +7,7 @@ use fvm_shared::{METHOD_SEND, address::Address, econ::TokenAmount};
 
 const VERIFIED_REGISTRY_ACTOR: Address = Address::new_id(6);
 
-/// Params for the verified registry's AddVerifiedClient method.
+/// Params for the `AddVerifiedClient` method.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize_tuple, Deserialize_tuple)]
 pub struct AddVerifiedClientParams {
     pub address: Address,
@@ -52,7 +52,7 @@ pub fn message_transfer_native(
     }
 }
 
-/// Creates a new datacap allocation message with default values for gas and sequence.
+/// Creates a new Datacap allocation message with default values for gas and sequence.
 pub fn message_grant_datacap(from: Address, params: RawBytes) -> Message {
     message_grant_datacap_native(
         from,
@@ -64,7 +64,7 @@ pub fn message_grant_datacap(from: Address, params: RawBytes) -> Message {
     )
 }
 
-/// Creates a new datacap allocation message with specified values for gas and sequence.
+/// Creates a new Datacap allocation message with specified values for gas and sequence.
 pub fn message_grant_datacap_native(
     from: Address,
     params: RawBytes,
