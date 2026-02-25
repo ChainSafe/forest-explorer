@@ -16,7 +16,7 @@ pub fn FaucetDescription(faucet_info: FaucetInfo) -> impl IntoView {
     view! {
         <div class="description">
             <p>
-                "This faucet distributes " {format_balance(drip_amount, token_unit)}
+                "This faucet distributes " {format_balance(&drip_amount, token_unit)}
                 " per request and is rate-limited to 1 request per " {rate_limit_seconds}
                 " seconds. Each wallet address is subject to receive " {format_balance(&wallet_cap, token_unit)}
                 " every " {reset_limiter_hours} " hours, and exceeding this limit may result in temporary restrictions."

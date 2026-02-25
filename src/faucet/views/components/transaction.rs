@@ -33,7 +33,7 @@ pub fn TransactionList(
                                     }
                                         .into_any()
                                 })
-                                .unwrap_or_else(|| view! { {msg.to_string()} }.into_any());
+                                .unwrap_or(view! { {msg.to_string()} }.into_any());
                             (tx, "(confirmed)")
                         } else {
                             let tx = view! { {msg.to_string()} }.into_any();

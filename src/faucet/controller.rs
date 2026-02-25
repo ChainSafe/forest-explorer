@@ -1,13 +1,20 @@
-use super::constants::{FaucetInfo, TokenType};
-use super::server_api::{faucet_address, signed_erc20_transfer, signed_fil_transfer};
+use super::constants::{DripAmount, FaucetInfo, TokenType};
+use super::server_api::{
+    faucet_address, signed_datacap_transfer, signed_erc20_transfer, signed_fil_transfer,
+};
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
 use crate::utils::error::FaucetError;
 use crate::utils::lotus_json::LotusJson;
+use crate::utils::message::AddVerifiedClientParams;
 use crate::utils::rpc_context::Provider;
 use crate::utils::transaction_id::TransactionId;
-use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
-use fvm_shared::econ::TokenAmount;
+use crate::utils::{
+    address::parse_address,
+    error::catch_all,
+    message::{message_grant_datacap, message_transfer},
+};
+use fvm_ipld_encoding::RawBytes;
 use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -38,9 +45,9 @@ impl FaucetController {
                         .wallet_balance(address, &token_type)
                         .await
                         .ok()
-                        .unwrap_or(TokenAmount::from_atto(0))
+                        .unwrap_or(DripAmount::default(token_type))
                 } else {
-                    TokenAmount::from_atto(0)
+                    DripAmount::default(token_type)
                 }
             }
         });
@@ -61,9 +68,9 @@ impl FaucetController {
                         .wallet_balance(addr, &token_type)
                         .await
                         .ok()
-                        .unwrap_or(TokenAmount::from_atto(0))
+                        .unwrap_or(DripAmount::default(token_type))
                 } else {
-                    TokenAmount::from_atto(0)
+                    DripAmount::default(token_type)
                 }
             }
         });
@@ -136,8 +143,11 @@ impl FaucetController {
             Ok(())
         }));
     }
-    pub fn get_target_balance(&self) -> TokenAmount {
-        self.faucet.target_balance.get().unwrap_or_default()
+    pub fn get_target_balance(&self) -> DripAmount {
+        self.faucet
+            .target_balance
+            .get()
+            .unwrap_or(DripAmount::default(self.info.token_type()))
     }
 
     pub fn get_sender_address(&self) -> String {
@@ -156,8 +166,11 @@ impl FaucetController {
         self.faucet.target_address.set(address);
     }
 
-    pub fn get_faucet_balance(&self) -> TokenAmount {
-        self.faucet.faucet_balance.get().unwrap_or_default()
+    pub fn get_faucet_balance(&self) -> DripAmount {
+        self.faucet
+            .faucet_balance
+            .get()
+            .unwrap_or(DripAmount::default(self.info.token_type()))
     }
 
     pub fn get_error_messages(&self) -> Vec<(Uuid, String)> {
@@ -193,20 +206,25 @@ impl FaucetController {
         self.faucet.send_limited.set(remaining);
     }
 
-    fn get_drip_amount(&self) -> TokenAmount {
+    fn get_drip_amount(&self) -> DripAmount {
         self.info.drip_amount().clone()
     }
 
     pub fn is_low_balance(&self) -> bool {
-        let target_balance = self.get_faucet_balance();
-        let drip_amount = self.get_drip_amount();
-        target_balance < drip_amount
+        let balance = self.get_faucet_balance();
+        let drip = self.get_drip_amount();
+        match (&balance, &drip) {
+            (DripAmount::Token(a), DripAmount::Token(b)) => a.atto() < b.atto(),
+            (DripAmount::Storage(a), DripAmount::Storage(b)) => a < b,
+            _ => false,
+        }
     }
 
     pub fn drip(&self) {
         match self.info.token_type() {
             TokenType::Native => self.drip_native_token(),
             TokenType::Erc20(_) => self.drip_erc20_token(),
+            TokenType::DataCap => self.drip_datacap(),
         }
     }
 
@@ -227,8 +245,10 @@ impl FaucetController {
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let raw_msg =
-                            message_transfer(from, id_address, info.drip_amount().clone());
+                        let DripAmount::Token(drip_amount) = info.drip_amount() else {
+                            unreachable!("Expected DripAmount::Token variant");
+                        };
+                        let raw_msg = message_transfer(from, id_address, drip_amount);
                         let msg = rpc.estimate_gas(raw_msg).await?;
                         match signed_fil_transfer(
                             LotusJson(id_address),
@@ -315,6 +335,75 @@ impl FaucetController {
                     &self.faucet.target_address.get()
                 ));
                 log::error!("Error parsing address: {e}");
+            }
+        }
+    }
+
+    fn drip_datacap(&self) {
+        let faucet = self.faucet.clone();
+        let network = self.info.network();
+        let info = self.info;
+        match parse_address(&self.faucet.target_address.get(), network) {
+            Ok(recipient) => {
+                spawn_local(async move {
+                    catch_all(faucet.error_messages, async move {
+                        faucet.send_disabled.set(true);
+
+                        let rpc = Provider::from_network(network);
+                        let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
+                        let from = faucet_address(info)
+                            .await
+                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
+                            .to_filecoin_address(network)?;
+                        let nonce = rpc.mpool_get_nonce(from).await?;
+                        let DripAmount::Storage(allowance) = info.drip_amount() else {
+                            unreachable!("Expected DripAmount::Storage variant");
+                        };
+                        let params = AddVerifiedClientParams {
+                            address: id_address,
+                            allowance,
+                        };
+                        let raw_msg = message_grant_datacap(
+                            from,
+                            RawBytes::new(fvm_ipld_encoding::to_vec(&params)?.into()),
+                        );
+                        let msg = rpc.estimate_gas(raw_msg).await?;
+                        match signed_datacap_transfer(
+                            LotusJson(id_address),
+                            msg.gas_limit,
+                            LotusJson(msg.gas_fee_cap),
+                            LotusJson(msg.gas_premium),
+                            nonce,
+                            info,
+                        )
+                        .await
+                        {
+                            Ok(LotusJson(smsg)) => {
+                                let cid = rpc.mpool_push(smsg).await?;
+                                faucet.sent_messages.update(|messages| {
+                                    messages.push((TransactionId::Native(cid), false));
+                                });
+                                log::info!("Sent message: {:?}", cid);
+                            }
+                            Err(e) => {
+                                if let FaucetError::RateLimited { retry_after_secs } = e {
+                                    faucet.send_limited.set(retry_after_secs);
+                                }
+                            }
+                        }
+                        Ok(())
+                    })
+                    .await;
+                    faucet.send_disabled.set(false);
+                });
+            }
+            Err(err) => {
+                self.add_error_message(format!("Invalid address: {}", err));
+                log::error!(
+                    "Error parsing address {}: {}",
+                    &self.faucet.target_address.get(),
+                    err
+                );
             }
         }
     }

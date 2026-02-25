@@ -12,9 +12,7 @@ use leptos_meta::{Meta, Title};
 pub fn Faucet_Calibnet_USDFC() -> impl IntoView {
     let faucet_info = FaucetInfo::CalibnetUSDFC;
     let rpc_context = RpcContext::use_context();
-    rpc_context.set(Provider::get_network_url(
-        FaucetInfo::CalibnetUSDFC.network(),
-    ));
+    rpc_context.set(Provider::get_network_url(faucet_info.network()));
 
     view! {
         <Title text="💰 Filecoin USDFC Faucet - Calibration Network" />
