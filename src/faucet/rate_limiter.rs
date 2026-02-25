@@ -1,10 +1,8 @@
 #![cfg(feature = "ssr")]
 use std::str::FromStr as _;
 
-use crate::faucet::constants::FaucetInfo;
-use crate::utils::lotus_json::LotusJson;
+use crate::faucet::constants::{DripAmount, FaucetInfo};
 use chrono::{DateTime, Duration, Utc};
-use fvm_shared::econ::TokenAmount;
 use worker::*;
 
 #[cfg(test)]
@@ -92,23 +90,21 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         faucet_info: &FaucetInfo,
         id: &str,
         now: DateTime<Utc>,
-    ) -> Result<(bool, Option<i64>, TokenAmount, TokenAmount)> {
+    ) -> Result<(bool, Option<i64>, DripAmount, DripAmount)> {
         let dripped = self
             .storage
-            .get::<LotusJson<TokenAmount>>("dripped")
+            .get::<DripAmount>("dripped")
             .await
             .ok()
             .flatten()
-            .map(|v| v.into_inner())
-            .unwrap_or_default();
+            .unwrap_or(DripAmount::default(faucet_info.token_type()));
         let claimed = self
             .storage
-            .get::<LotusJson<TokenAmount>>(&format!("claimed_{id}"))
+            .get::<DripAmount>(&format!("claimed_{id}"))
             .await
             .ok()
             .flatten()
-            .map(|v| v.into_inner())
-            .unwrap_or_default();
+            .unwrap_or(DripAmount::default(faucet_info.token_type()));
         if dripped >= faucet_info.drip_cap() {
             let retry_after = self
                 .storage
@@ -160,17 +156,16 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         faucet_info: &FaucetInfo,
         id: &str,
         now: DateTime<Utc>,
-        claimed: TokenAmount,
-        dripped: TokenAmount,
+        claimed: DripAmount,
+        dripped: DripAmount,
     ) -> Result<()> {
-        let update_dripped = dripped + faucet_info.drip_amount();
-        let updated_claimed = claimed + faucet_info.drip_amount();
+        let drip_amount = faucet_info.drip_amount();
+        let update_dripped = dripped + &drip_amount;
+        let updated_claimed = claimed + &drip_amount;
         let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
+        self.storage.put("dripped", update_dripped.clone()).await?;
         self.storage
-            .put("dripped", LotusJson(update_dripped.clone()))
-            .await?;
-        self.storage
-            .put(&format!("claimed_{id}"), LotusJson(updated_claimed.clone()))
+            .put(&format!("claimed_{id}"), updated_claimed.clone())
             .await?;
         self.storage
             .put("block_until", next_block.timestamp())
@@ -227,7 +222,7 @@ impl RateLimiter {
         faucet_info: &FaucetInfo,
         id: &str,
         now: DateTime<Utc>,
-    ) -> Result<(bool, Option<i64>, TokenAmount, TokenAmount)> {
+    ) -> Result<(bool, Option<i64>, DripAmount, DripAmount)> {
         self.create_core()
             .get_rate_limit(faucet_info, id, now)
             .await
@@ -237,8 +232,8 @@ impl RateLimiter {
         faucet_info: &FaucetInfo,
         id: &str,
         now: DateTime<Utc>,
-        claimed: TokenAmount,
-        dripped: TokenAmount,
+        claimed: DripAmount,
+        dripped: DripAmount,
     ) -> Result<()> {
         self.create_core()
             .update_rate_limit(faucet_info, id, now, claimed, dripped)
@@ -275,14 +270,16 @@ impl DurableObject for RateLimiter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use num_traits::cast::ToPrimitive;
-    use std::ops::AddAssign;
+    use crate::faucet::constants::DripAmount;
+    use fvm_shared::econ::TokenAmount;
+
+    const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;
 
     /// Configuration for mock storage used in rate limiter tests.
     /// This struct allows tests to specify the initial state and expected behavior of the mock storage backend implementing [`RateLimiterStorage`].
     struct MockStorageConfig<'a> {
-        dripped: Option<TokenAmount>,
-        claimed: Option<TokenAmount>,
+        dripped: Option<DripAmount>,
+        claimed: Option<DripAmount>,
         block_until: Option<i64>,
         alarm: Option<i64>,
         wallet_id: &'a str,
@@ -293,16 +290,16 @@ mod tests {
     fn new_mock_storage(config: MockStorageConfig) -> MockRateLimiterStorage {
         let mut mock_storage = MockRateLimiterStorage::new();
         mock_storage
-            .expect_get::<LotusJson<TokenAmount>>()
+            .expect_get::<DripAmount>()
             .with(mockall::predicate::eq("dripped"))
-            .returning(move |_| Ok(config.dripped.clone().map(LotusJson)));
+            .returning(move |_| Ok(config.dripped.clone()));
         mock_storage
-            .expect_get::<LotusJson<TokenAmount>>()
+            .expect_get::<DripAmount>()
             .with(mockall::predicate::eq(format!(
                 "claimed_{}",
                 config.wallet_id
             )))
-            .returning(move |_| Ok(config.claimed.clone().map(LotusJson)));
+            .returning(move |_| Ok(config.claimed.clone()));
         mock_storage
             .expect_get::<i64>()
             .with(mockall::predicate::eq("block_until"))
@@ -312,14 +309,14 @@ mod tests {
             .returning(move || Ok(config.alarm));
         if config.expect_puts {
             mock_storage
-                .expect_put::<LotusJson<TokenAmount>>()
+                .expect_put::<DripAmount>()
                 .with(
                     mockall::predicate::eq("dripped"),
                     mockall::predicate::always(),
                 )
                 .returning(|_, _| Ok(()));
             mock_storage
-                .expect_put::<LotusJson<TokenAmount>>()
+                .expect_put::<DripAmount>()
                 .with(
                     mockall::predicate::eq(format!("claimed_{}", config.wallet_id)),
                     mockall::predicate::always(),
@@ -385,11 +382,12 @@ mod tests {
         let now = Utc::now();
         let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
         let faucet_info = FaucetInfo::CalibnetFIL;
-        let exceeded_amount = faucet_info.wallet_cap() + TokenAmount::from_whole(1);
+        let exceeded_amount =
+            faucet_info.wallet_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
         let alarm_time = now.timestamp_millis() + 3600 * 1000; // 1 hour from now
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
-            claimed: Some(exceeded_amount.clone()),
+            claimed: Some(exceeded_amount),
             block_until: None,
             alarm: Some(alarm_time),
             wallet_id: "test_wallet",
@@ -409,10 +407,11 @@ mod tests {
         let now = Utc::now();
         let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
         let faucet_info = FaucetInfo::CalibnetFIL;
-        let exceeded_amount = faucet_info.drip_cap() + TokenAmount::from_whole(1);
+        let exceeded_amount =
+            faucet_info.drip_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
         let alarm_time = now.timestamp_millis() + 7200 * 1000; // 2 hours from now
         let mock_storage = new_mock_storage(MockStorageConfig {
-            dripped: Some(exceeded_amount.clone()),
+            dripped: Some(exceeded_amount),
             claimed: None,
             block_until: None,
             alarm: Some(alarm_time),
@@ -478,16 +477,12 @@ mod tests {
         let faucet_info = FaucetInfo::CalibnetFIL;
         let wallet_id = "test_wallet_123";
         let path = format!("http://do/rate_limiter/{faucet_info}/{wallet_id}");
-        let wallet_cap_requests = (faucet_info.wallet_cap().atto()
-            / faucet_info.drip_amount().atto())
-        .to_u64()
-        .unwrap() as usize;
-
-        let mut claimed = TokenAmount::default();
-        let mut dripped = TokenAmount::default();
+        let drip_amount = faucet_info.drip_amount();
+        let mut claimed = DripAmount::default(faucet_info.token_type());
+        let mut dripped = DripAmount::default(faucet_info.token_type());
 
         // For each request up to wallet cap
-        for _ in 0..wallet_cap_requests {
+        for _ in 0..CALIBNET_PER_WALLET_DRIP_MULTIPLIER {
             let mock_storage = new_mock_storage(MockStorageConfig {
                 dripped: None,
                 claimed: None,
@@ -500,22 +495,22 @@ mod tests {
             let now = chrono::Utc::now();
             let result = core.handle_request(&path, now).await.unwrap();
             assert!(result.is_none());
-            claimed += faucet_info.drip_amount();
-            dripped += faucet_info.drip_amount();
+            claimed += &drip_amount;
+            dripped += &drip_amount;
         }
 
         // Final request should hit wallet cap
         let mut mock_storage = MockRateLimiterStorage::new();
         let dripped_clone = dripped.clone();
         mock_storage
-            .expect_get::<LotusJson<TokenAmount>>()
+            .expect_get::<DripAmount>()
             .with(mockall::predicate::eq("dripped"))
-            .returning(move |_| Ok(Some(LotusJson(dripped_clone.clone()))));
+            .returning(move |_| Ok(Some(dripped_clone.clone())));
         let claimed_clone = claimed.clone();
         mock_storage
-            .expect_get::<LotusJson<TokenAmount>>()
+            .expect_get::<DripAmount>()
             .with(mockall::predicate::eq(format!("claimed_{}", wallet_id)))
-            .returning(move |_| Ok(Some(LotusJson(claimed_clone.clone()))));
+            .returning(move |_| Ok(Some(claimed_clone.clone())));
         let alarm_time =
             chrono::Utc::now().timestamp_millis() + faucet_info.reset_limiter_seconds() * 1000;
         mock_storage
@@ -536,17 +531,15 @@ mod tests {
         let wallet_1 = "wallet_1";
         let wallet_2 = "wallet_2";
         let wallet_3 = "wallet_3";
-        let wallet_cap_requests = (faucet_info.wallet_cap().atto()
-            / faucet_info.drip_amount().atto())
-        .to_u64()
-        .unwrap() as usize;
-        let mut dripped = TokenAmount::default();
-        let mut claimed_1 = TokenAmount::default();
-        let mut claimed_2 = TokenAmount::default();
-        let mut claimed_3 = TokenAmount::default();
+        let drip_amount = faucet_info.drip_amount();
+        let drip_cap = faucet_info.drip_cap();
+        let mut dripped = DripAmount::default(faucet_info.token_type());
+        let mut claimed_1 = DripAmount::default(faucet_info.token_type());
+        let mut claimed_2 = DripAmount::default(faucet_info.token_type());
+        let mut claimed_3 = DripAmount::default(faucet_info.token_type());
 
         // Wallet 1: Up to wallet cap
-        for _ in 0..wallet_cap_requests {
+        for _ in 0..CALIBNET_PER_WALLET_DRIP_MULTIPLIER {
             let mock_storage = new_mock_storage(MockStorageConfig {
                 dripped: None,
                 claimed: None,
@@ -565,11 +558,11 @@ mod tests {
                 .await
                 .unwrap();
             assert!(result.is_none());
-            claimed_1 += faucet_info.drip_amount();
-            dripped += faucet_info.drip_amount();
+            claimed_1 += &drip_amount;
+            dripped += &drip_amount;
         }
         // Wallet 2: Up to wallet cap
-        for _ in 0..wallet_cap_requests {
+        for _ in 0..CALIBNET_PER_WALLET_DRIP_MULTIPLIER {
             if dripped >= faucet_info.drip_cap() {
                 break;
             }
@@ -591,11 +584,11 @@ mod tests {
                 .await
                 .unwrap();
             assert!(result.is_none());
-            claimed_2 += faucet_info.drip_amount();
-            dripped += faucet_info.drip_amount();
+            claimed_2 += &drip_amount;
+            dripped += &drip_amount;
         }
         // Wallet 3: Up to drip cap
-        while dripped < faucet_info.drip_cap() {
+        while dripped < drip_cap {
             let mock_storage = new_mock_storage(MockStorageConfig {
                 dripped: None,
                 claimed: None,
@@ -614,8 +607,8 @@ mod tests {
                 .await
                 .unwrap();
             assert!(result.is_none());
-            claimed_3 += faucet_info.drip_amount();
-            dripped += faucet_info.drip_amount();
+            claimed_3 += &drip_amount;
+            dripped += &drip_amount;
         }
         // Now all wallets should be rate limited due to drip cap
         for wallet in [wallet_1, wallet_2, wallet_3] {
@@ -627,13 +620,13 @@ mod tests {
                 _ => claimed_3.clone(),
             };
             mock_storage
-                .expect_get::<LotusJson<TokenAmount>>()
+                .expect_get::<DripAmount>()
                 .with(mockall::predicate::eq("dripped"))
-                .returning(move |_| Ok(Some(LotusJson(dripped_clone.clone()))));
+                .returning(move |_| Ok(Some(dripped_clone.clone())));
             mock_storage
-                .expect_get::<LotusJson<TokenAmount>>()
+                .expect_get::<DripAmount>()
                 .with(mockall::predicate::eq(format!("claimed_{}", wallet)))
-                .returning(move |_| Ok(Some(LotusJson(claimed_clone.clone()))));
+                .returning(move |_| Ok(Some(claimed_clone.clone())));
             let alarm_time =
                 chrono::Utc::now().timestamp_millis() + faucet_info.reset_limiter_seconds() * 1000;
             mock_storage
@@ -657,15 +650,17 @@ mod tests {
     async fn test_alarm_reset_cycle() {
         let faucet_info = FaucetInfo::CalibnetFIL;
         let wallets = ["wallet_1", "wallet_2", "wallet_3", "wallet_4", "wallet_5"];
-        let mut dripped = TokenAmount::default();
+        let drip_amount = faucet_info.drip_amount();
+        let drip_cap = faucet_info.drip_cap();
+        let mut dripped = DripAmount::default(faucet_info.token_type());
         let mut claimed = std::collections::HashMap::new();
         for &wallet in &wallets {
-            claimed.insert(wallet, TokenAmount::default());
+            claimed.insert(wallet, DripAmount::default(faucet_info.token_type()));
         }
         // Use multiple wallets to reach the global cap
         'outer: for &wallet in &wallets {
             for _ in 0..2 {
-                if dripped >= faucet_info.drip_cap() {
+                if dripped >= drip_cap {
                     break 'outer;
                 }
                 let mock_storage = new_mock_storage(MockStorageConfig {
@@ -686,11 +681,9 @@ mod tests {
                     .await
                     .unwrap();
                 assert!(result.is_none());
-                claimed
-                    .get_mut(wallet)
-                    .unwrap()
-                    .add_assign(faucet_info.drip_amount());
-                dripped += faucet_info.drip_amount();
+                let claimed_amount = claimed.get_mut(wallet).unwrap();
+                *claimed_amount += &drip_amount;
+                dripped += &drip_amount;
             }
         }
         // Verify drip cap is reached
@@ -698,13 +691,13 @@ mod tests {
         let dripped_clone = dripped.clone();
         let claimed_clone = claimed["wallet_1"].clone();
         mock_storage
-            .expect_get::<LotusJson<TokenAmount>>()
+            .expect_get::<DripAmount>()
             .with(mockall::predicate::eq("dripped"))
-            .returning(move |_| Ok(Some(LotusJson(dripped_clone.clone()))));
+            .returning(move |_| Ok(Some(dripped_clone.clone())));
         mock_storage
-            .expect_get::<LotusJson<TokenAmount>>()
+            .expect_get::<DripAmount>()
             .with(mockall::predicate::eq(format!("claimed_{}", "wallet_1")))
-            .returning(move |_| Ok(Some(LotusJson(claimed_clone.clone()))));
+            .returning(move |_| Ok(Some(claimed_clone.clone())));
         let alarm_time =
             chrono::Utc::now().timestamp_millis() + faucet_info.reset_limiter_seconds() * 1000;
         mock_storage
