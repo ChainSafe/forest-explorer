@@ -19,7 +19,7 @@ impl HasLotusJson for Address {
 fn parse_address(s: &str) -> anyhow::Result<Address> {
     Ok(Network::Testnet
         .parse_address(s)
-        .or_else(|_| Network::Mainnet.parse_address(s))?)
+        .or(Network::Mainnet.parse_address(s))?)
 }
 
 impl Serialize for AddressLotusJson {

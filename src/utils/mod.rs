@@ -1,5 +1,6 @@
 pub mod address;
 pub mod conversions;
+pub mod drip_amount;
 pub mod error;
 pub mod format;
 pub mod key;

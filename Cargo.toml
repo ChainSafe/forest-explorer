@@ -24,6 +24,7 @@ cid = "0.11"
 console_error_panic_hook = { version = "0.1" }
 console_log = "1"
 derive_more = { version = "2", features = ["from", "into", "display"] }
+frc42_dispatch = "10"
 fvm_ipld_encoding = "0.5"
 fvm_shared = { version = "~4.7" }
 hex = "0.4"
