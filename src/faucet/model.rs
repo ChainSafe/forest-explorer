@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use uuid::Uuid;
 
-use crate::faucet::constants::DripAmount;
+use crate::utils::drip_amount::DripAmount;
 use crate::utils::transaction_id::TransactionId;
 
 #[derive(Clone)]

@@ -1,9 +1,10 @@
-use super::constants::{DripAmount, FaucetInfo, TokenType};
+use super::constants::FaucetInfo;
 use super::server_api::{
     faucet_address, signed_datacap_transfer, signed_erc20_transfer, signed_fil_transfer,
 };
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
+use crate::utils::drip_amount::{DripAmount, TokenType};
 use crate::utils::error::FaucetError;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::message::AddVerifiedClientParams;

@@ -13,9 +13,9 @@ use serde_json::{Value, json};
 use std::sync::LazyLock;
 use url::Url;
 
-use crate::faucet::constants::{DripAmount, TokenType};
 use crate::utils::address::AddressAlloyExt as _;
 use crate::utils::conversions::TokenAmountAlloyExt as _;
+use crate::utils::drip_amount::{DripAmount, TokenType};
 
 use super::lotus_json::{HasLotusJson, LotusJson, signed_message::SignedMessage};
 

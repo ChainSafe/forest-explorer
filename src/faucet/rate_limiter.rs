@@ -1,7 +1,8 @@
 #![cfg(feature = "ssr")]
 use std::str::FromStr as _;
 
-use crate::faucet::constants::{DripAmount, FaucetInfo};
+use crate::faucet::constants::FaucetInfo;
+use crate::utils::drip_amount::DripAmount;
 use chrono::{DateTime, Duration, Utc};
 use worker::*;
 
@@ -270,7 +271,7 @@ impl DurableObject for RateLimiter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::faucet::constants::DripAmount;
+    use crate::utils::drip_amount::DripAmount;
     use fvm_shared::econ::TokenAmount;
 
     const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;

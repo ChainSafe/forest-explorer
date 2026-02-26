@@ -7,7 +7,7 @@ use leptos::{IntoView, component, view};
 use leptos_meta::{Meta, Title};
 
 /// Displays the Calibnet Datacap Faucet page.
-/// Sets the RPC context to calibnet verifier and renders the faucet and its description.
+/// Sets the RPC context to calibnet and renders the faucet and its description.
 #[component]
 pub fn Faucet_Calibnet_Datacap() -> impl IntoView {
     let faucet_info = FaucetInfo::CalibnetDatacap;

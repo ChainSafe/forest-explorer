@@ -1,4 +1,4 @@
-use crate::faucet::constants::DripAmount;
+use crate::utils::drip_amount::DripAmount;
 use anyhow::{Result, anyhow};
 use fvm_shared::bigint::BigInt;
 use url::Url;

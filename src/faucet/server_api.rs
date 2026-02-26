@@ -28,7 +28,7 @@ use super::server::{
 };
 
 #[cfg(feature = "ssr")]
-use crate::faucet::constants::{DripAmount, TokenType};
+use crate::utils::drip_amount::{DripAmount, TokenType};
 
 use super::constants::FaucetInfo;
 use crate::utils::error::FaucetError;

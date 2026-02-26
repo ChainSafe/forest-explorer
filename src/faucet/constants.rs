@@ -1,10 +1,9 @@
+use crate::utils::drip_amount::{DripAmount, TokenType};
 use alloy::primitives::address;
 use fvm_shared::{address::Network, econ::TokenAmount, sector::StoragePower};
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr as _, sync::LazyLock};
 use strum::{Display, EnumString};
-
-pub use crate::utils::drip_amount::{DripAmount, TokenType};
 
 /// The amount of calibnet FIL to be dripped to the user.
 static CALIBNET_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| {

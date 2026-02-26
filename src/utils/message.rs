@@ -5,16 +5,6 @@ use fvm_shared::message::Message;
 use fvm_shared::sector::StoragePower;
 use fvm_shared::{METHOD_SEND, address::Address, econ::TokenAmount};
 
-const VERIFIED_REGISTRY_ACTOR: Address = Address::new_id(6);
-
-/// Params for the `AddVerifiedClient` method.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize_tuple, Deserialize_tuple)]
-pub struct AddVerifiedClientParams {
-    pub address: Address,
-    #[serde(with = "bigint_ser")]
-    pub allowance: StoragePower,
-}
-
 /// Creates a new transfer message with default values for gas and sequence.
 pub fn message_transfer(from: Address, to: Address, value: TokenAmount) -> Message {
     message_transfer_native(
@@ -50,6 +40,16 @@ pub fn message_transfer_native(
         version: 0,
         sequence,
     }
+}
+
+const VERIFIED_REGISTRY_ACTOR: Address = Address::new_id(6);
+
+/// Params for the `AddVerifiedClient` method.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize_tuple, Deserialize_tuple)]
+pub struct AddVerifiedClientParams {
+    pub address: Address,
+    #[serde(with = "bigint_ser")]
+    pub allowance: StoragePower,
 }
 
 /// Creates a new Datacap allocation message with default values for gas and sequence.
