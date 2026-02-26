@@ -14,6 +14,7 @@ use crate::utils::{
     error::catch_all,
     message::{message_grant_datacap, message_transfer},
 };
+use anyhow::bail;
 use fvm_ipld_encoding::RawBytes;
 use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
@@ -211,13 +212,9 @@ impl FaucetController {
     }
 
     pub fn is_low_balance(&self) -> bool {
-        let balance = self.get_faucet_balance();
-        let drip = self.get_drip_amount();
-        match (&balance, &drip) {
-            (DripAmount::Token(a), DripAmount::Token(b)) => a.atto() < b.atto(),
-            (DripAmount::Storage(a), DripAmount::Storage(b)) => a < b,
-            _ => false,
-        }
+        let target_balance = self.get_faucet_balance();
+        let drip_amount = self.get_drip_amount();
+        target_balance < drip_amount
     }
 
     pub fn drip(&self) {
@@ -246,7 +243,7 @@ impl FaucetController {
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
                         let DripAmount::Token(drip_amount) = info.drip_amount() else {
-                            unreachable!("Expected DripAmount::Token variant");
+                            bail!("Expected DripAmount::Token variant")
                         };
                         let raw_msg = message_transfer(from, id_address, drip_amount);
                         let msg = rpc.estimate_gas(raw_msg).await?;
@@ -357,7 +354,7 @@ impl FaucetController {
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
                         let DripAmount::Storage(allowance) = info.drip_amount() else {
-                            unreachable!("Expected DripAmount::Storage variant");
+                            bail!("Expected DripAmount::Storage variant")
                         };
                         let params = AddVerifiedClientParams {
                             address: id_address,

@@ -2,7 +2,7 @@ use fvm_shared::{econ::TokenAmount, sector::StoragePower};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, Mul};
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum DripAmount {
     Token(#[serde(with = "crate::utils::lotus_json")] TokenAmount),
     Storage(#[serde(with = "crate::utils::lotus_json")] StoragePower),
@@ -21,7 +21,6 @@ pub enum TokenType {
 pub type ContractAddress = alloy::primitives::Address;
 
 impl DripAmount {
-    /// Default (zero) in the same variant as `self`.
     pub fn default(token_type: TokenType) -> DripAmount {
         match token_type {
             TokenType::Native | TokenType::Erc20(_) => DripAmount::Token(TokenAmount::default()),
@@ -37,7 +36,7 @@ impl Add<&DripAmount> for DripAmount {
         match (&self, rhs) {
             (DripAmount::Token(x), DripAmount::Token(y)) => DripAmount::Token(x + y),
             (DripAmount::Storage(x), DripAmount::Storage(y)) => DripAmount::Storage(x + y),
-            _ => panic!("DripAmount variant mismatch"),
+            _ => unreachable!("DripAmount variant mismatch"),
         }
     }
 }
@@ -57,7 +56,7 @@ impl Div<&DripAmount> for DripAmount {
                 DripAmount::Token(TokenAmount::from_atto(x.atto() / y.atto()))
             }
             (DripAmount::Storage(x), DripAmount::Storage(y)) => DripAmount::Storage(x / y),
-            _ => panic!("DripAmount variant mismatch"),
+            _ => unreachable!("DripAmount variant mismatch"),
         }
     }
 }

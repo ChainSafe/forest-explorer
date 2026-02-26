@@ -79,7 +79,10 @@ pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<AnyAddress, Serve
 async fn faucet_eth_address(
     faucet_info: FaucetInfo,
 ) -> Result<alloy::primitives::Address, ServerFnError> {
-    if matches!(faucet_info.token_type(), TokenType::Native) {
+    if matches!(
+        faucet_info.token_type(),
+        TokenType::Native | TokenType::Datacap
+    ) {
         return Err(ServerFnError::ServerError(
             "This function is only for ERC-20 token faucets".to_string(),
         ));
@@ -129,7 +132,9 @@ pub async fn signed_fil_transfer(
         .map_err(|e| FaucetError::Server(e.to_string()))?;
 
     let DripAmount::Token(drip_amount) = faucet_info.drip_amount() else {
-        unreachable!("Expected DripAmount::Token variant");
+        return Err(FaucetError::Server(
+            "Invalid DripAmount, Expected Token variant".to_string(),
+        ));
     };
     let unsigned_msg = message_transfer_native(
         from,
@@ -185,7 +190,9 @@ pub async fn signed_erc20_transfer(
         }
     };
     let DripAmount::Token(drip_amount) = faucet_info.drip_amount() else {
-        unreachable!("Expected DripAmount::Token variant");
+        return Err(FaucetError::Server(
+            "Invalid DripAmount, Expected Token variant".to_string(),
+        ));
     };
     let gas_limit = faucet_info.max_gas_limit();
     let calldata =
@@ -243,7 +250,9 @@ pub async fn signed_datacap_transfer(
         .map_err(|e| FaucetError::Server(e.to_string()))?;
 
     let DripAmount::Storage(allowance) = faucet_info.drip_amount() else {
-        unreachable!("Expected DripAmount::Storage variant");
+        return Err(FaucetError::Server(
+            "Invalid DripAmount, Expected Storage variant".to_string(),
+        ));
     };
     let params = AddVerifiedClientParams {
         address: to,
@@ -296,12 +305,12 @@ pub async fn claim_token(
         .map_err(ServerFnError::new)?;
 
     SendWrapper::new(async move {
-        ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
         match faucet_info {
             FaucetInfo::MainnetFIL | FaucetInfo::CalibnetDatacap => {
                 set_response_status(StatusCode::IM_A_TEAPOT);
                 Err(ServerFnError::ServerError(
-                    "I'm a teapot - mainnet tokens are not available.".to_string(),
+                    "I'm a teapot - requested tokens are not available via this endpoint."
+                        .to_string(),
                 ))
             }
             FaucetInfo::CalibnetFIL => handle_native_claim(faucet_info, recipient, from, rpc).await,
@@ -402,6 +411,7 @@ async fn handle_native_claim(
 ) -> Result<TxHash, ServerFnError> {
     use crate::utils::message::message_transfer;
 
+    ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
     let id_address = rpc.lookup_id(recipient).await.unwrap_or({
         log::debug!("ID lookup failed, using recipient address: {:?}", recipient);
         recipient
@@ -411,7 +421,9 @@ async fn handle_native_claim(
         .await
         .map_err(ServerFnError::new)?;
     let DripAmount::Token(drip_amount) = faucet_info.drip_amount() else {
-        unreachable!("Expected DripAmount::Token variant");
+        return Err(ServerFnError::ServerError(
+            "Invalid DripAmount, Expected Token variant".to_string(),
+        ));
     };
     let raw_msg = message_transfer(from, id_address, drip_amount);
     let msg = rpc
@@ -450,6 +462,7 @@ async fn handle_erc20_claim(
 ) -> Result<TxHash, ServerFnError> {
     use crate::utils::address::AddressAlloyExt;
 
+    ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
     let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
     let nonce = rpc
         .mpool_get_nonce(from)
