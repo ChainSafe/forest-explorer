@@ -57,7 +57,7 @@ strategy:
 Each test suite runs with isolated Durable Object storage:
 
 ```bash
-yarn wrangler dev --port ${matrix.port} --persist-to .wrangler-state-${state_dir}-${github.run_id}
+pnpm wrangler dev --port ${matrix.port} --persist-to .wrangler-state-${state_dir}-${github.run_id}
 ```
 
 This prevents the rate-limiting state from one test from affecting the other.

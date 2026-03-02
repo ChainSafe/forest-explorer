@@ -47,9 +47,9 @@ jobs:
       - name: Install worker-build
         run: cargo install --locked worker-build
 
-      - run: corepack enable
+      - run: corepack enable pnpm
 
-      - run: yarn --immutable
+      - run: pnpm i --frozen-lockfile
 
       - name: Dry Run
         if: github.ref != 'refs/heads/main'
