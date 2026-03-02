@@ -20,15 +20,15 @@ Anything pushed to `main` will automatically be deployed at
 
 Installing node(LTS versions recommended).
 
-Running `corepack enable` to opt-in corepack, see
-[docs](https://yarnpkg.com/corepack#installation) for details.
+Running `corepack enable pnpm` to opt-in corepack, see
+[docs](https://pnpm.io/installation#using-corepack) for details.
 
-Running `yarn` or `yarn --immutable` once to install all required npm
+Running `pnpm i` or `pnpm i --frozen-lockfile` once to install all required npm
 dependencies.
 
-Running `yarn start` will spawn a local copy of the explorer.
+Running `pnpm start` will spawn a local copy of the explorer.
 
-To speed up the build during development, you can run `yarn dev` which will skip
+To speed up the build during development, you can run `pnpm dev` which will skip
 the optimization step.
 
 You can define secrets for your local faucet in the `.dev.vars` file. This file
