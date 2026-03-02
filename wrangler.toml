@@ -21,9 +21,9 @@ enabled = true
 
 [build]
 command = """
-yarn assets &&
-yarn css-minify &&
-yarn wasm-pack &&
+pnpm assets &&
+pnpm css-minify &&
+pnpm wasm-pack &&
 worker-build --release --features ssr --no-default-features
 """
 
@@ -31,8 +31,8 @@ worker-build --release --features ssr --no-default-features
 bindings = [{ name = "RATE_LIMITER", class_name = "RateLimiter" }]
 [env.quick.build]
 command = """
-yarn assets &&
-yarn css-minify &&
-yarn wasm-pack-dev &&
+pnpm assets &&
+pnpm css-minify &&
+pnpm wasm-pack-dev &&
 worker-build --dev --no-opt --features ssr --no-default-features
 """

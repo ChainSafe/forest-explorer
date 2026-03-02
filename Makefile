@@ -16,12 +16,12 @@ fmt:
 	cargo fmt --all
 	taplo fmt
 	leptosfmt .
-	corepack enable && yarn && yarn md-fmt
+	corepack enable pnpm && pnpm i && pnpm md-fmt
 
 fmt-lints: cargo-fmt taplo md-lint leptos-fmt
 
 md-lint:
-	corepack enable && yarn && yarn md-check
+	corepack enable pnpm && pnpm i && pnpm md-check
 
 cargo-fmt:
 	cargo fmt --all --check
