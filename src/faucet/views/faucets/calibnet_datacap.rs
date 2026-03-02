@@ -19,7 +19,7 @@ pub fn Faucet_Calibnet_Datacap() -> impl IntoView {
         <Title text="⚡️ Filecoin Datacap Faucet - Calibration Network" />
         <Meta
             name="description"
-            content="Filecoin Datacap Calibration Network Faucet dispensing Datacap tokens for testing purposes."
+            content="Filecoin Datacap Calibration Network Faucet dispensing Datacap for testing purposes."
         />
         <h1 class="header">"⚡️ Filecoin Calibnet Datacap Faucet"</h1>
         <div class="main-container">

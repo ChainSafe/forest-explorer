@@ -236,6 +236,9 @@ impl FaucetController {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
 
+                        let DripAmount::Token(drip_amount) = info.drip_amount() else {
+                            bail!("Expected DripAmount::Token variant")
+                        };
                         let rpc = Provider::from_network(network);
                         let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
                         let from = faucet_address(info)
@@ -243,9 +246,6 @@ impl FaucetController {
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let DripAmount::Token(drip_amount) = info.drip_amount() else {
-                            bail!("Expected DripAmount::Token variant")
-                        };
                         let raw_msg = message_transfer(from, id_address, drip_amount);
                         let msg = rpc.estimate_gas(raw_msg).await?;
                         match signed_fil_transfer(

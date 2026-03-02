@@ -1,6 +1,6 @@
 use fvm_shared::{econ::TokenAmount, sector::StoragePower};
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, AddAssign, Div, Mul};
+use std::ops::{Add, AddAssign, Mul};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum DripAmount {
@@ -44,20 +44,6 @@ impl Add<&DripAmount> for DripAmount {
 impl AddAssign<&DripAmount> for DripAmount {
     fn add_assign(&mut self, rhs: &DripAmount) {
         *self = self.clone().add(rhs);
-    }
-}
-
-impl Div<&DripAmount> for DripAmount {
-    type Output = DripAmount;
-
-    fn div(self, rhs: &DripAmount) -> DripAmount {
-        match (&self, rhs) {
-            (DripAmount::Token(x), DripAmount::Token(y)) => {
-                DripAmount::Token(TokenAmount::from_atto(x.atto() / y.atto()))
-            }
-            (DripAmount::Storage(x), DripAmount::Storage(y)) => DripAmount::Storage(x / y),
-            _ => unreachable!("DripAmount variant mismatch"),
-        }
     }
 }
 

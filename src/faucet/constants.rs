@@ -190,7 +190,7 @@ impl FaucetInfo {
                 option_env!("CALIBNET_USDFC_CONTRACT_ADDRESS")
                     .and_then(|addr| alloy::primitives::Address::from_str(addr).ok())
                     // Default, as present in: https://stg.usdfc.net/#/
-                    .unwrap_or(address!("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")),
+                    .unwrap_or_else(|| address!("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")),
             ),
             FaucetInfo::CalibnetDatacap => TokenType::Datacap,
         }
