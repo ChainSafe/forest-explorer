@@ -351,6 +351,9 @@ impl FaucetController {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
 
+                        let DripAmount::Storage(allowance) = info.drip_amount() else {
+                            bail!("Expected DripAmount::Storage variant")
+                        };
                         let rpc = Provider::from_network(network);
                         let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
                         let from = faucet_address(info)
@@ -358,9 +361,6 @@ impl FaucetController {
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
                             .to_filecoin_address(network)?;
                         let nonce = rpc.mpool_get_nonce(from).await?;
-                        let DripAmount::Storage(allowance) = info.drip_amount() else {
-                            bail!("Expected DripAmount::Storage variant")
-                        };
                         let params = AddVerifiedClientParams {
                             address: id_address,
                             allowance,
