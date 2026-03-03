@@ -12,4 +12,5 @@ URL endpoints and token drip amounts.
 | MAINNET_DRIP_AMOUNT             | Amount of tokens to drip on Mainnet in nanoFIL          | 10000000 (0.01 FIL)                                          |
 | CALIBNET_DRIP_AMOUNT            | Amount of tokens to drip on Calibnet in nanoFIL         | 5000000000 (5 tFIL)                                          |
 | CALIBNET_USDFC_DRIP_AMOUNT      | Amount of USDFC tokens to drip on Calibnet in nanoUSDFC | 5000000000 (5 tUSDFC)                                        |
+| CALIBNET_DATACAP_DRIP_AMOUNT    | Amount of Datacap to grant on Calibnet in bytes         | 1048576 (1 MiB)                                              |
 | CALIBNET_USDFC_CONTRACT_ADDRESS | Contract address for Calibnet USDFC                     | 0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0                   |

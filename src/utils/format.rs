@@ -1,13 +1,21 @@
+use crate::utils::drip_amount::DripAmount;
 use anyhow::{Result, anyhow};
-use fvm_shared::econ::TokenAmount;
+use fvm_shared::bigint::BigInt;
 use url::Url;
 
-/// Formats FIL balance to a human-readable string with two decimal places and a unit.
-pub fn format_balance(balance: &TokenAmount, unit: &str) -> String {
-    format!(
-        "{:.2} {unit}",
-        balance.to_string().parse::<f32>().unwrap_or_default(),
-    )
+/// Formats [`DripAmount`] to a human-readable string with the given unit.
+pub fn format_balance(amount: &DripAmount, unit: &str) -> String {
+    match amount {
+        DripAmount::Token(balance) => {
+            format!(
+                "{:.2} {unit}",
+                balance.to_string().parse::<f32>().unwrap_or_default(),
+            )
+        }
+        DripAmount::Storage(balance) => {
+            format!("{} MiB", balance / BigInt::from(1 << 20))
+        }
+    }
 }
 
 /// Types of search paths in Filecoin explorer.
@@ -37,15 +45,22 @@ pub fn format_url(base_url: &Url, path: SearchPath, identifier: &str) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fvm_shared::econ::TokenAmount;
+    use fvm_shared::{econ::TokenAmount, sector::StoragePower};
 
     #[test]
     fn test_format_balance() {
         let cases = [
-            (TokenAmount::from_whole(1), "1.00 FIL"),
-            (TokenAmount::from_whole(0), "0.00 FIL"),
-            (TokenAmount::from_nano(10e6 as i64), "0.01 FIL"),
-            (TokenAmount::from_nano(999_999_999), "1.00 FIL"),
+            (DripAmount::Token(TokenAmount::from_whole(1)), "1.00 FIL"),
+            (DripAmount::Token(TokenAmount::from_whole(0)), "0.00 FIL"),
+            (
+                DripAmount::Token(TokenAmount::from_nano(10e6 as i64)),
+                "0.01 FIL",
+            ),
+            (
+                DripAmount::Token(TokenAmount::from_nano(999_999_999)),
+                "1.00 FIL",
+            ),
+            (DripAmount::Storage(StoragePower::from(1 << 20)), "1 MiB"),
         ];
         for (balance, expected) in cases.iter() {
             assert_eq!(format_balance(balance, "FIL"), *expected);

@@ -44,6 +44,9 @@
 - [#257](https://github.com/ChainSafe/forest-explorer/issues/257) Added per
   wallet daily cap on token claim.
 
+- [#417](https://github.com/ChainSafe/forest-explorer/pull/417) Implement
+  Datacap Faucet for Calibnet.
+
 ### Changed
 
 - [#136](https://github.com/ChainSafe/forest-explorer/pull/136) Increased the

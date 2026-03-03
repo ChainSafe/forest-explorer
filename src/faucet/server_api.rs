@@ -28,7 +28,7 @@ use super::server::{
 };
 
 #[cfg(feature = "ssr")]
-use crate::faucet::constants::TokenType;
+use crate::utils::drip_amount::{DripAmount, TokenType};
 
 use super::constants::FaucetInfo;
 use crate::utils::error::FaucetError;
@@ -54,7 +54,7 @@ async fn faucet_fil_address(faucet_info: FaucetInfo) -> Result<LotusJson<Address
 pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<AnyAddress, ServerFnError> {
     use fvm_shared::address;
     match faucet_info.token_type() {
-        TokenType::Native => {
+        TokenType::Native | TokenType::Datacap => {
             match faucet_info.network() {
                 address::Network::Mainnet => {
                     address::set_current_network(address::Network::Mainnet);
@@ -79,7 +79,10 @@ pub async fn faucet_address(faucet_info: FaucetInfo) -> Result<AnyAddress, Serve
 async fn faucet_eth_address(
     faucet_info: FaucetInfo,
 ) -> Result<alloy::primitives::Address, ServerFnError> {
-    if matches!(faucet_info.token_type(), TokenType::Native) {
+    if matches!(
+        faucet_info.token_type(),
+        TokenType::Native | TokenType::Datacap
+    ) {
         return Err(ServerFnError::ServerError(
             "This function is only for ERC-20 token faucets".to_string(),
         ));
@@ -111,6 +114,11 @@ pub async fn signed_fil_transfer(
     let LotusJson(gas_fee_cap) = gas_fee_cap;
     let LotusJson(gas_premium) = gas_premium;
 
+    let DripAmount::Token(drip_amount) = faucet_info.drip_amount() else {
+        return Err(FaucetError::Server(
+            "Invalid DripAmount, Expected Token variant".to_string(),
+        ));
+    };
     let rate_limit_seconds =
         check_rate_limit(faucet_info, AnyAddress::Filecoin(LotusJson(to))).await?;
     // Make sure gas values aren't too high
@@ -122,23 +130,20 @@ pub async fn signed_fil_transfer(
             retry_after_secs: secs,
         });
     }
-
     let from = faucet_address(faucet_info)
         .await?
         .to_filecoin_address(faucet_info.network())
         .map_err(|e| FaucetError::Server(e.to_string()))?;
-
     let unsigned_msg = message_transfer_native(
         from,
         to,
-        faucet_info.drip_amount().clone(),
+        drip_amount,
         gas_limit,
         gas_fee_cap,
         gas_premium,
         sequence,
     );
-    let signed = sign_with_secret_key(unsigned_msg, faucet_info).await?;
-    Ok(signed)
+    Ok(sign_with_secret_key(unsigned_msg, faucet_info).await?)
 }
 
 /// Signs an ERC-20 transfer transaction to the specified recipient with the given nonce and gas
@@ -157,6 +162,11 @@ pub async fn signed_erc20_transfer(
     use crate::utils::conversions::TokenAmountAlloyExt as _;
     use alloy::network::TransactionBuilder as _;
 
+    let DripAmount::Token(drip_amount) = faucet_info.drip_amount() else {
+        return Err(FaucetError::Server(
+            "Invalid DripAmount, Expected Token variant".to_string(),
+        ));
+    };
     let rate_limit_seconds = check_rate_limit(faucet_info, AnyAddress::Ethereum(recipient)).await?;
     if let Some(secs) = rate_limit_seconds {
         return Err(FaucetError::RateLimited {
@@ -172,7 +182,6 @@ pub async fn signed_erc20_transfer(
             function transfer(address to, uint256 amount) public returns (bool);
         }
     }
-
     let contract_address = match faucet_info.token_type() {
         TokenType::Erc20(addr) => addr,
         _ => {
@@ -181,11 +190,9 @@ pub async fn signed_erc20_transfer(
             ));
         }
     };
-    let amount = faucet_info.drip_amount().to_alloy_amount();
-
     let gas_limit = faucet_info.max_gas_limit();
-    let calldata = ERC20::transferCall::new((recipient, amount)).abi_encode();
-
+    let calldata =
+        ERC20::transferCall::new((recipient, drip_amount.to_alloy_amount())).abi_encode();
     let tx = alloy::rpc::types::TransactionRequest::default()
         .with_to(contract_address)
         .with_chain_id(faucet_info.chain_id())
@@ -193,9 +200,67 @@ pub async fn signed_erc20_transfer(
         .with_gas_limit(gas_limit)
         .with_gas_price(gas_price.into())
         .with_input(calldata);
-
     let signed = sign_with_eth_secret_key(tx.clone(), faucet_info).await?;
     Ok(signed)
+}
+
+/// Signs a Datacap allocation message to the verifreg address with the given parameters.
+/// The required params are needed so that the server doesn't have to call the provider.
+/// Note: it's important that the message is constructed server-side to avoid exposing the
+/// `message` to the client, which could lead to security issues if the client were to
+/// manipulate the message data.
+/// This function is used for granting Datacap to a verified client address.
+#[server]
+pub async fn signed_datacap_allocation(
+    to: LotusJson<Address>,
+    gas_limit: u64,
+    gas_fee_cap: LotusJson<TokenAmount>,
+    gas_premium: LotusJson<TokenAmount>,
+    sequence: u64,
+    faucet_info: FaucetInfo,
+) -> Result<LotusJson<SignedMessage>, FaucetError> {
+    use crate::utils::message::{AddVerifiedClientParams, message_grant_datacap_native};
+    use fvm_ipld_encoding::RawBytes;
+
+    let LotusJson(to) = to;
+    let LotusJson(gas_fee_cap) = gas_fee_cap;
+    let LotusJson(gas_premium) = gas_premium;
+
+    let DripAmount::Storage(allowance) = faucet_info.drip_amount() else {
+        return Err(FaucetError::Server(
+            "Invalid DripAmount, Expected Storage variant".to_string(),
+        ));
+    };
+    let rate_limit_seconds =
+        check_rate_limit(faucet_info, AnyAddress::Filecoin(LotusJson(to))).await?;
+    // Make sure gas values aren't too high
+    let gas_limit = gas_limit.min(faucet_info.max_gas_limit());
+    let gas_fee_cap = gas_fee_cap.min(faucet_info.max_gas_fee_cap());
+    let gas_premium = gas_premium.min(faucet_info.max_gas_premium());
+    if let Some(secs) = rate_limit_seconds {
+        return Err(FaucetError::RateLimited {
+            retry_after_secs: secs,
+        });
+    }
+    let from = faucet_address(faucet_info)
+        .await?
+        .to_filecoin_address(faucet_info.network())
+        .map_err(|e| FaucetError::Server(e.to_string()))?;
+    let params = AddVerifiedClientParams {
+        address: to,
+        allowance,
+    };
+    let unsigned_msg = message_grant_datacap_native(
+        from,
+        RawBytes::new(
+            fvm_ipld_encoding::to_vec(&params).map_err(|e| FaucetError::Server(e.to_string()))?,
+        ),
+        gas_limit,
+        gas_fee_cap,
+        gas_premium,
+        sequence,
+    );
+    Ok(sign_with_secret_key(unsigned_msg, faucet_info).await?)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -230,12 +295,12 @@ pub async fn claim_token(
         .map_err(ServerFnError::new)?;
 
     SendWrapper::new(async move {
-        ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
         match faucet_info {
-            FaucetInfo::MainnetFIL => {
+            FaucetInfo::MainnetFIL | FaucetInfo::CalibnetDatacap => {
                 set_response_status(StatusCode::IM_A_TEAPOT);
                 Err(ServerFnError::ServerError(
-                    "I'm a teapot - mainnet tokens are not available.".to_string(),
+                    "I'm a teapot - requested tokens are not available via this endpoint."
+                        .to_string(),
                 ))
             }
             FaucetInfo::CalibnetFIL => handle_native_claim(faucet_info, recipient, from, rpc).await,
@@ -310,17 +375,27 @@ fn parse_and_validate_address(
 #[cfg(feature = "ssr")]
 async fn ensure_faucet_has_funds(
     rpc: &crate::utils::rpc_context::Provider,
-    from: &Address,
+    wallet_address: &Address,
     faucet_info: &FaucetInfo,
 ) -> Result<(), ServerFnError> {
     let faucet_balance = rpc
-        .wallet_balance(*from, &faucet_info.token_type())
+        .wallet_balance(*wallet_address, &faucet_info.token_type())
         .await
         .map_err(ServerFnError::new)?;
-    let max_gas_estimate = faucet_info.max_gas_limit() * faucet_info.max_gas_fee_cap();
-    if faucet_balance < (faucet_info.drip_amount() + max_gas_estimate) {
+    if faucet_balance < faucet_info.drip_amount() {
         return Err(ServerFnError::ServerError(
             "Faucet is empty, Request top-up".to_string(),
+        ));
+    }
+    let max_gas_estimate =
+        DripAmount::Token(faucet_info.max_gas_limit() * faucet_info.max_gas_fee_cap());
+    let native_balance = rpc
+        .wallet_balance(*wallet_address, &TokenType::Native)
+        .await
+        .map_err(ServerFnError::new)?;
+    if native_balance < max_gas_estimate {
+        return Err(ServerFnError::ServerError(
+            "Not enough balance to cover gas fees, Request top-up".to_string(),
         ));
     }
     Ok(())
@@ -335,6 +410,12 @@ async fn handle_native_claim(
 ) -> Result<TxHash, ServerFnError> {
     use crate::utils::message::message_transfer;
 
+    let DripAmount::Token(drip_amount) = faucet_info.drip_amount() else {
+        return Err(ServerFnError::ServerError(
+            "Invalid DripAmount, Expected Token variant".to_string(),
+        ));
+    };
+    ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
     let id_address = rpc.lookup_id(recipient).await.unwrap_or_else(|_| {
         log::debug!("ID lookup failed, using recipient address: {:?}", recipient);
         recipient
@@ -343,13 +424,11 @@ async fn handle_native_claim(
         .mpool_get_nonce(from)
         .await
         .map_err(ServerFnError::new)?;
-    let drip_amount = faucet_info.drip_amount();
-    let raw_msg = message_transfer(from, id_address, drip_amount.clone());
+    let raw_msg = message_transfer(from, id_address, drip_amount);
     let msg = rpc
         .estimate_gas(raw_msg)
         .await
         .map_err(ServerFnError::new)?;
-
     match signed_fil_transfer(
         LotusJson(id_address),
         msg.gas_limit,
@@ -381,6 +460,7 @@ async fn handle_erc20_claim(
 ) -> Result<TxHash, ServerFnError> {
     use crate::utils::address::AddressAlloyExt;
 
+    ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
     let eth_to = recipient.into_eth_address().map_err(ServerFnError::new)?;
     let nonce = rpc
         .mpool_get_nonce(from)

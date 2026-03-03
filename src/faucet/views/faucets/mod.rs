@@ -1,4 +1,5 @@
 pub mod calibnet;
+pub mod calibnet_datacap;
 pub mod calibnet_usdfc;
 pub mod mainnet;
 
@@ -167,6 +168,9 @@ pub fn Faucets() -> impl IntoView {
                 </a>
                 <a class="link-text" href="/faucet/calibnet">
                     "🧪 Calibration Network Faucet"
+                </a>
+                <a class="link-text" href="/faucet/calibnet_datacap">
+                    "⚡️ Calibration Network Datacap Faucet"
                 </a>
                 <a class="link-text" href="/faucet/mainnet">
                     "🌐 Mainnet Network Faucet"

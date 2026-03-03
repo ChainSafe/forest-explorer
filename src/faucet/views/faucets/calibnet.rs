@@ -13,7 +13,7 @@ pub fn Faucet_Calibnet() -> impl IntoView {
     let faucet_info = FaucetInfo::CalibnetFIL;
     let rpc_context = RpcContext::use_context();
     // Set rpc context to calibnet url
-    rpc_context.set(Provider::get_network_url(FaucetInfo::CalibnetFIL.network()));
+    rpc_context.set(Provider::get_network_url(faucet_info.network()));
 
     view! {
         <Title text="🧪 Filecoin Faucet - Calibration Network" />
