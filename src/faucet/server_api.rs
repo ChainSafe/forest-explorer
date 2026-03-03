@@ -211,7 +211,7 @@ pub async fn signed_erc20_transfer(
 /// manipulate the message data.
 /// This function is used for granting Datacap to a verified client address.
 #[server]
-pub async fn signed_datacap_transfer(
+pub async fn signed_datacap_allocation(
     to: LotusJson<Address>,
     gas_limit: u64,
     gas_fee_cap: LotusJson<TokenAmount>,
@@ -407,7 +407,7 @@ async fn handle_native_claim(
         ));
     };
     ensure_faucet_has_funds(&rpc, &from, &faucet_info).await?;
-    let id_address = rpc.lookup_id(recipient).await.unwrap_or({
+    let id_address = rpc.lookup_id(recipient).await.unwrap_or_else(|_| {
         log::debug!("ID lookup failed, using recipient address: {:?}", recipient);
         recipient
     });

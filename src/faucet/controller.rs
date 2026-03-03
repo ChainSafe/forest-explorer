@@ -1,6 +1,6 @@
 use super::constants::FaucetInfo;
 use super::server_api::{
-    faucet_address, signed_datacap_transfer, signed_erc20_transfer, signed_fil_transfer,
+    faucet_address, signed_datacap_allocation, signed_erc20_transfer, signed_fil_transfer,
 };
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
@@ -266,9 +266,11 @@ impl FaucetController {
                                 log::info!("Sent message: {:?}", cid);
                             }
                             Err(e) => {
+                                log::error!("Error signing {info} transaction: {e}");
                                 if let FaucetError::RateLimited { retry_after_secs } = e {
                                     faucet.send_limited.set(retry_after_secs);
                                 }
+                                bail!("Failed to sign {info} transaction: {e}");
                             }
                         }
                         Ok(())
@@ -316,9 +318,11 @@ impl FaucetController {
                                 console_log(&format!("Transaction sent successfully: {tx_id}"));
                             }
                             Err(e) => {
+                                log::error!("Error signing {info} transaction: {e}");
                                 if let FaucetError::RateLimited { retry_after_secs } = e {
                                     faucet.send_limited.set(retry_after_secs);
                                 }
+                                bail!("Failed to sign {info} transaction: {e}");
                             }
                         }
                         Ok(())
@@ -366,7 +370,7 @@ impl FaucetController {
                             RawBytes::new(fvm_ipld_encoding::to_vec(&params)?),
                         );
                         let msg = rpc.estimate_gas(raw_msg).await?;
-                        match signed_datacap_transfer(
+                        match signed_datacap_allocation(
                             LotusJson(id_address),
                             msg.gas_limit,
                             LotusJson(msg.gas_fee_cap),
@@ -384,9 +388,11 @@ impl FaucetController {
                                 log::info!("Sent message: {:?}", cid);
                             }
                             Err(e) => {
+                                log::error!("Error signing {info} transaction: {e}");
                                 if let FaucetError::RateLimited { retry_after_secs } = e {
                                     faucet.send_limited.set(retry_after_secs);
                                 }
+                                bail!("Failed to sign {info} transaction: {e}");
                             }
                         }
                         Ok(())
