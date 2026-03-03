@@ -375,18 +375,27 @@ fn parse_and_validate_address(
 #[cfg(feature = "ssr")]
 async fn ensure_faucet_has_funds(
     rpc: &crate::utils::rpc_context::Provider,
-    from: &Address,
+    wallet_address: &Address,
     faucet_info: &FaucetInfo,
 ) -> Result<(), ServerFnError> {
     let faucet_balance = rpc
-        .wallet_balance(*from, &faucet_info.token_type())
+        .wallet_balance(*wallet_address, &faucet_info.token_type())
         .await
         .map_err(ServerFnError::new)?;
-    let max_gas_estimate =
-        DripAmount::Token(faucet_info.max_gas_limit() * faucet_info.max_gas_fee_cap());
-    if faucet_balance < (&faucet_info.drip_amount() + &max_gas_estimate) {
+    if faucet_balance < faucet_info.drip_amount() {
         return Err(ServerFnError::ServerError(
             "Faucet is empty, Request top-up".to_string(),
+        ));
+    }
+    let max_gas_estimate =
+        DripAmount::Token(faucet_info.max_gas_limit() * faucet_info.max_gas_fee_cap());
+    let native_balance = rpc
+        .wallet_balance(*wallet_address, &TokenType::Native)
+        .await
+        .map_err(ServerFnError::new)?;
+    if native_balance < max_gas_estimate {
+        return Err(ServerFnError::ServerError(
+            "Not enough balance to cover gas fees, Request top-up".to_string(),
         ));
     }
     Ok(())
