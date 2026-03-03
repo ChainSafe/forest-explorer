@@ -384,7 +384,7 @@ async fn ensure_faucet_has_funds(
         .map_err(ServerFnError::new)?;
     let max_gas_estimate =
         DripAmount::Token(faucet_info.max_gas_limit() * faucet_info.max_gas_fee_cap());
-    if faucet_balance < (faucet_info.drip_amount() + &max_gas_estimate) {
+    if faucet_balance < (&faucet_info.drip_amount() + &max_gas_estimate) {
         return Err(ServerFnError::ServerError(
             "Faucet is empty, Request top-up".to_string(),
         ));

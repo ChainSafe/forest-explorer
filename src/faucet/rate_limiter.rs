@@ -98,14 +98,14 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
             .await
             .ok()
             .flatten()
-            .unwrap_or(DripAmount::default(faucet_info.token_type()));
+            .unwrap_or(DripAmount::zero(faucet_info.token_type()));
         let claimed = self
             .storage
             .get::<DripAmount>(&format!("claimed_{id}"))
             .await
             .ok()
             .flatten()
-            .unwrap_or(DripAmount::default(faucet_info.token_type()));
+            .unwrap_or(DripAmount::zero(faucet_info.token_type()));
         if dripped >= faucet_info.drip_cap() {
             let retry_after = self
                 .storage
@@ -157,8 +157,8 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         faucet_info: &FaucetInfo,
         id: &str,
         now: DateTime<Utc>,
-        claimed: DripAmount,
-        dripped: DripAmount,
+        claimed: &DripAmount,
+        dripped: &DripAmount,
     ) -> Result<()> {
         let drip_amount = faucet_info.drip_amount();
         let update_dripped = dripped + &drip_amount;
@@ -190,7 +190,7 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         let (is_allowed, retry_after, claimed, dripped) =
             self.get_rate_limit(&faucet_info, &id, now).await?;
         if is_allowed {
-            self.update_rate_limit(&faucet_info, &id, now, claimed, dripped)
+            self.update_rate_limit(&faucet_info, &id, now, &claimed, &dripped)
                 .await?;
         }
         Ok(retry_after)
@@ -233,8 +233,8 @@ impl RateLimiter {
         faucet_info: &FaucetInfo,
         id: &str,
         now: DateTime<Utc>,
-        claimed: DripAmount,
-        dripped: DripAmount,
+        claimed: &DripAmount,
+        dripped: &DripAmount,
     ) -> Result<()> {
         self.create_core()
             .update_rate_limit(faucet_info, id, now, claimed, dripped)
@@ -255,7 +255,7 @@ impl DurableObject for RateLimiter {
             self.get_rate_limit(&faucet_info, &id, now).await?;
 
         if is_allowed {
-            self.update_rate_limit(&faucet_info, &id, now, claimed, dripped)
+            self.update_rate_limit(&faucet_info, &id, now, &claimed, &dripped)
                 .await?;
         }
         Response::from_json(&retry_after)
@@ -384,7 +384,7 @@ mod tests {
         let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
         let faucet_info = FaucetInfo::CalibnetFIL;
         let exceeded_amount =
-            faucet_info.wallet_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
+            &faucet_info.wallet_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
         let alarm_time = now.timestamp_millis() + 3600 * 1000; // 1 hour from now
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
@@ -409,7 +409,7 @@ mod tests {
         let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
         let faucet_info = FaucetInfo::CalibnetFIL;
         let exceeded_amount =
-            faucet_info.drip_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
+            &faucet_info.drip_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
         let alarm_time = now.timestamp_millis() + 7200 * 1000; // 2 hours from now
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: Some(exceeded_amount),
@@ -479,8 +479,8 @@ mod tests {
         let wallet_id = "test_wallet_123";
         let path = format!("http://do/rate_limiter/{faucet_info}/{wallet_id}");
         let drip_amount = faucet_info.drip_amount();
-        let mut claimed = DripAmount::default(faucet_info.token_type());
-        let mut dripped = DripAmount::default(faucet_info.token_type());
+        let mut claimed = DripAmount::zero(faucet_info.token_type());
+        let mut dripped = DripAmount::zero(faucet_info.token_type());
 
         // For each request up to wallet cap
         for _ in 0..CALIBNET_PER_WALLET_DRIP_MULTIPLIER {
@@ -534,10 +534,10 @@ mod tests {
         let wallet_3 = "wallet_3";
         let drip_amount = faucet_info.drip_amount();
         let drip_cap = faucet_info.drip_cap();
-        let mut dripped = DripAmount::default(faucet_info.token_type());
-        let mut claimed_1 = DripAmount::default(faucet_info.token_type());
-        let mut claimed_2 = DripAmount::default(faucet_info.token_type());
-        let mut claimed_3 = DripAmount::default(faucet_info.token_type());
+        let mut dripped = DripAmount::zero(faucet_info.token_type());
+        let mut claimed_1 = DripAmount::zero(faucet_info.token_type());
+        let mut claimed_2 = DripAmount::zero(faucet_info.token_type());
+        let mut claimed_3 = DripAmount::zero(faucet_info.token_type());
 
         // Wallet 1: Up to wallet cap
         for _ in 0..CALIBNET_PER_WALLET_DRIP_MULTIPLIER {
@@ -653,10 +653,10 @@ mod tests {
         let wallets = ["wallet_1", "wallet_2", "wallet_3", "wallet_4", "wallet_5"];
         let drip_amount = faucet_info.drip_amount();
         let drip_cap = faucet_info.drip_cap();
-        let mut dripped = DripAmount::default(faucet_info.token_type());
+        let mut dripped = DripAmount::zero(faucet_info.token_type());
         let mut claimed = std::collections::HashMap::new();
         for &wallet in &wallets {
-            claimed.insert(wallet, DripAmount::default(faucet_info.token_type()));
+            claimed.insert(wallet, DripAmount::zero(faucet_info.token_type()));
         }
         // Use multiple wallets to reach the global cap
         'outer: for &wallet in &wallets {

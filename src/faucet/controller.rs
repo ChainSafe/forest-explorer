@@ -47,9 +47,9 @@ impl FaucetController {
                         .wallet_balance(address, &token_type)
                         .await
                         .ok()
-                        .unwrap_or(DripAmount::default(token_type))
+                        .unwrap_or(DripAmount::zero(token_type))
                 } else {
-                    DripAmount::default(token_type)
+                    DripAmount::zero(token_type)
                 }
             }
         });
@@ -70,9 +70,9 @@ impl FaucetController {
                         .wallet_balance(addr, &token_type)
                         .await
                         .ok()
-                        .unwrap_or(DripAmount::default(token_type))
+                        .unwrap_or(DripAmount::zero(token_type))
                 } else {
-                    DripAmount::default(token_type)
+                    DripAmount::zero(token_type)
                 }
             }
         });
@@ -149,7 +149,7 @@ impl FaucetController {
         self.faucet
             .target_balance
             .get()
-            .unwrap_or(DripAmount::default(self.info.token_type()))
+            .unwrap_or(DripAmount::zero(self.info.token_type()))
     }
 
     pub fn get_sender_address(&self) -> String {
@@ -172,7 +172,7 @@ impl FaucetController {
         self.faucet
             .faucet_balance
             .get()
-            .unwrap_or(DripAmount::default(self.info.token_type()))
+            .unwrap_or(DripAmount::zero(self.info.token_type()))
     }
 
     pub fn get_error_messages(&self) -> Vec<(Uuid, String)> {

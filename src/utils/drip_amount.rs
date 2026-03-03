@@ -1,4 +1,4 @@
-use fvm_shared::{econ::TokenAmount, sector::StoragePower};
+use fvm_shared::{bigint::Zero, econ::TokenAmount, sector::StoragePower};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Mul};
 
@@ -21,15 +21,15 @@ pub enum TokenType {
 pub type ContractAddress = alloy::primitives::Address;
 
 impl DripAmount {
-    pub fn default(token_type: TokenType) -> DripAmount {
+    pub fn zero(token_type: TokenType) -> DripAmount {
         match token_type {
-            TokenType::Native | TokenType::Erc20(_) => DripAmount::Token(TokenAmount::default()),
-            TokenType::Datacap => DripAmount::Storage(StoragePower::default()),
+            TokenType::Native | TokenType::Erc20(_) => DripAmount::Token(TokenAmount::zero()),
+            TokenType::Datacap => DripAmount::Storage(StoragePower::zero()),
         }
     }
 }
 
-impl Add<&DripAmount> for DripAmount {
+impl Add<&DripAmount> for &DripAmount {
     type Output = DripAmount;
 
     fn add(self, rhs: &DripAmount) -> DripAmount {
@@ -43,7 +43,7 @@ impl Add<&DripAmount> for DripAmount {
 
 impl AddAssign<&DripAmount> for DripAmount {
     fn add_assign(&mut self, rhs: &DripAmount) {
-        *self = self.clone().add(rhs);
+        *self = self.add(rhs);
     }
 }
 
