@@ -91,6 +91,7 @@ jobs:
           echo "SECRET_WALLET=${{ secrets.TEST_CALIBNET_PRIVATE_KEY_HEX }}" > .dev.vars
           echo "SECRET_MAINNET_WALLET=${{ secrets.TEST_MAINNET_PRIVATE_KEY_HEX }}" >> .dev.vars
           echo "SECRET_CALIBNET_USDFC_WALLET=${{ secrets.TEST_CALIBNET_USDFC_PRIVATE_KEY_HEX }}" >> .dev.vars
+          echo "SECRET_CALIBNET_DATACAP_WALLET=${{ secrets.TEST_CALIBNET_PRIVATE_KEY_HEX }}" >> .dev.vars
 
       - name: Build and run website
         run: |

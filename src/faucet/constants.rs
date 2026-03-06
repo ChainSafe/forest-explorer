@@ -150,9 +150,10 @@ impl FaucetInfo {
     #[cfg(any(test, feature = "ssr"))]
     pub fn secret_key_name(&self) -> &str {
         match self {
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetDatacap => "SECRET_WALLET",
+            FaucetInfo::CalibnetFIL => "SECRET_WALLET",
             FaucetInfo::MainnetFIL => "SECRET_MAINNET_WALLET",
             FaucetInfo::CalibnetUSDFC => "SECRET_CALIBNET_USDFC_WALLET",
+            FaucetInfo::CalibnetDatacap => "SECRET_CALIBNET_DATACAP_WALLET",
         }
     }
 
@@ -359,7 +360,10 @@ mod tests {
         assert_eq!(calibnet_datacap_faucet.rate_limit_seconds(), 60);
         assert_eq!(calibnet_datacap_faucet.unit(), "MiB");
         assert_eq!(calibnet_datacap_faucet.network(), Network::Testnet);
-        assert_eq!(calibnet_datacap_faucet.secret_key_name(), "SECRET_WALLET");
+        assert_eq!(
+            calibnet_datacap_faucet.secret_key_name(),
+            "SECRET_CALIBNET_DATACAP_WALLET"
+        );
         assert!(calibnet_datacap_faucet.transaction_base_url().is_some());
         assert_eq!(calibnet_datacap_faucet.token_type(), TokenType::Datacap);
         assert_eq!(calibnet_datacap_faucet.chain_id(), 314159);
