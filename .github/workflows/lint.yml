@@ -36,7 +36,7 @@ jobs:
         continue-on-error: true
       - uses: actions/checkout@v6
       - name: Apt Dependencies
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 5
           max_attempts: 3
