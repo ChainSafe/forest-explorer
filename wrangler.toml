@@ -21,9 +21,9 @@ enabled = true
 
 [build]
 command = """
-mise run assets &&
-mise run css-minify &&
-mise run wasm-pack &&
+mise run build:assets &&
+mise run build:css &&
+mise run build:wasm &&
 worker-build --release --features ssr --no-default-features
 """
 
@@ -31,8 +31,8 @@ worker-build --release --features ssr --no-default-features
 bindings = [{ name = "RATE_LIMITER", class_name = "RateLimiter" }]
 [env.quick.build]
 command = """
-mise run assets &&
-mise run css-minify &&
-mise run wasm-pack-dev &&
+mise run build:assets &&
+mise run build:css &&
+mise run build:wasm-dev &&
 worker-build --dev --no-opt --features ssr --no-default-features
 """
