@@ -62,7 +62,7 @@ permission.
 Each test suite runs independently:
 
 ```bash
-pnpm wrangler dev --port 8788 --persist-to .wrangler-state-cors-${github.run_id}
+pnpm exec wrangler dev --port 8788 --persist-to .wrangler-state-cors-${github.run_id}
 ```
 
 This prevents CORS test state from interfering with Browser or API tests.
@@ -153,7 +153,7 @@ Validates security headers and error handling:
 
 ```bash
 # Start server
-pnpm wrangler dev --port 8787
+mise run start -- --port 8787
 
 # Run CORS tests
 API_URL="http://127.0.0.1:8787" k6 run e2e/test_cors.js

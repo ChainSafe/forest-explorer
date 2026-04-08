@@ -1,0 +1,104 @@
+[tools]
+node = "22"
+pnpm = "10.29.3"
+cargo-binstall = "1.17.7"
+
+[tasks.install-lint-tools]
+description = "Install lint tools via cargo-binstall"
+run = "cargo binstall --no-confirm cargo-spellcheck@0.15.7 taplo-cli@0.10.0 leptosfmt@0.1.33 cargo-deny@0.19.0"
+
+[tasks.lint]
+description = "Run all lints"
+depends = ["deny", "spellcheck", "fmt-lints", "cargo-clippy"]
+
+[tasks.fmt]
+description = "Format all files"
+run = """
+cargo fmt --all
+taplo fmt
+leptosfmt .
+pnpm install
+pnpm exec prettier --write '**/*.md'
+"""
+
+[tasks.fmt-lints]
+description = "Check formatting"
+depends = ["cargo-fmt", "taplo", "md-lint", "leptos-fmt"]
+
+[tasks.md-lint]
+description = "Check markdown formatting"
+run = """
+pnpm install
+pnpm exec prettier --check '**/*.md'
+"""
+
+[tasks.md-fmt]
+description = "Format markdown files"
+run = """
+pnpm install
+pnpm exec prettier --write '**/*.md'
+"""
+
+[tasks.cargo-fmt]
+description = "Check cargo formatting"
+run = "cargo fmt --all --check"
+
+[tasks.leptos-fmt]
+description = "Check leptos formatting"
+run = "leptosfmt --check ."
+
+[tasks.cargo-clippy]
+description = "Run cargo clippy"
+run = "cargo clippy --workspace --all-features --all-targets --quiet --no-deps -- --deny warnings"
+
+[tasks.taplo]
+description = "Check and lint TOML files"
+run = """
+taplo fmt --check
+taplo lint
+"""
+
+[tasks.deny]
+description = "Run cargo deny"
+run = 'cargo deny check || (echo "See deny.toml"; false)'
+
+[tasks.spellcheck]
+description = "Run cargo spellcheck"
+run = 'cargo spellcheck --code 1 || (echo "See .config/spellcheck.toml"; false)'
+
+[tasks.assets]
+description = "Copy public assets"
+run = "mkdir -p assets && cp public/* assets/"
+
+[tasks.css-minify]
+description = "Minify CSS with tailwindcss"
+run = "pnpm exec tailwindcss --minify -i style/tailwind.css -o assets/style.css"
+
+[tasks.wasm-pack]
+description = "Build client WASM (release)"
+run = "wasm-pack build --out-dir assets/pkg --release --no-typescript --target web --out-name client --features hydrate --no-default-features"
+
+[tasks.wasm-pack-dev]
+description = "Build client WASM (dev, no optimization)"
+run = "wasm-pack build --out-dir assets/pkg --dev --no-opt --no-typescript --target web --out-name client --features hydrate --no-default-features"
+
+[tasks.build]
+description = "Build the project (wrangler build)"
+run = """
+pnpm install
+pnpm exec wrangler build
+"""
+
+[tasks.dev]
+description = "Start dev server (skip optimization)"
+run = """
+pnpm install
+pnpm exec wrangler dev --env quick "$@"
+"""
+
+[tasks.start]
+description = "Start local server"
+run = """
+pnpm install
+pnpm exec wrangler dev "$@"
+"""

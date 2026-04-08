@@ -18,18 +18,13 @@ Anything pushed to `main` will automatically be deployed at
 
 ## Development
 
-Installing node(LTS versions recommended).
+Install [mise](https://mise.jdx.dev/) and run `mise install` to set up `node`
+and `pnpm`.
 
-Running `corepack enable pnpm` to opt-in corepack, see
-[docs](https://pnpm.io/installation#using-corepack) for details.
+Running `mise run start` will spawn a local copy of the explorer.
 
-Running `pnpm i` or `pnpm i --frozen-lockfile` once to install all required npm
-dependencies.
-
-Running `pnpm start` will spawn a local copy of the explorer.
-
-To speed up the build during development, you can run `pnpm dev` which will skip
-the optimization step.
+To speed up the build during development, you can run `mise run dev` which will
+skip the optimization step.
 
 You can define secrets for your local faucet in the `.dev.vars` file. This file
 is ignored by git.
