@@ -18,7 +18,7 @@ Anything pushed to `main` will automatically be deployed at
 
 ## Development
 
-Install [mise](https://mise.jdx.dev/) and run `mise install` to set up `node`
+Install [`mise`](https://mise.jdx.dev/) and run `mise install` to set up `node`
 and `pnpm`.
 
 Running `mise run start` will spawn a local copy of the explorer.
