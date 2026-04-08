@@ -20,7 +20,7 @@ depends = ["lint:cargo-fmt", "lint:taplo", "lint:markdown", "lint:leptos-fmt"]
 [tasks."lint:markdown"]
 description = "Check markdown formatting"
 run = """
-pnpm install
+pnpm install --frozen-lockfile
 pnpm exec prettier --check '**/*.md'
 """
 
@@ -72,7 +72,7 @@ run = "leptosfmt ."
 [tasks."fmt:markdown"]
 description = "Format markdown files"
 run = """
-pnpm install
+pnpm install --frozen-lockfile
 pnpm exec prettier --write '**/*.md'
 """
 
@@ -81,7 +81,7 @@ pnpm exec prettier --write '**/*.md'
 [tasks.build]
 description = "Build the project (wrangler build)"
 run = """
-pnpm install
+pnpm install --frozen-lockfile
 pnpm exec wrangler build
 """
 
@@ -106,13 +106,13 @@ run = "wasm-pack build --out-dir assets/pkg --dev --no-opt --no-typescript --tar
 [tasks.dev]
 description = "Start dev server (skip optimization)"
 run = """
-pnpm install
+pnpm install --frozen-lockfile
 pnpm exec wrangler dev --env quick "$@"
 """
 
 [tasks.start]
 description = "Start local server"
 run = """
-pnpm install
+pnpm install --frozen-lockfile
 pnpm exec wrangler dev "$@"
 """
