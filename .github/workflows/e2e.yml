@@ -55,6 +55,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - uses: jdx/mise-action@v4
+
       - name: Cache dependencies
         uses: actions/cache@v5
         with:
@@ -105,11 +107,9 @@ jobs:
           # Set to ~0.000000001 tFIL for e2e tests
           export CALIBNET_DRIP_AMOUNT=1
 
-          corepack enable pnpm
-          pnpm i --frozen-lockfile
-          pnpm build
+          mise run build
           # Use separate state directories to isolate Durable Object storage between parallel runs
-          pnpm wrangler dev --port ${{ matrix.port }} --persist-to .wrangler-state-${{ matrix.state_dir }}-${{ github.run_id }} &
+          pnpm exec wrangler dev --port ${{ matrix.port }} --persist-to .wrangler-state-${{ matrix.state_dir }}-${{ github.run_id }} &
           echo "waiting for server on port ${{ matrix.port }}"
           timeout 120 sh -c 'until nc -z $0 $1; do sleep 1; done' 127.0.0.1 ${{ matrix.port }}
           echo "TCP port check passed, now waiting for HTTP server to be ready..."

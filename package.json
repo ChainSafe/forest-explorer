@@ -10,16 +10,5 @@
     "tailwindcss": "^3.4.17",
     "wrangler": "^4.76.0"
   },
-  "scripts": {
-    "prettier-version": "prettier --version",
-    "md-fmt": "prettier --write '**/*.md'",
-    "md-check": "prettier --check '**/*.md'",
-    "css-minify": "tailwindcss --minify -i style/tailwind.css -o assets/style.css",
-    "assets": "mkdir -p assets && cp public/* assets/",
-    "wasm-pack": "wasm-pack build --out-dir assets/pkg --release --no-typescript --target web --out-name client --features hydrate --no-default-features",
-    "wasm-pack-dev": "wasm-pack build --out-dir assets/pkg --dev --no-opt --no-typescript --target web --out-name client --features hydrate --no-default-features",
-    "build": "wrangler build",
-    "dev": "wrangler dev --env quick",
-    "start": "wrangler dev"
-  }
+  "scripts": {}
 }

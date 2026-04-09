@@ -1,0 +1,118 @@
+[tools]
+node = "22"
+pnpm = "10.29.3"
+cargo-binstall = "1.17.7"
+
+# Lint
+
+[tasks."lint:install-tools"]
+description = "Install lint tools via cargo-binstall"
+run = "cargo binstall --no-confirm cargo-spellcheck@0.15.7 taplo-cli@0.10.0 leptosfmt@0.1.33 cargo-deny@0.19.0"
+
+[tasks.lint]
+description = "Run all lints"
+depends = ["lint:deny", "lint:spellcheck", "lint:fmt", "lint:clippy"]
+
+[tasks."lint:fmt"]
+description = "Check all formatting"
+depends = ["lint:cargo-fmt", "lint:taplo", "lint:markdown", "lint:leptos-fmt"]
+
+[tasks."lint:markdown"]
+description = "Check markdown formatting"
+run = """
+pnpm install --frozen-lockfile
+pnpm exec prettier --check '**/*.md'
+"""
+
+[tasks."lint:cargo-fmt"]
+description = "Check cargo formatting"
+run = "cargo fmt --all --check"
+
+[tasks."lint:leptos-fmt"]
+description = "Check leptos formatting"
+run = "leptosfmt --check ."
+
+[tasks."lint:clippy"]
+description = "Run cargo clippy"
+run = "cargo clippy --workspace --all-features --all-targets --quiet --no-deps -- --deny warnings"
+
+[tasks."lint:taplo"]
+description = "Check and lint TOML files"
+run = """
+taplo fmt --check
+taplo lint
+"""
+
+[tasks."lint:deny"]
+description = "Run cargo deny"
+run = 'cargo deny check || (echo "See deny.toml"; false)'
+
+[tasks."lint:spellcheck"]
+description = "Run cargo spellcheck"
+run = 'cargo spellcheck --code 1 || (echo "See .config/spellcheck.toml"; false)'
+
+# Format
+
+[tasks.fmt]
+description = "Format all files"
+depends = ["fmt:cargo", "fmt:taplo", "fmt:leptos", "fmt:markdown"]
+
+[tasks."fmt:cargo"]
+description = "Format Rust files"
+run = "cargo fmt --all"
+
+[tasks."fmt:taplo"]
+description = "Format TOML files"
+run = "taplo fmt"
+
+[tasks."fmt:leptos"]
+description = "Format Leptos files"
+run = "leptosfmt ."
+
+[tasks."fmt:markdown"]
+description = "Format markdown files"
+run = """
+pnpm install --frozen-lockfile
+pnpm exec prettier --write '**/*.md'
+"""
+
+# Build
+
+[tasks.build]
+description = "Build the project (wrangler build)"
+run = """
+pnpm install --frozen-lockfile
+pnpm exec wrangler build
+"""
+
+[tasks."build:assets"]
+description = "Copy public assets"
+run = "mkdir -p assets && cp public/* assets/"
+
+[tasks."build:css"]
+description = "Minify CSS with tailwindcss"
+run = "pnpm exec tailwindcss --minify -i style/tailwind.css -o assets/style.css"
+
+[tasks."build:wasm"]
+description = "Build client WASM (release)"
+run = "wasm-pack build --out-dir assets/pkg --release --no-typescript --target web --out-name client --features hydrate --no-default-features"
+
+[tasks."build:wasm-dev"]
+description = "Build client WASM (dev, no optimization)"
+run = "wasm-pack build --out-dir assets/pkg --dev --no-opt --no-typescript --target web --out-name client --features hydrate --no-default-features"
+
+# Dev
+
+[tasks.dev]
+description = "Start dev server (skip optimization)"
+run = """
+pnpm install --frozen-lockfile
+pnpm exec wrangler dev --env quick "$@"
+"""
+
+[tasks.start]
+description = "Start local server"
+run = """
+pnpm install --frozen-lockfile
+pnpm exec wrangler dev "$@"
+"""
