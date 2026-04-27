@@ -8,7 +8,7 @@ use crate::utils::lotus_json::{
     LotusJson,
     signed_message::{SignedMessage, message_cid},
 };
-use alloy::{network::TransactionBuilder, rpc::types::TransactionRequest};
+use alloy::{network::NetworkTransactionBuilder, rpc::types::TransactionRequest};
 use anyhow::Result;
 use axum::Extension;
 use fvm_shared::message::Message;
