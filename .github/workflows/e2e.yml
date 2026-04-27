@@ -48,7 +48,7 @@ jobs:
     name: "E2E ${{ matrix.name }}"
     steps:
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.10
         timeout-minutes: "${{ fromJSON(env.CACHE_TIMEOUT_MINUTES) }}"
         continue-on-error: true
 
