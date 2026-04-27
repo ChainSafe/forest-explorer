@@ -12,7 +12,7 @@ resolver = "3"
 crate-type = ["cdylib"]
 
 [dependencies]
-alloy = "1"
+alloy = "2"
 anyhow = "1"
 async-trait = "0.1"
 axum = { version = "0.8", default-features = false, optional = true }
