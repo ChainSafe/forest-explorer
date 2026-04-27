@@ -1,6 +1,5 @@
 use anyhow::{Context as _, Result};
 use bls_signatures::{PrivateKey as BlsPrivate, Serialize as _};
-use libsecp256k1::{PublicKey as SecpPublic, SecretKey as SecpPrivate};
 use serde::{Deserialize, Serialize};
 use std::{convert::TryFrom, str::FromStr};
 
@@ -11,9 +10,9 @@ pub fn to_public(sig_type: SignatureType, private_key: &[u8]) -> Result<Vec<u8>>
     match sig_type {
         SignatureType::BLS => Ok(BlsPrivate::from_bytes(private_key)?.public_key().as_bytes()),
         SignatureType::Secp256k1 => {
-            let private_key = SecpPrivate::parse_slice(private_key)?;
-            let public_key = SecpPublic::from_secret_key(&private_key);
-            Ok(public_key.serialize().to_vec())
+            let private_key = k256::ecdsa::SigningKey::from_slice(private_key)?;
+            let public_key = private_key.verifying_key();
+            Ok(public_key.to_encoded_point(false).as_bytes().to_vec())
         }
     }
 }
@@ -112,7 +111,6 @@ pub fn sign(
     msg: &[u8],
 ) -> Result<fvm_shared::crypto::signature::Signature> {
     use fvm_shared::crypto::signature::Signature;
-    use libsecp256k1::Message as SecpMessage;
     match sig_type {
         SignatureType::BLS => {
             let priv_key = BlsPrivate::from_bytes(private_key)?;
@@ -123,13 +121,12 @@ pub fn sign(
             Ok(crypto_sig)
         }
         SignatureType::Secp256k1 => {
-            let priv_key = SecpPrivate::parse_slice(private_key)?;
+            let priv_key = k256::ecdsa::SigningKey::from_slice(private_key)?;
             let msg_hash = blake2b_256(msg);
-            let message = SecpMessage::parse(&msg_hash);
-            let (sig, recovery_id) = libsecp256k1::sign(&message, &priv_key);
+            let (sig, recovery_id) = priv_key.sign_prehash_recoverable(&msg_hash)?;
             let mut new_bytes = [0; 65];
-            new_bytes[..64].copy_from_slice(&sig.serialize());
-            new_bytes[64] = recovery_id.serialize();
+            new_bytes[..64].copy_from_slice(&sig.to_bytes());
+            new_bytes[64] = recovery_id.to_byte();
             let crypto_sig = Signature::new_secp256k1(new_bytes.to_vec());
             Ok(crypto_sig)
         }
