@@ -1,3 +1,5 @@
+#![recursion_limit = "1024"]
+
 mod app;
 mod utils;
 #[cfg(feature = "hydrate")]
