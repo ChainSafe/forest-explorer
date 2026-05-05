@@ -1,4 +1,8 @@
 # https://pnpm.io/supply-chain-security
 
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
 blockExoticSubdeps: true
 minimumReleaseAge: 10080 # 7 days

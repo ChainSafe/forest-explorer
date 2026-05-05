@@ -1,7 +1,7 @@
 [tools]
 node = "22"
-pnpm = "10.29.3"
-cargo-binstall = "1.17.7"
+pnpm = "11"
+cargo-binstall = "1.19.0"
 
 # Lint
 
