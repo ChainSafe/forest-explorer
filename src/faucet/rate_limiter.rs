@@ -265,7 +265,10 @@ impl RateLimiter {
     }
 
     fn refund_authorized(req: &Request, env: &Env) -> Result<bool> {
-        let Ok(expected) = env.secret("RATE_LIMITER_REFUND_SECRET").map(|s| s.to_string()) else {
+        let Ok(expected) = env
+            .secret("RATE_LIMITER_REFUND_SECRET")
+            .map(|s| s.to_string())
+        else {
             return Ok(false);
         };
         let expected = expected.trim();
@@ -307,9 +310,7 @@ impl RateLimiter {
 
     async fn refund_rate_limit_for_path(&self, path: &str) -> Result<()> {
         let (faucet_info, id) = Self::parse_refund_path(path)?;
-        self.create_core()
-            .refund_last_drip(&faucet_info, &id)
-            .await
+        self.create_core().refund_last_drip(&faucet_info, &id).await
     }
 }
 
@@ -573,7 +574,9 @@ mod tests {
             .return_once(|_, _| Ok(()));
 
         let core = RateLimiterCore::new(mock_storage);
-        core.refund_last_drip(&faucet_info, wallet_id).await.unwrap();
+        core.refund_last_drip(&faucet_info, wallet_id)
+            .await
+            .unwrap();
     }
 
     /// Checks path parsing with an invalid path.

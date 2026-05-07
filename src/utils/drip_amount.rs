@@ -29,23 +29,15 @@ impl DripAmount {
         }
     }
 
-    /// Subtract rhs from self, saturating at the appropriate zero representation.
+    /// Subtract `rhs` from self, saturating at the appropriate zero representation.
     pub fn saturating_sub(&self, rhs: &DripAmount) -> DripAmount {
         match (self, rhs) {
             (DripAmount::Token(a), DripAmount::Token(b)) => {
-                DripAmount::Token(if *a <= *b {
-                    TokenAmount::zero()
-                } else {
-                    a - b
-                })
+                DripAmount::Token(if *a <= *b { TokenAmount::zero() } else { a - b })
             }
-            (DripAmount::Storage(a), DripAmount::Storage(b)) => DripAmount::Storage(
-                if a <= b {
-                    StoragePower::zero()
-                } else {
-                    a - b
-                },
-            ),
+            (DripAmount::Storage(a), DripAmount::Storage(b)) => {
+                DripAmount::Storage(if a <= b { StoragePower::zero() } else { a - b })
+            }
             _ => unreachable!("DripAmount variant mismatch"),
         }
     }

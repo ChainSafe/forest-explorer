@@ -117,7 +117,7 @@ async fn query_rate_limiter(
 }
 
 /// Undoes one drip allocation in the rate limiter DO after a failed on-chain submission.
-/// Server-internal: never call from a public server fn (would defeat rate limiting).
+/// Server-internal: do not call from a browser-facing server function (would defeat rate limiting).
 pub async fn refund_rate_limit_by_key(
     faucet_info: FaucetInfo,
     wallet_addr: AnyAddress,
