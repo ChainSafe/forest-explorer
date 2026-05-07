@@ -116,6 +116,53 @@ async fn query_rate_limiter(
     .await
 }
 
+/// Undoes one drip allocation in the rate limiter DO after a failed on-chain submission.
+/// Server-internal: never call from a public server fn (would defeat rate limiting).
+pub async fn refund_rate_limit_by_key(
+    faucet_info: FaucetInfo,
+    wallet_addr: AnyAddress,
+) -> Result<(), ServerFnError> {
+    SendWrapper::new(async move {
+        let Extension(env): Extension<Arc<Env>> = extract().await?;
+        if env
+            .secret("RATE_LIMITER_DISABLED")
+            .map(|v| v.to_string().to_lowercase() == "true")
+            .unwrap_or(false)
+        {
+            return Ok(());
+        }
+        let token = match env.secret("RATE_LIMITER_REFUND_SECRET") {
+            Ok(s) if !s.to_string().trim().is_empty() => s.to_string(),
+            _ => {
+                log::warn!("RATE_LIMITER_REFUND_SECRET unset/empty: skipping rate limit refund");
+                return Ok(());
+            }
+        };
+        let stub = env
+            .durable_object("RATE_LIMITER")?
+            .id_from_name(&faucet_info.to_string())?
+            .get_stub()?;
+        let headers = Headers::new();
+        headers.set("Authorization", &format!("Bearer {}", token.trim()))?;
+        let mut init = RequestInit::new();
+        init.with_method(Method::Post).with_headers(headers);
+        let request = Request::new_with_init(
+            &format!("http://do/rate_limiter/{faucet_info}/{wallet_addr}/refund"),
+            &init,
+        )?;
+        let status = stub
+            .fetch_with_request(request)
+            .await
+            .map_err(ServerFnError::new)?
+            .status_code();
+        if !(200..300).contains(&status) {
+            log::warn!("rate limit refund DO returned HTTP {status} (faucet={faucet_info})");
+        }
+        Ok(())
+    })
+    .await
+}
+
 /// Checks if the request can proceed based on the rate limit for the given faucet.
 pub async fn check_rate_limit(
     faucet_info: FaucetInfo,

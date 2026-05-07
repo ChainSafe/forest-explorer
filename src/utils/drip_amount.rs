@@ -1,4 +1,5 @@
-use fvm_shared::{bigint::Zero, econ::TokenAmount, sector::StoragePower};
+use fvm_shared::{econ::TokenAmount, sector::StoragePower};
+use num_traits::Zero as _;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Mul};
 
@@ -25,6 +26,27 @@ impl DripAmount {
         match token_type {
             TokenType::Native | TokenType::Erc20(_) => DripAmount::Token(TokenAmount::zero()),
             TokenType::Datacap => DripAmount::Storage(StoragePower::zero()),
+        }
+    }
+
+    /// Subtract rhs from self, saturating at the appropriate zero representation.
+    pub fn saturating_sub(&self, rhs: &DripAmount) -> DripAmount {
+        match (self, rhs) {
+            (DripAmount::Token(a), DripAmount::Token(b)) => {
+                DripAmount::Token(if *a <= *b {
+                    TokenAmount::zero()
+                } else {
+                    a - b
+                })
+            }
+            (DripAmount::Storage(a), DripAmount::Storage(b)) => DripAmount::Storage(
+                if a <= b {
+                    StoragePower::zero()
+                } else {
+                    a - b
+                },
+            ),
+            _ => unreachable!("DripAmount variant mismatch"),
         }
     }
 }

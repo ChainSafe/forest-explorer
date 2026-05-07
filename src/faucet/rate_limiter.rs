@@ -86,6 +86,20 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         Ok((faucet_info, id))
     }
 
+    /// Same shape as [`parse_request_path`] but expects a trailing `/refund` segment.
+    fn parse_refund_path(path: &str) -> Result<(FaucetInfo, String)> {
+        let mut path_info = path.split('/');
+        if path_info.next_back() != Some("refund") {
+            return Err(Error::RustError(
+                "rate limiter refund path must end with /refund".into(),
+            ));
+        }
+        let id = path_info.next_back().unwrap_or_default().to_string();
+        let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
+            .map_err(|e| Error::RustError(e.to_string()))?;
+        Ok((faucet_info, id))
+    }
+
     async fn get_rate_limit(
         &self,
         faucet_info: &FaucetInfo,
@@ -184,6 +198,35 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         Ok(())
     }
 
+    async fn refund_last_drip(&self, faucet_info: &FaucetInfo, id: &str) -> Result<()> {
+        let drip_amount = faucet_info.drip_amount();
+        let dripped = self
+            .storage
+            .get::<DripAmount>("dripped")
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| DripAmount::zero(faucet_info.token_type()));
+        let claimed_key = format!("claimed_{id}");
+        let claimed = self
+            .storage
+            .get::<DripAmount>(&claimed_key)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| DripAmount::zero(faucet_info.token_type()));
+        let updated_dripped = dripped.saturating_sub(&drip_amount);
+        let updated_claimed = claimed.saturating_sub(&drip_amount);
+        self.storage.put("dripped", updated_dripped.clone()).await?;
+        self.storage
+            .put(&claimed_key, updated_claimed.clone())
+            .await?;
+        log::info!(
+            "{faucet_info} Rate limiter refund for {id}: claimed={updated_claimed:?}, dripped={updated_dripped:?}"
+        );
+        Ok(())
+    }
+
     #[allow(dead_code)]
     async fn handle_request(&self, path: &str, now: DateTime<Utc>) -> Result<Option<i64>> {
         let (faucet_info, id) = Self::parse_request_path(path)?;
@@ -208,12 +251,33 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
 pub struct RateLimiter {
     #[cfg(not(test))]
     state: State,
+    env: Env,
 }
 
 #[cfg(not(test))]
 impl RateLimiter {
     fn parse_request_path(path: &str) -> Result<(FaucetInfo, String)> {
         RateLimiterCore::<DurableObjectStorage>::parse_request_path(path)
+    }
+
+    fn parse_refund_path(path: &str) -> Result<(FaucetInfo, String)> {
+        RateLimiterCore::<DurableObjectStorage>::parse_refund_path(path)
+    }
+
+    fn refund_authorized(req: &Request, env: &Env) -> Result<bool> {
+        let Ok(expected) = env.secret("RATE_LIMITER_REFUND_SECRET").map(|s| s.to_string()) else {
+            return Ok(false);
+        };
+        let expected = expected.trim();
+        if expected.is_empty() {
+            return Ok(false);
+        }
+        let bearer = req
+            .headers()
+            .get("Authorization")?
+            .and_then(|h| h.strip_prefix("Bearer ").map(|t| t.trim().to_string()))
+            .unwrap_or_default();
+        Ok(bearer == expected)
     }
     fn create_core(&self) -> RateLimiterCore<DurableObjectStorage<'_>> {
         RateLimiterCore::new(DurableObjectStorage::new(&self.state))
@@ -240,15 +304,30 @@ impl RateLimiter {
             .update_rate_limit(faucet_info, id, now, claimed, dripped)
             .await
     }
+
+    async fn refund_rate_limit_for_path(&self, path: &str) -> Result<()> {
+        let (faucet_info, id) = Self::parse_refund_path(path)?;
+        self.create_core()
+            .refund_last_drip(&faucet_info, &id)
+            .await
+    }
 }
 
 #[cfg(not(test))]
 impl DurableObject for RateLimiter {
-    fn new(state: State, _env: Env) -> Self {
-        Self { state }
+    fn new(state: State, env: Env) -> Self {
+        Self { state, env }
     }
 
     async fn fetch(&self, req: Request) -> Result<Response> {
+        if req.method() == Method::Post {
+            if !Self::refund_authorized(&req, &self.env)? {
+                return Response::error("Unauthorized", 401);
+            }
+            self.refund_rate_limit_for_path(&req.path()).await?;
+            return Response::ok("");
+        }
+
         let now = Utc::now();
         let (faucet_info, id) = Self::parse_request_path(&req.path())?;
         let (is_allowed, retry_after, claimed, dripped) =
@@ -453,6 +532,48 @@ mod tests {
             RateLimiterCore::<MockRateLimiterStorage>::parse_request_path(path).unwrap();
         assert_eq!(faucet_info, FaucetInfo::CalibnetFIL);
         assert_eq!(id, "test_wallet_123");
+    }
+
+    #[tokio::test]
+    async fn test_parse_refund_path_ok() {
+        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet_123/refund";
+        let (faucet_info, id) =
+            RateLimiterCore::<MockRateLimiterStorage>::parse_refund_path(path).unwrap();
+        assert_eq!(faucet_info, FaucetInfo::CalibnetFIL);
+        assert_eq!(id, "test_wallet_123");
+    }
+
+    #[tokio::test]
+    async fn test_refund_subtracts_last_drip() {
+        use crate::utils::drip_amount::TokenType;
+        use mockall::predicate::eq;
+
+        let wallet_id = "w1";
+        let faucet_info = FaucetInfo::CalibnetFIL;
+        let drip = faucet_info.drip_amount();
+        let drip_for_claimed = drip.clone();
+        let zero = DripAmount::zero(TokenType::Native);
+
+        let mut mock_storage = MockRateLimiterStorage::new();
+        mock_storage
+            .expect_get::<DripAmount>()
+            .with(eq("dripped"))
+            .return_once(move |_| Ok(Some(drip.clone())));
+        mock_storage
+            .expect_get::<DripAmount>()
+            .with(eq(format!("claimed_{wallet_id}")))
+            .return_once(move |_| Ok(Some(drip_for_claimed.clone())));
+        mock_storage
+            .expect_put::<DripAmount>()
+            .with(eq("dripped"), eq(zero.clone()))
+            .return_once(|_, _| Ok(()));
+        mock_storage
+            .expect_put::<DripAmount>()
+            .with(eq(format!("claimed_{wallet_id}")), eq(zero))
+            .return_once(|_, _| Ok(()));
+
+        let core = RateLimiterCore::new(mock_storage);
+        core.refund_last_drip(&faucet_info, wallet_id).await.unwrap();
     }
 
     /// Checks path parsing with an invalid path.

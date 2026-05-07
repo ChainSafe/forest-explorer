@@ -23,8 +23,8 @@ use alloy::{sol, sol_types::SolCall};
 
 #[cfg(feature = "ssr")]
 use super::server::{
-    check_rate_limit, read_faucet_secret, secret_key, sign_with_eth_secret_key,
-    sign_with_secret_key,
+    check_rate_limit, read_faucet_secret, refund_rate_limit_by_key, secret_key,
+    sign_with_eth_secret_key, sign_with_secret_key,
 };
 
 #[cfg(feature = "ssr")]
@@ -439,14 +439,20 @@ async fn handle_native_claim(
     )
     .await
     {
-        Ok(LotusJson(smsg)) => {
-            let cid = rpc.mpool_push(smsg).await.map_err(ServerFnError::new)?;
-            let tx_hash = rpc
+        Ok(LotusJson(smsg)) => match rpc.mpool_push(smsg).await.map_err(ServerFnError::new) {
+            Ok(cid) => rpc
                 .eth_get_transaction_hash_by_cid(cid)
                 .await
-                .map_err(ServerFnError::new)?;
-            Ok(tx_hash)
-        }
+                .map_err(ServerFnError::new),
+            Err(e) => {
+                let _ = refund_rate_limit_by_key(
+                    faucet_info,
+                    AnyAddress::Filecoin(LotusJson(id_address)),
+                )
+                .await;
+                Err(e)
+            }
+        },
         Err(err) => Err(handle_faucet_error(err)),
     }
 }
@@ -469,13 +475,17 @@ async fn handle_erc20_claim(
     let gas_price = rpc.gas_price().await.map_err(ServerFnError::new)?;
 
     match signed_erc20_transfer(eth_to, nonce, gas_price, faucet_info).await {
-        Ok(signed) => {
-            let tx_hash = rpc
-                .send_eth_transaction_signed(&signed)
-                .await
-                .map_err(ServerFnError::new)?;
-            Ok(tx_hash)
-        }
+        Ok(signed) => match rpc
+            .send_eth_transaction_signed(&signed)
+            .await
+            .map_err(ServerFnError::new)
+        {
+            Ok(tx_hash) => Ok(tx_hash),
+            Err(e) => {
+                let _ = refund_rate_limit_by_key(faucet_info, AnyAddress::Ethereum(eth_to)).await;
+                Err(e)
+            }
+        },
         Err(err) => Err(handle_faucet_error(err)),
     }
 }
