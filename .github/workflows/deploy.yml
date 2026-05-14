@@ -53,14 +53,14 @@ jobs:
 
       - name: Dry Run
         if: github.ref != 'refs/heads/main'
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           wranglerVersion: "4.76.0"
           command: deploy --dry-run
 
       - name: Publish
         if: github.ref == 'refs/heads/main'
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           wranglerVersion: "4.76.0"
           apiToken: ${{ secrets.CF_API_TOKEN }}
