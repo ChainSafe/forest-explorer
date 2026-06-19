@@ -8,7 +8,7 @@ use crate::utils::drip_amount::{DripAmount, TokenType};
 use crate::utils::error::FaucetError;
 use crate::utils::lotus_json::LotusJson;
 use crate::utils::message::AddVerifiedClientParams;
-use crate::utils::rpc_context::Provider;
+use crate::utils::rpc_context::RpcContext;
 use crate::utils::transaction_id::TransactionId;
 use crate::utils::{
     address::parse_address,
@@ -33,17 +33,25 @@ impl FaucetController {
     pub fn new(faucet_info: FaucetInfo) -> Self {
         let network = faucet_info.network();
         fvm_shared::address::set_current_network(network);
+        let rpc_context = RpcContext::use_context();
+        let provider = rpc_context.provider();
         let balance_trigger = Trigger::new();
+        Effect::new(move |_| {
+            let _ = provider.get();
+            balance_trigger.notify();
+        });
         let sender_address = RwSignal::new(String::new());
         let target_address = RwSignal::new(String::new());
         let token_type = faucet_info.token_type();
         let target_balance = LocalResource::new(move || {
+            let _ = provider.get();
             let target_address = target_address.get();
             balance_trigger.track();
             let token_type = token_type.clone();
             async move {
                 if let Ok(address) = parse_address(&target_address, network) {
-                    Provider::from_network(network)
+                    rpc_context
+                        .get()
                         .wallet_balance(address, &token_type)
                         .await
                         .ok()
@@ -61,12 +69,14 @@ impl FaucetController {
         });
         let token_type = faucet_info.token_type();
         let faucet_balance = LocalResource::new(move || {
+            let _ = provider.get();
             balance_trigger.track();
             let token_type = token_type.clone();
             async move {
                 if let Some(addr) = faucet_address.await {
                     sender_address.set(addr.to_string());
-                    Provider::from_network(network)
+                    rpc_context
+                        .get()
                         .wallet_balance(addr, &token_type)
                         .await
                         .ok()
@@ -107,16 +117,14 @@ impl FaucetController {
             .filter_map(|(tx_id, sent)| if !sent { Some(tx_id) } else { None })
             .collect::<Vec<_>>();
 
-        let network = self.info.network();
+        let rpc_context = RpcContext::use_context();
         let messages = self.faucet.sent_messages;
         spawn_local(catch_all(self.faucet.error_messages, async move {
+            let rpc = rpc_context.get();
             for id in pending {
                 match id {
                     TransactionId::Native(cid) => {
-                        if let Some(lookup) = Provider::from_network(network)
-                            .state_search_msg(cid)
-                            .await?
-                        {
+                        if let Some(lookup) = rpc.state_search_msg(cid).await? {
                             messages.update(|messages| {
                                 for (cid, sent) in messages {
                                     if *cid == TransactionId::Native(lookup.message) {
@@ -127,10 +135,7 @@ impl FaucetController {
                         }
                     }
                     TransactionId::Eth(eth_hash) => {
-                        if let Ok(true) = Provider::from_network(network)
-                            .check_eth_transaction_confirmed(eth_hash)
-                            .await
-                        {
+                        if let Ok(true) = rpc.check_eth_transaction_confirmed(eth_hash).await {
                             messages.update(|messages| {
                                 for (id, sent) in messages {
                                     if *id == TransactionId::Eth(eth_hash) {
@@ -230,6 +235,7 @@ impl FaucetController {
         let faucet = self.faucet.clone();
         let network = self.info.network();
         let info = self.info;
+        let rpc_context = RpcContext::use_context();
         match parse_address(&self.faucet.target_address.get(), network) {
             Ok(recipient) => {
                 spawn_local(async move {
@@ -239,7 +245,7 @@ impl FaucetController {
                         let DripAmount::Token(drip_amount) = info.drip_amount() else {
                             bail!("Expected DripAmount::Token variant")
                         };
-                        let rpc = Provider::from_network(network);
+                        let rpc = rpc_context.get();
                         let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
                         let from = faucet_address(info)
                             .await
@@ -294,13 +300,14 @@ impl FaucetController {
         let faucet = self.faucet.clone();
         let network = self.info.network();
         let info = self.info;
+        let rpc_context = RpcContext::use_context();
         match parse_address(&self.faucet.target_address.get(), network) {
             Ok(recipient) => {
                 spawn_local(async move {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
 
-                        let filecoin_rpc = Provider::from_network(network);
+                        let filecoin_rpc = rpc_context.get();
                         let owner_fil_address = faucet_address(info)
                             .await
                             .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
@@ -345,6 +352,7 @@ impl FaucetController {
         let faucet = self.faucet.clone();
         let network = self.info.network();
         let info = self.info;
+        let rpc_context = RpcContext::use_context();
         match parse_address(&self.faucet.target_address.get(), network) {
             Ok(recipient) => {
                 spawn_local(async move {
@@ -354,7 +362,7 @@ impl FaucetController {
                         let DripAmount::Storage(allowance) = info.drip_amount() else {
                             bail!("Expected DripAmount::Storage variant")
                         };
-                        let rpc = Provider::from_network(network);
+                        let rpc = rpc_context.get();
                         let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
                         let from = faucet_address(info)
                             .await

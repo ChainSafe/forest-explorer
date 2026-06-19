@@ -1,10 +1,10 @@
-use crate::faucet::views::components::icons::{CheckIcon, LightningIcon, Loader};
+use crate::faucet::views::components::icons::{CheckIcon, LightningIcon};
 use crate::faucet::views::components::layout::Header;
 use crate::faucet::views::components::nav::GotoFaucetList;
-use crate::utils::rpc_context::{Provider, RpcContext};
-use fvm_shared::address::Network;
+use crate::faucet::views::components::rpc_selector::RpcSelectors;
+use crate::utils::rpc_context::RpcContext;
 use leptos::prelude::*;
-use leptos::{IntoView, component, leptos_dom::helpers::event_target_value, view};
+use leptos::{IntoView, component, view};
 use leptos_meta::Title;
 
 #[component]
@@ -69,66 +69,17 @@ fn FaucetOverview() -> impl IntoView {
 }
 
 #[component]
-fn NetworkSelection(
-    rpc_context: RpcContext,
-    network_name: LocalResource<Option<String>>,
-    network_version: LocalResource<Option<u64>>,
-) -> impl IntoView {
-    view! {
-        <div class="network-selector">
-            <div class="dropdown">
-                <label for="network-select" class="sr-only">
-                    Select Network
-                </label>
-                <select
-                    id="network-select"
-                    on:change=move |ev| {
-                        rpc_context.set(event_target_value(&ev).parse().expect("predefined values, must succeed"))
-                    }
-                    class="dropdown-items"
-                >
-                    <option value=Provider::get_network_url(Network::Testnet).to_string()>Glif.io Calibnet</option>
-                    <option value=Provider::get_network_url(Network::Mainnet).to_string()>Glif.io Mainnet</option>
-                </select>
-                <div class="dropdown-icon">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </div>
-            </div>
-
-            <div class="network-info">
-                <p>Network:</p>
-                <Transition fallback=move || view! { <p>Loading network name...</p> }>
-                    <p>
-                        <span>{move || network_name.get().flatten()}</span>
-                        <Loader loading=move || network_name.get().is_none() />
-                    </p>
-                </Transition>
-            </div>
-
-            <div class="network-info">
-                <p>Version:</p>
-                <Transition fallback=move || view! { <p>Loading network version...</p> }>
-                    <p>
-                        <span>{move || network_version.get().flatten()}</span>
-                        <Loader loading=move || network_version.get().is_none() />
-                    </p>
-                </Transition>
-            </div>
-        </div>
-    }
-}
-
-#[component]
 pub fn Explorer() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
+    let provider = rpc_context.provider();
     let network_name = LocalResource::new(move || {
+        let _ = provider.get();
         let provider = rpc_context.get();
         async move { provider.network_name().await.ok() }
     });
 
     let network_version = LocalResource::new(move || {
+        let _ = provider.get();
         let provider = rpc_context.get();
         async move { provider.network_version().await.ok() }
     });
@@ -138,7 +89,7 @@ pub fn Explorer() -> impl IntoView {
             <Title text="Filecoin Forest Explorer Faucet" />
             <Header />
             <FaucetOverview />
-            <NetworkSelection rpc_context=rpc_context network_name=network_name network_version=network_version />
+            <RpcSelectors rpc_context=rpc_context network_name=network_name network_version=network_version />
             <GotoFaucetList />
         </main>
     }
