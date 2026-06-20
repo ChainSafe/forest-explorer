@@ -6,9 +6,8 @@ use leptos::{IntoView, component, leptos_dom::helpers::event_target_value, view}
 
 fn parse_network(value: &str) -> Network {
     match value {
-        "calibnet" => Network::Testnet,
         "mainnet" => Network::Mainnet,
-        _ => panic!("predefined network values, must succeed"),
+        _ => Network::Testnet,
     }
 }
 
@@ -50,10 +49,9 @@ pub fn ProviderSelection(rpc_context: RpcContext) -> impl IntoView {
             <select
                 id="provider-select"
                 on:change=move |ev| {
-                    rpc_context
-                        .set_provider_url(
-                            event_target_value(&ev).parse().expect("predefined provider URLs, must succeed"),
-                        )
+                    if let Ok(url) = event_target_value(&ev).parse() {
+                        rpc_context.set_provider_url(url);
+                    }
                 }
                 class="dropdown-items"
             >

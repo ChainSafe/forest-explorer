@@ -108,8 +108,10 @@ impl RpcContext {
     }
 
     pub fn set_network(&self, network: Network) {
-        self.network.set(network);
-        self.provider.set(default_provider(network));
+        if self.network.get_untracked() != network {
+            self.network.set(network);
+            self.provider.set(default_provider(network));
+        }
     }
 
     pub fn set_provider_url(&self, url: Url) {
@@ -357,5 +359,46 @@ impl Provider {
             Some(receipt) => Ok(receipt.block_number.is_some() && receipt.status()),
             None => Ok(false),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_providers_for_network_testnet() {
+        let providers = providers_for(Network::Testnet);
+        assert_eq!(providers.len(), CALIBNET_PROVIDERS.len());
+        for (actual, expected) in providers.iter().zip(CALIBNET_PROVIDERS) {
+            assert_eq!(actual.label, expected.label);
+            assert_eq!(actual.url, expected.url);
+        }
+    }
+
+    #[test]
+    fn test_providers_for_network_mainnet() {
+        let providers = providers_for(Network::Mainnet);
+        assert_eq!(providers.len(), MAINNET_PROVIDERS.len());
+        for (actual, expected) in providers.iter().zip(MAINNET_PROVIDERS) {
+            assert_eq!(actual.label, expected.label);
+            assert_eq!(actual.url, expected.url);
+        }
+    }
+
+    #[test]
+    fn test_default_provider_per_network() {
+        let testnet = default_provider(Network::Testnet);
+        let mainnet = default_provider(Network::Mainnet);
+
+        assert_eq!(
+            testnet.url,
+            CALIBNET_PROVIDERS[0].url.parse().unwrap()
+        );
+        assert_eq!(
+            mainnet.url,
+            MAINNET_PROVIDERS[0].url.parse().unwrap()
+        );
+        assert_ne!(testnet.url, mainnet.url);
     }
 }
