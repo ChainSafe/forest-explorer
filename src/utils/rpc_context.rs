@@ -391,14 +391,8 @@ mod tests {
         let testnet = default_provider(Network::Testnet);
         let mainnet = default_provider(Network::Mainnet);
 
-        assert_eq!(
-            testnet.url,
-            CALIBNET_PROVIDERS[0].url.parse().unwrap()
-        );
-        assert_eq!(
-            mainnet.url,
-            MAINNET_PROVIDERS[0].url.parse().unwrap()
-        );
+        assert_eq!(testnet.url, CALIBNET_PROVIDERS[0].url.parse().unwrap());
+        assert_eq!(mainnet.url, MAINNET_PROVIDERS[0].url.parse().unwrap());
         assert_ne!(testnet.url, mainnet.url);
     }
 }
