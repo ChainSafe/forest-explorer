@@ -73,13 +73,13 @@ pub fn Explorer() -> impl IntoView {
     let rpc_context = RpcContext::use_context();
     let provider = rpc_context.provider();
     let network_name = LocalResource::new(move || {
-        let _ = provider.get();
+        provider.track();
         let provider = rpc_context.get();
         async move { provider.network_name().await.ok() }
     });
 
     let network_version = LocalResource::new(move || {
-        let _ = provider.get();
+        provider.track();
         let provider = rpc_context.get();
         async move { provider.network_version().await.ok() }
     });

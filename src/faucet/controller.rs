@@ -27,6 +27,7 @@ pub struct FaucetController {
     faucet: FaucetModel,
     /// Constant information describing a particular faucet type.
     info: FaucetInfo,
+    rpc_context: RpcContext,
 }
 
 impl FaucetController {
@@ -37,14 +38,14 @@ impl FaucetController {
         let provider = rpc_context.provider();
         let balance_trigger = Trigger::new();
         Effect::new(move |_| {
-            let _ = provider.get();
+            provider.track();
             balance_trigger.notify();
         });
         let sender_address = RwSignal::new(String::new());
         let target_address = RwSignal::new(String::new());
         let token_type = faucet_info.token_type();
         let target_balance = LocalResource::new(move || {
-            let _ = provider.get();
+            provider.track();
             let target_address = target_address.get();
             balance_trigger.track();
             let token_type = token_type.clone();
@@ -69,7 +70,7 @@ impl FaucetController {
         });
         let token_type = faucet_info.token_type();
         let faucet_balance = LocalResource::new(move || {
-            let _ = provider.get();
+            provider.track();
             balance_trigger.track();
             let token_type = token_type.clone();
             async move {
@@ -100,6 +101,7 @@ impl FaucetController {
         Self {
             faucet,
             info: faucet_info,
+            rpc_context,
         }
     }
 
@@ -117,7 +119,7 @@ impl FaucetController {
             .filter_map(|(tx_id, sent)| if !sent { Some(tx_id) } else { None })
             .collect::<Vec<_>>();
 
-        let rpc_context = RpcContext::use_context();
+        let rpc_context = self.rpc_context;
         let messages = self.faucet.sent_messages;
         spawn_local(catch_all(self.faucet.error_messages, async move {
             let rpc = rpc_context.get();
