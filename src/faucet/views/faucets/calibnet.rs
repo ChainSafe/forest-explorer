@@ -1,7 +1,7 @@
 use super::Faucet;
 use crate::faucet::constants::FaucetInfo;
 use crate::faucet::views::components::faucet_description::FaucetDescription;
-use crate::utils::rpc_context::{Provider, RpcContext};
+use crate::utils::rpc_context::RpcContext;
 use leptos::prelude::*;
 use leptos::{IntoView, component, view};
 use leptos_meta::{Meta, Title};
@@ -12,8 +12,7 @@ use leptos_meta::{Meta, Title};
 pub fn Faucet_Calibnet() -> impl IntoView {
     let faucet_info = FaucetInfo::CalibnetFIL;
     let rpc_context = RpcContext::use_context();
-    // Set rpc context to calibnet url
-    rpc_context.set(Provider::get_network_url(faucet_info.network()));
+    rpc_context.set_network(faucet_info.network());
 
     view! {
         <Title text="🧪 Filecoin Faucet - Calibration Network" />

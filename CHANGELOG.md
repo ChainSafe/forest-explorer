@@ -47,6 +47,9 @@
 - [#417](https://github.com/ChainSafe/forest-explorer/pull/417) Implement
   Datacap Faucet for Calibnet.
 
+- [#460](https://github.com/ChainSafe/forest-explorer/pull/460) Add RPC provider
+  selector on faucet pages.
+
 ### Changed
 
 - [#136](https://github.com/ChainSafe/forest-explorer/pull/136) Increased the

@@ -21,40 +21,68 @@ use super::lotus_json::{HasLotusJson, LotusJson, signed_message::SignedMessage};
 
 static CLIENT: LazyLock<Client> = LazyLock::new(Client::new);
 
-static GLIF_CALIBNET: LazyLock<Url> = LazyLock::new(|| {
-    "https://api.calibration.node.glif.io"
-        .parse()
-        .expect("Invalid URL for Filecoin calibration network")
-});
-static GLIF_MAINNET: LazyLock<Url> = LazyLock::new(|| {
-    "https://api.node.glif.io"
-        .parse()
-        .expect("Invalid URL for Filecoin mainnet")
-});
+pub struct RpcEndpoint {
+    pub label: &'static str,
+    pub url: &'static str,
+}
+
+const CALIBNET_PROVIDERS: &[RpcEndpoint] = &[
+    RpcEndpoint {
+        label: "Glif",
+        url: "https://api.calibration.node.glif.io",
+    },
+    RpcEndpoint {
+        label: "Ankr",
+        url: "https://rpc.ankr.com/filecoin_testnet",
+    },
+    RpcEndpoint {
+        label: "Filfox",
+        url: "https://calibration.filfox.info/rpc/v1",
+    },
+];
+
+const MAINNET_PROVIDERS: &[RpcEndpoint] = &[
+    RpcEndpoint {
+        label: "Glif",
+        url: "https://api.node.glif.io",
+    },
+    RpcEndpoint {
+        label: "Ankr",
+        url: "https://rpc.ankr.com/filecoin",
+    },
+    RpcEndpoint {
+        label: "Filfox",
+        url: "https://filfox.info/rpc/v1",
+    },
+];
+
+pub fn providers_for(network: Network) -> &'static [RpcEndpoint] {
+    match network {
+        Network::Testnet => CALIBNET_PROVIDERS,
+        Network::Mainnet => MAINNET_PROVIDERS,
+    }
+}
+
+pub fn default_provider(network: Network) -> Provider {
+    let endpoint = providers_for(network)
+        .first()
+        .expect("each network has at least one provider");
+    Provider::new(endpoint.url.parse().expect("invalid default provider URL"))
+}
 
 #[derive(Clone, Copy)]
 pub struct RpcContext {
-    #[allow(unused)]
-    network: LocalResource<Network>,
+    network: RwSignal<Network>,
     provider: RwSignal<Provider>,
 }
 
 impl RpcContext {
     pub fn new() -> Self {
-        let provider = RwSignal::new(Provider::new(GLIF_CALIBNET.clone()));
-        let network = LocalResource::new(move || {
-            let provider = provider.get();
-            async move {
-                if provider.network_name().await.ok() != Some("mainnet".to_string()) {
-                    Network::Testnet
-                } else {
-                    Network::Mainnet
-                }
-            }
-        });
+        let network = RwSignal::new(Network::Testnet);
+        let provider = RwSignal::new(default_provider(Network::Testnet));
         Effect::new(move |_| {
             log::info!("Updating network: {:?}", network.get());
-            set_current_network(network.get().unwrap_or(Network::Testnet));
+            set_current_network(network.get());
         });
         Self { network, provider }
     }
@@ -67,12 +95,27 @@ impl RpcContext {
         use_context::<Self>().expect("RpcContext should be provided")
     }
 
+    pub fn network(&self) -> RwSignal<Network> {
+        self.network
+    }
+
+    pub fn provider(&self) -> RwSignal<Provider> {
+        self.provider
+    }
+
     pub fn get(&self) -> Provider {
         self.provider.get()
     }
 
-    pub fn set(&self, provider: Url) {
-        self.provider.set(Provider::new(provider));
+    pub fn set_network(&self, network: Network) {
+        if self.network.get_untracked() != network {
+            self.network.set(network);
+            self.provider.set(default_provider(network));
+        }
+    }
+
+    pub fn set_provider_url(&self, url: Url) {
+        self.provider.set(Provider::new(url));
     }
 }
 
@@ -113,30 +156,8 @@ impl Provider {
         Self { url }
     }
 
-    pub fn get_network_url(network: Network) -> Url {
-        match network {
-            Network::Testnet => GLIF_CALIBNET.to_owned(),
-            Network::Mainnet => GLIF_MAINNET.to_owned(),
-        }
-    }
-
-    pub fn calibnet() -> Self {
-        Self {
-            url: GLIF_CALIBNET.to_owned(),
-        }
-    }
-
-    pub fn mainnet() -> Self {
-        Self {
-            url: GLIF_MAINNET.to_owned(),
-        }
-    }
-
-    pub fn from_network(network: Network) -> Self {
-        match network {
-            Network::Testnet => Self::calibnet(),
-            Network::Mainnet => Self::mainnet(),
-        }
+    pub fn default_for(network: Network) -> Self {
+        default_provider(network)
     }
 
     pub async fn network_name(&self) -> anyhow::Result<String> {
@@ -338,5 +359,40 @@ impl Provider {
             Some(receipt) => Ok(receipt.block_number.is_some() && receipt.status()),
             None => Ok(false),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_providers_for_network_testnet() {
+        let providers = providers_for(Network::Testnet);
+        assert_eq!(providers.len(), CALIBNET_PROVIDERS.len());
+        for (actual, expected) in providers.iter().zip(CALIBNET_PROVIDERS) {
+            assert_eq!(actual.label, expected.label);
+            assert_eq!(actual.url, expected.url);
+        }
+    }
+
+    #[test]
+    fn test_providers_for_network_mainnet() {
+        let providers = providers_for(Network::Mainnet);
+        assert_eq!(providers.len(), MAINNET_PROVIDERS.len());
+        for (actual, expected) in providers.iter().zip(MAINNET_PROVIDERS) {
+            assert_eq!(actual.label, expected.label);
+            assert_eq!(actual.url, expected.url);
+        }
+    }
+
+    #[test]
+    fn test_default_provider_per_network() {
+        let testnet = default_provider(Network::Testnet);
+        let mainnet = default_provider(Network::Mainnet);
+
+        assert_eq!(testnet.url, CALIBNET_PROVIDERS[0].url.parse().unwrap());
+        assert_eq!(mainnet.url, MAINNET_PROVIDERS[0].url.parse().unwrap());
+        assert_ne!(testnet.url, mainnet.url);
     }
 }

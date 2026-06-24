@@ -288,7 +288,7 @@ pub async fn claim_token(
     let network = faucet_info.network();
     set_current_network(network);
     let recipient = parse_and_validate_address(&address, faucet_info)?;
-    let rpc = Provider::from_network(network);
+    let rpc = Provider::default_for(network);
     let from = faucet_address(faucet_info)
         .await?
         .to_filecoin_address(network)

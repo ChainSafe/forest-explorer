@@ -12,12 +12,16 @@ use crate::faucet::controller::FaucetController;
 use crate::faucet::views::components::alert::ErrorMessages;
 use crate::faucet::views::components::balance::{FaucetBalance, TargetBalance};
 use crate::faucet::views::components::nav::{GotoFaucetList, GotoHome};
+use crate::faucet::views::components::rpc_selector::ProviderSelection;
 use crate::faucet::views::components::transaction::{TransactionHistoryButton, TransactionList};
+use crate::utils::rpc_context::RpcContext;
 
 #[component]
 fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
+    let rpc_context = RpcContext::use_context();
     view! {
         <div class="input-container">
+            <ProviderSelection rpc_context=rpc_context />
             <input
                 type="text"
                 placeholder="Enter target address (Filecoin or Ethereum style)"
