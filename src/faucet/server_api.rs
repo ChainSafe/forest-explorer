@@ -441,14 +441,39 @@ async fn handle_native_claim(
     {
         Ok(LotusJson(smsg)) => {
             let cid = rpc.mpool_push(smsg).await.map_err(ServerFnError::new)?;
-            let tx_hash = rpc
-                .eth_get_transaction_hash_by_cid(cid)
-                .await
-                .map_err(ServerFnError::new)?;
+            let tx_hash = poll_eth_tx_hash(&rpc, cid).await?;
             Ok(tx_hash)
         }
         Err(err) => Err(handle_faucet_error(err)),
     }
+}
+
+#[cfg(feature = "ssr")]
+async fn poll_eth_tx_hash(
+    rpc: &crate::utils::rpc_context::Provider,
+    cid: cid::Cid,
+) -> Result<TxHash, ServerFnError> {
+    use std::time::Duration;
+
+    const MAX_ATTEMPTS: usize = 3;
+    const DELAY: Duration = Duration::from_millis(500);
+
+    for attempt in 1..=MAX_ATTEMPTS {
+        match rpc
+            .eth_get_transaction_hash_by_cid(cid)
+            .await
+            .map_err(ServerFnError::new)?
+        {
+            Some(tx_hash) => return Ok(tx_hash),
+            None => {
+                log::debug!("polling tx hash ({attempt}/{MAX_ATTEMPTS})");
+                worker::Delay::from(DELAY).await;
+            }
+        }
+    }
+    Err(ServerFnError::ServerError(format!(
+        "Failed to get tx hash for submitted transaction {cid}"
+    )))
 }
 
 #[cfg(feature = "ssr")]

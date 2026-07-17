@@ -326,8 +326,11 @@ impl Provider {
         .await
     }
 
-    pub async fn eth_get_transaction_hash_by_cid(&self, cid: Cid) -> anyhow::Result<TxHash> {
-        invoke_rpc_method(
+    pub async fn eth_get_transaction_hash_by_cid(
+        &self,
+        cid: Cid,
+    ) -> anyhow::Result<Option<TxHash>> {
+        invoke_rpc_method::<Option<TxHash>>(
             &self.url,
             "Filecoin.EthGetTransactionHashByCid",
             &[serde_json::to_value(LotusJson(cid))?],
