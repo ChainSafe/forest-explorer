@@ -16,7 +16,7 @@ alloy = "2"
 anyhow = "1"
 async-trait = "0.1"
 axum = { version = "0.8", default-features = false, optional = true }
-base64 = "0.22"
+base64 = "0.23"
 blake2b_simd = "1"
 bls-signatures = "0.15"
 chrono = "0.4"
