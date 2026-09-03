@@ -23,10 +23,11 @@ assignees: ""
 <!-- Please paste the log output derived from the error. -->
 <details>
   <summary>Log Output</summary>
-  
-  ```Paste log output here
-  paste log output...
-  ```
+
+```Paste log output here
+paste log output...
+```
+
 </details>
 
 ## Expected behaviour
