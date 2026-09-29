@@ -2295,7 +2295,6 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "derive_more",
- "frc42_dispatch",
  "fvm_ipld_encoding",
  "fvm_shared",
  "getrandom 0.2.17",
@@ -2348,44 +2347,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8878864ba14bb86e818a412bfd6f18f9eabd4ec0f008a28e8f7eb61db532fcf9"
 dependencies = [
  "futures-core",
-]
-
-[[package]]
-name = "frc42_dispatch"
-version = "11.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5adda887b823f91643af62fbe2b44e8e08aecdc55167463996f30ccf4891d9c4"
-dependencies = [
- "frc42_hasher",
- "frc42_macros",
- "fvm_ipld_encoding",
- "fvm_sdk",
- "fvm_shared",
- "thiserror 2.0.20",
-]
-
-[[package]]
-name = "frc42_hasher"
-version = "9.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c23f342605b9ee11ae783e259b553e305807787be5ec7ead9ef086f6a17b4bfc"
-dependencies = [
- "fvm_sdk",
- "fvm_shared",
- "thiserror 2.0.20",
-]
-
-[[package]]
-name = "frc42_macros"
-version = "9.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4a55499fbd3b12d5bbbecd18fbc59bc8774734c59e508776d0506a94c0e8178"
-dependencies = [
- "blake2b_simd",
- "frc42_hasher",
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -2519,21 +2480,6 @@ dependencies = [
  "serde_ipld_dagcbor",
  "serde_repr",
  "serde_tuple",
- "thiserror 2.0.20",
-]
-
-[[package]]
-name = "fvm_sdk"
-version = "4.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29dc0e6fe5cfac6cb6166b02b1a92eb8107afde1acd0bf2663c630da2434892a"
-dependencies = [
- "cid",
- "fvm_ipld_encoding",
- "fvm_shared",
- "lazy_static",
- "log",
- "num-traits",
  "thiserror 2.0.20",
 ]
 

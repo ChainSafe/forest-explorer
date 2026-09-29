@@ -14,7 +14,6 @@ export const PAGES = [
     links: [
       "💰 Calibration Network USDFC Faucet",
       "🧪 Calibration Network Faucet",
-      "⚡️ Calibration Network Datacap Faucet",
       "🌐 Mainnet Network Faucet",
     ],
   },
@@ -25,10 +24,6 @@ export const PAGES = [
   {
     path: "/faucet/calibnet",
     buttons: ["Faucet List", "Transaction History", "Claim tFIL"],
-  },
-  {
-    path: "/faucet/calibnet_datacap",
-    buttons: ["Faucet List", "Transaction History", "Claim MiB"],
   },
   {
     path: "/faucet/mainnet",
@@ -50,11 +45,6 @@ export const BUTTON_ACTIONS = {
     "Faucet List": { type: "navigate" },
     "Transaction History": { type: "clickable" },
     "Claim tFIL": { type: "expectError", errorMsg: "Invalid address" },
-  },
-  "/faucet/calibnet_datacap": {
-    "Faucet List": { type: "navigate" },
-    "Transaction History": { type: "clickable" },
-    "Claim MiB": { type: "expectError", errorMsg: "Invalid address" },
   },
   "/faucet/mainnet": {
     "Faucet List": { type: "navigate" },
@@ -90,15 +80,6 @@ export const CLAIM_TESTS = [
     button: "Claim tFIL",
     addresses: [
       "t1pxxbe7he3c6vcw5as3gfvq33kprpmlufgtjgfdq", // valid
-      "f1mwllxrw7frn2lwhf4u26y4f3m7f6wsl4i3o3jvi", // invalid: mainnet address on calibnet faucet
-    ],
-    expectSuccess: [true, false],
-  },
-  {
-    path: "/faucet/calibnet_datacap",
-    button: "Claim MiB",
-    addresses: [
-      "0xAe9C4b9508c929966ef37209b336E5796D632CDc", // valid
       "f1mwllxrw7frn2lwhf4u26y4f3m7f6wsl4i3o3jvi", // invalid: mainnet address on calibnet faucet
     ],
     expectSuccess: [true, false],

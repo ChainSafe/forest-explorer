@@ -44,9 +44,6 @@
 - [#257](https://github.com/ChainSafe/forest-explorer/issues/257) Added per
   wallet daily cap on token claim.
 
-- [#417](https://github.com/ChainSafe/forest-explorer/pull/417) Implement
-  Datacap Faucet for Calibnet.
-
 - [#460](https://github.com/ChainSafe/forest-explorer/pull/460) Add RPC provider
   selector on faucet pages.
 

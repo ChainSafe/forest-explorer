@@ -1,6 +1,6 @@
 use crate::utils::drip_amount::{DripAmount, TokenType};
 use alloy::primitives::address;
-use fvm_shared::{address::Network, econ::TokenAmount, sector::StoragePower};
+use fvm_shared::{address::Network, econ::TokenAmount};
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr as _, sync::LazyLock};
 use strum::{Display, EnumString};
@@ -29,15 +29,6 @@ static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| {
         option_env!("CALIBNET_USDFC_DRIP_AMOUNT")
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(5_000_000_000),
-    )
-});
-
-/// The amount of calibnet Datacap to be dripped to the user.
-static CALIBNET_DATACAP_DRIP_AMOUNT: LazyLock<StoragePower> = LazyLock::new(|| {
-    StoragePower::from(
-        option_env!("CALIBNET_DATACAP_DRIP_AMOUNT")
-            .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(1 << 20), // 1 MiB of storage power
     )
 });
 
@@ -80,7 +71,6 @@ pub enum FaucetInfo {
     MainnetFIL,
     CalibnetFIL,
     CalibnetUSDFC,
-    CalibnetDatacap,
 }
 
 impl FaucetInfo {
@@ -90,9 +80,6 @@ impl FaucetInfo {
             FaucetInfo::MainnetFIL => DripAmount::Token(MAINNET_DRIP_AMOUNT.clone()),
             FaucetInfo::CalibnetFIL => DripAmount::Token(CALIBNET_DRIP_AMOUNT.clone()),
             FaucetInfo::CalibnetUSDFC => DripAmount::Token(CALIBNET_USDFC_DRIP_AMOUNT.clone()),
-            FaucetInfo::CalibnetDatacap => {
-                DripAmount::Storage(CALIBNET_DATACAP_DRIP_AMOUNT.clone())
-            }
         }
     }
 
@@ -101,9 +88,7 @@ impl FaucetInfo {
     pub fn rate_limit_seconds(&self) -> i64 {
         match self {
             FaucetInfo::MainnetFIL => MAINNET_COOLDOWN_SECONDS,
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
-                CALIBNET_COOLDOWN_SECONDS
-            }
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => CALIBNET_COOLDOWN_SECONDS,
         }
     }
 
@@ -113,7 +98,7 @@ impl FaucetInfo {
     pub fn drip_cap(&self) -> DripAmount {
         match self {
             FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_GLOBAL_DRIP_MULTIPLIER,
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => {
                 self.drip_amount() * CALIBNET_GLOBAL_DRIP_MULTIPLIER
             }
         }
@@ -125,7 +110,7 @@ impl FaucetInfo {
     pub fn wallet_cap(&self) -> DripAmount {
         match self {
             FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_PER_WALLET_DRIP_MULTIPLIER,
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => {
                 self.drip_amount() * CALIBNET_PER_WALLET_DRIP_MULTIPLIER
             }
         }
@@ -142,7 +127,6 @@ impl FaucetInfo {
             FaucetInfo::MainnetFIL => "FIL",
             FaucetInfo::CalibnetFIL => "tFIL",
             FaucetInfo::CalibnetUSDFC => "tUSDFC",
-            FaucetInfo::CalibnetDatacap => "MiB",
         }
     }
 
@@ -153,7 +137,6 @@ impl FaucetInfo {
             FaucetInfo::CalibnetFIL => "SECRET_WALLET",
             FaucetInfo::MainnetFIL => "SECRET_MAINNET_WALLET",
             FaucetInfo::CalibnetUSDFC => "SECRET_CALIBNET_USDFC_WALLET",
-            FaucetInfo::CalibnetDatacap => "SECRET_CALIBNET_DATACAP_WALLET",
         }
     }
 
@@ -162,9 +145,7 @@ impl FaucetInfo {
     pub fn network(&self) -> Network {
         match self {
             FaucetInfo::MainnetFIL => Network::Mainnet,
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
-                Network::Testnet
-            }
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => Network::Testnet,
         }
     }
 
@@ -175,7 +156,7 @@ impl FaucetInfo {
             FaucetInfo::MainnetFIL => {
                 option_env!("FAUCET_TX_URL_MAINNET").unwrap_or("https://beryx.io/fil/mainnet/")
             }
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => {
                 option_env!("FAUCET_TX_URL_CALIBNET").unwrap_or("https://beryx.io/fil/calibration/")
             }
         };
@@ -193,7 +174,6 @@ impl FaucetInfo {
                     // Default, as present in: https://stg.usdfc.net/#/
                     .unwrap_or_else(|| address!("0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0")),
             ),
-            FaucetInfo::CalibnetDatacap => TokenType::Datacap,
         }
     }
 
@@ -213,9 +193,7 @@ impl FaucetInfo {
     pub fn max_gas_limit(&self) -> u64 {
         match self {
             FaucetInfo::MainnetFIL => MAX_MAINNET_GAS_LIMIT,
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
-                MAX_CALIBNET_GAS_LIMIT
-            }
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => MAX_CALIBNET_GAS_LIMIT,
         }
     }
 
@@ -224,9 +202,7 @@ impl FaucetInfo {
     pub fn max_gas_fee_cap(&self) -> TokenAmount {
         match self {
             FaucetInfo::MainnetFIL => MAX_MAINNET_GAS_FEE_CAP.clone(),
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
-                MAX_CALIBNET_GAS_FEE_CAP.clone()
-            }
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => MAX_CALIBNET_GAS_FEE_CAP.clone(),
         }
     }
 
@@ -235,9 +211,7 @@ impl FaucetInfo {
     pub fn max_gas_premium(&self) -> TokenAmount {
         match self {
             FaucetInfo::MainnetFIL => MAX_MAINNET_GAS_PREMIUM.clone(),
-            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC | FaucetInfo::CalibnetDatacap => {
-                MAX_CALIBNET_GAS_PREMIUM.clone()
-            }
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => MAX_CALIBNET_GAS_PREMIUM.clone(),
         }
     }
 }
@@ -350,44 +324,6 @@ mod tests {
         assert_eq!(
             calibnet_usdfc_faucet.drip_cap(),
             DripAmount::Token(CALIBNET_GLOBAL_DRIP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT)
-        );
-
-        let calibnet_datacap_faucet = FaucetInfo::CalibnetDatacap;
-        assert_eq!(
-            calibnet_datacap_faucet.drip_amount(),
-            DripAmount::Storage(CALIBNET_DATACAP_DRIP_AMOUNT.clone())
-        );
-        assert_eq!(calibnet_datacap_faucet.rate_limit_seconds(), 60);
-        assert_eq!(calibnet_datacap_faucet.unit(), "MiB");
-        assert_eq!(calibnet_datacap_faucet.network(), Network::Testnet);
-        assert_eq!(
-            calibnet_datacap_faucet.secret_key_name(),
-            "SECRET_CALIBNET_DATACAP_WALLET"
-        );
-        assert!(calibnet_datacap_faucet.transaction_base_url().is_some());
-        assert_eq!(calibnet_datacap_faucet.token_type(), TokenType::Datacap);
-        assert_eq!(calibnet_datacap_faucet.chain_id(), 314159);
-        assert_eq!(
-            calibnet_datacap_faucet.max_gas_limit(),
-            MAX_CALIBNET_GAS_LIMIT
-        );
-        assert_eq!(
-            calibnet_datacap_faucet.max_gas_fee_cap(),
-            TokenAmount::from_atto(200_000)
-        );
-        assert_eq!(
-            calibnet_datacap_faucet.max_gas_premium(),
-            TokenAmount::from_atto(200_000)
-        );
-        assert_eq!(
-            calibnet_datacap_faucet.wallet_cap(),
-            DripAmount::Storage(
-                CALIBNET_PER_WALLET_DRIP_MULTIPLIER * &*CALIBNET_DATACAP_DRIP_AMOUNT
-            )
-        );
-        assert_eq!(
-            calibnet_datacap_faucet.drip_cap(),
-            DripAmount::Storage(CALIBNET_GLOBAL_DRIP_MULTIPLIER * &*CALIBNET_DATACAP_DRIP_AMOUNT)
         );
     }
 }
