@@ -6,7 +6,6 @@ use cid::Cid;
 use fvm_shared::address::{Address, Network, set_current_network};
 use fvm_shared::econ::TokenAmount;
 use fvm_shared::message::Message;
-use fvm_shared::sector::StoragePower;
 use leptos::prelude::*;
 use reqwest::Client;
 use serde_json::{Value, json};
@@ -185,16 +184,6 @@ impl Provider {
                     .await?;
                 Ok(DripAmount::Token(balance))
             }
-            TokenType::Datacap => {
-                let balance = match self.wallet_balance_verifier_datacap(wallet_address).await {
-                    Ok(val) => val,
-                    Err(_) => {
-                        self.wallet_balance_verified_client_datacap(wallet_address)
-                            .await?
-                    }
-                };
-                Ok(DripAmount::Storage(balance))
-            }
         }
     }
 
@@ -227,38 +216,6 @@ impl Provider {
 
         let balance = erc20.balanceOf(eth_address).call().await?;
         Ok(TokenAmount::from_alloy_amount(&balance))
-    }
-
-    /// Returns the remaining storage power of a verifier address.
-    async fn wallet_balance_verifier_datacap(
-        &self,
-        verifier_address: Address,
-    ) -> anyhow::Result<StoragePower> {
-        invoke_rpc_method(
-            &self.url,
-            "Filecoin.StateVerifierStatus",
-            &[
-                serde_json::to_value(LotusJson(verifier_address))?,
-                Value::Null,
-            ],
-        )
-        .await
-    }
-
-    /// Returns the remaining storage power of a verified client address.
-    async fn wallet_balance_verified_client_datacap(
-        &self,
-        verified_client_address: Address,
-    ) -> anyhow::Result<StoragePower> {
-        invoke_rpc_method(
-            &self.url,
-            "Filecoin.StateVerifiedClientStatus",
-            &[
-                serde_json::to_value(LotusJson(verified_client_address))?,
-                Value::Null,
-            ],
-        )
-        .await
     }
 
     pub async fn send_eth_transaction_signed(&self, signed_tx: &[u8]) -> anyhow::Result<TxHash> {

@@ -1,22 +1,14 @@
 use super::constants::FaucetInfo;
-use super::server_api::{
-    faucet_address, signed_datacap_allocation, signed_erc20_transfer, signed_fil_transfer,
-};
+use super::server_api::{faucet_address, signed_erc20_transfer, signed_fil_transfer};
 use crate::faucet::model::FaucetModel;
 use crate::utils::address::AddressAlloyExt;
 use crate::utils::drip_amount::{DripAmount, TokenType};
 use crate::utils::error::FaucetError;
 use crate::utils::lotus_json::LotusJson;
-use crate::utils::message::AddVerifiedClientParams;
 use crate::utils::rpc_context::RpcContext;
 use crate::utils::transaction_id::TransactionId;
-use crate::utils::{
-    address::parse_address,
-    error::catch_all,
-    message::{message_grant_datacap, message_transfer},
-};
+use crate::utils::{address::parse_address, error::catch_all, message::message_transfer};
 use anyhow::bail;
-use fvm_ipld_encoding::RawBytes;
 use leptos::leptos_dom::logging::console_log;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -229,7 +221,6 @@ impl FaucetController {
         match self.info.token_type() {
             TokenType::Native => self.drip_native_token(),
             TokenType::Erc20(_) => self.drip_erc20_token(),
-            TokenType::Datacap => self.drip_datacap(),
         }
     }
 
@@ -244,9 +235,7 @@ impl FaucetController {
                     catch_all(faucet.error_messages, async move {
                         faucet.send_disabled.set(true);
 
-                        let DripAmount::Token(drip_amount) = info.drip_amount() else {
-                            bail!("Expected DripAmount::Token variant")
-                        };
+                        let DripAmount::Token(drip_amount) = info.drip_amount();
                         let rpc = rpc_context.get();
                         let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
                         let from = faucet_address(info)
@@ -346,78 +335,6 @@ impl FaucetController {
                     &self.faucet.target_address.get()
                 ));
                 log::error!("Error parsing address: {e}");
-            }
-        }
-    }
-
-    fn drip_datacap(&self) {
-        let faucet = self.faucet.clone();
-        let network = self.info.network();
-        let info = self.info;
-        let rpc_context = RpcContext::use_context();
-        match parse_address(&self.faucet.target_address.get(), network) {
-            Ok(recipient) => {
-                spawn_local(async move {
-                    catch_all(faucet.error_messages, async move {
-                        faucet.send_disabled.set(true);
-
-                        let DripAmount::Storage(allowance) = info.drip_amount() else {
-                            bail!("Expected DripAmount::Storage variant")
-                        };
-                        let rpc = rpc_context.get();
-                        let id_address = rpc.lookup_id(recipient).await.unwrap_or(recipient);
-                        let from = faucet_address(info)
-                            .await
-                            .map_err(|e| anyhow::anyhow!("Error getting faucet address: {}", e))?
-                            .to_filecoin_address(network)?;
-                        let nonce = rpc.mpool_get_nonce(from).await?;
-                        let params = AddVerifiedClientParams {
-                            address: id_address,
-                            allowance,
-                        };
-                        let raw_msg = message_grant_datacap(
-                            from,
-                            RawBytes::new(fvm_ipld_encoding::to_vec(&params)?),
-                        );
-                        let msg = rpc.estimate_gas(raw_msg).await?;
-                        match signed_datacap_allocation(
-                            LotusJson(id_address),
-                            msg.gas_limit,
-                            LotusJson(msg.gas_fee_cap),
-                            LotusJson(msg.gas_premium),
-                            nonce,
-                            info,
-                        )
-                        .await
-                        {
-                            Ok(LotusJson(smsg)) => {
-                                let cid = rpc.mpool_push(smsg).await?;
-                                faucet.sent_messages.update(|messages| {
-                                    messages.push((TransactionId::Native(cid), false));
-                                });
-                                log::info!("Sent message: {:?}", cid);
-                            }
-                            Err(e) => {
-                                log::error!("Error signing {info} transaction: {e}");
-                                if let FaucetError::RateLimited { retry_after_secs } = e {
-                                    faucet.send_limited.set(retry_after_secs);
-                                }
-                                bail!("Failed to sign {info} transaction: {e}");
-                            }
-                        }
-                        Ok(())
-                    })
-                    .await;
-                    faucet.send_disabled.set(false);
-                });
-            }
-            Err(err) => {
-                self.add_error_message(format!("Invalid address: {}", err));
-                log::error!(
-                    "Error parsing address {}: {}",
-                    &self.faucet.target_address.get(),
-                    err
-                );
             }
         }
     }

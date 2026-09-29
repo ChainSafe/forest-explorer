@@ -1,6 +1,5 @@
 use crate::utils::drip_amount::DripAmount;
 use anyhow::{Result, anyhow};
-use fvm_shared::bigint::BigInt;
 use url::Url;
 
 /// Formats [`DripAmount`] to a human-readable string with the given unit.
@@ -11,9 +10,6 @@ pub fn format_balance(amount: &DripAmount, unit: &str) -> String {
                 "{:.2} {unit}",
                 balance.to_string().parse::<f32>().unwrap_or_default(),
             )
-        }
-        DripAmount::Storage(balance) => {
-            format!("{} MiB", balance / BigInt::from(1 << 20))
         }
     }
 }
@@ -45,7 +41,7 @@ pub fn format_url(base_url: &Url, path: SearchPath, identifier: &str) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fvm_shared::{econ::TokenAmount, sector::StoragePower};
+    use fvm_shared::econ::TokenAmount;
 
     #[test]
     fn test_format_balance() {
@@ -60,7 +56,6 @@ mod tests {
                 DripAmount::Token(TokenAmount::from_nano(999_999_999)),
                 "1.00 FIL",
             ),
-            (DripAmount::Storage(StoragePower::from(1 << 20)), "1 MiB"),
         ];
         for (balance, expected) in cases.iter() {
             assert_eq!(format_balance(balance, "FIL"), *expected);
