@@ -76,7 +76,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -112,7 +112,7 @@ dependencies = [
  "futures",
  "futures-util",
  "serde_json",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tokio",
  "tracing",
  "wasmtimer",
@@ -157,7 +157,7 @@ dependencies = [
  "alloy-rlp",
  "crc",
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -182,7 +182,7 @@ dependencies = [
  "alloy-rlp",
  "borsh",
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -196,7 +196,7 @@ dependencies = [
  "borsh",
  "once_cell",
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -209,7 +209,7 @@ dependencies = [
  "alloy-rlp",
  "borsh",
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -247,7 +247,7 @@ dependencies = [
  "alloy-provider",
  "alloy-sol-types",
  "async-trait",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -288,7 +288,7 @@ dependencies = [
  "http",
  "serde",
  "serde_json",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tracing",
 ]
 
@@ -315,7 +315,7 @@ dependencies = [
  "futures-utils-wasm",
  "serde",
  "serde_json",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -392,7 +392,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tokio",
  "tracing",
  "url",
@@ -490,7 +490,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -516,7 +516,7 @@ dependencies = [
  "either",
  "elliptic-curve",
  "k256",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -532,7 +532,7 @@ dependencies = [
  "async-trait",
  "k256",
  "rand 0.8.6",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -623,7 +623,7 @@ dependencies = [
  "parking_lot",
  "serde",
  "serde_json",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tokio",
  "tower",
  "tracing",
@@ -659,7 +659,7 @@ dependencies = [
  "nybbles",
  "serde",
  "smallvec",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tracing",
 ]
 
@@ -697,7 +697,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1384d3fe1eecb464229fcf6eebb72306591c56bf27b373561489458a7c73027d"
 dependencies = [
  "futures",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tokio",
  "wasm-bindgen-futures",
 ]
@@ -1526,7 +1526,7 @@ checksum = "a9dbbdc4b4d349732bc6690de10a9de952bd39ba6a065c586e26600b6b0b91f5"
 dependencies = [
  "serde",
  "serde_json",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2334,7 +2334,7 @@ dependencies = [
  "serde_json",
  "serde_tuple",
  "strum 0.28.0",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tokio",
  "tower",
  "tower-http 0.7.1",
@@ -2495,7 +2495,7 @@ dependencies = [
  "serde_ipld_dagcbor",
  "serde_repr",
  "serde_tuple",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -2516,7 +2516,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "unsigned-varint",
 ]
 
@@ -3144,7 +3144,7 @@ dependencies = [
  "jni-sys",
  "log",
  "simd_cesu8",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "walkdir",
  "windows-link",
 ]
@@ -3296,7 +3296,7 @@ dependencies = [
  "server_fn",
  "slotmap",
  "tachys",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "throw_error",
  "typed-builder",
  "typed-builder-macro",
@@ -3324,7 +3324,7 @@ dependencies = [
  "leptos",
  "paste",
  "send_wrapper",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "unic-langid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -3363,7 +3363,7 @@ dependencies = [
  "config",
  "regex",
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "typed-builder",
 ]
 
@@ -3473,7 +3473,7 @@ dependencies = [
  "rustc_version 0.4.1",
  "send_wrapper",
  "tachys",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "url",
  "wasm-bindgen",
  "web-sys",
@@ -3854,7 +3854,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed0423ff9973dea4d6bd075934fdda86ebb8c05bdf9d6b0507067d4a1226371d"
 dependencies = [
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -4197,7 +4197,7 @@ dependencies = [
  "rustc-hash",
  "rustls",
  "socket2",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tokio",
  "tracing",
  "web-time",
@@ -4220,7 +4220,7 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "slab",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "tinyvec",
  "tracing",
  "web-time",
@@ -4435,7 +4435,7 @@ dependencies = [
  "send_wrapper",
  "serde",
  "slotmap",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "web-sys",
 ]
 
@@ -4622,7 +4622,7 @@ dependencies = [
  "quote",
  "syn 2.0.117",
  "syn_derive",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -5046,7 +5046,7 @@ checksum = "f3faaf9e727533a19351a43cc5a8de957372163c7d35cc48c90b75cdda13c352"
 dependencies = [
  "percent-encoding",
  "serde",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -5171,14 +5171,14 @@ dependencies = [
  "serde_json",
  "serde_qs",
  "server_fn_macro_default",
- "thiserror 2.0.20",
+ "thiserror 2.0.21",
  "throw_error",
  "tower",
  "tower-layer",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm-streams",
+ "wasm-streams 0.5.0",
  "web-sys",
  "xxhash-rust",
 ]
@@ -5588,11 +5588,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.20"
+version = "2.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec86235f5fcc2a73650310756d2ac5b138a5780bbbdfae3eeccec992c435ba4f"
+checksum = "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e"
 dependencies = [
- "thiserror-impl 2.0.20",
+ "thiserror-impl 2.0.21",
 ]
 
 [[package]]
@@ -5608,9 +5608,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.20"
+version = "2.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc04cd3e1236dd4a98afca4569f2deb3f120e5422a4023be2cb683f8486292af"
+checksum = "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6182,6 +6182,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasm-streams"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7d3be8814f5ba5f074491a469eed3d73c273ffad955f25ed1635efac4b0d269"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "wasm_split_helpers"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6598,9 +6611,9 @@ dependencies = [
 
 [[package]]
 name = "worker"
-version = "0.8.3"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d3c60a70414db58e1890f3675d02692adace736657cb66994f220ae3780c90d"
+checksum = "8d26f867aa88ccf66c91b5a804762e4ef001330b574de06988070798f41e19ce"
 dependencies = [
  "async-trait",
  "axum",
@@ -6617,12 +6630,12 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "serde_urlencoded",
- "strum 0.27.2",
+ "strum 0.28.0",
  "tokio",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm-streams",
+ "wasm-streams 0.6.0",
  "web-sys",
  "worker-macros",
  "worker-sys",
@@ -6630,15 +6643,15 @@ dependencies = [
 
 [[package]]
 name = "worker-macros"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d908735d273dd7f9c325a842623f4e5a745e0686187ce465b34dc162ad348df"
+checksum = "e81207058311798db94d25f1107d6abccec9424b7f5f8163600a44b37ccee876"
 dependencies = [
  "async-trait",
  "proc-macro2",
  "quote",
- "strum 0.27.2",
- "syn 2.0.117",
+ "strum 0.28.0",
+ "syn 3.0.3",
  "wasm-bindgen",
  "wasm-bindgen-macro-support",
  "worker-sys",
@@ -6646,9 +6659,9 @@ dependencies = [
 
 [[package]]
 name = "worker-sys"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33faa1a8fa6c7eec67b196e008859c44d468a5ad4f991855cdc856f119e0e98f"
+checksum = "2972c15e3a8be4a546ee1bbb8d9cfbb3fbcb29f4163e79188b78e3b1cdf3d95f"
 dependencies = [
  "cfg-if",
  "js-sys",
