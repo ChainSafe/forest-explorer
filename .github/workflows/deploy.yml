@@ -37,7 +37,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - uses: jdx/mise-action@v4
+      - uses: jdx/mise-action@v5
 
       - uses: jetli/wasm-pack-action@v0.4.0
 
