@@ -157,6 +157,7 @@ pub async fn signed_erc20_transfer(
 
     let DripAmount::Token(drip_amount) = faucet_info.drip_amount();
     let rate_limit_seconds = check_rate_limit(faucet_info, AnyAddress::Ethereum(recipient)).await?;
+    let gas_price = clamp_gas_price(gas_price, faucet_info);
     if let Some(secs) = rate_limit_seconds {
         return Err(FaucetError::RateLimited {
             retry_after_secs: secs,
@@ -191,6 +192,18 @@ pub async fn signed_erc20_transfer(
         .with_input(calldata);
     let signed = sign_with_eth_secret_key(tx.clone(), faucet_info).await?;
     Ok(signed)
+}
+
+#[cfg(feature = "ssr")]
+fn clamp_gas_price(gas_price: u64, faucet_info: FaucetInfo) -> u64 {
+    use num_traits::ToPrimitive as _;
+    gas_price.min(
+        faucet_info
+            .max_gas_fee_cap()
+            .atto()
+            .to_u64()
+            .unwrap_or(u64::MAX),
+    )
 }
 
 #[derive(Serialize, Deserialize)]
@@ -527,6 +540,22 @@ mod tests {
 
         for addr in invalid_addresses.iter() {
             assert_invalid_address(addr, FaucetInfo::CalibnetUSDFC);
+        }
+    }
+
+    #[test]
+    fn test_clamp_gas_price() {
+        use num_traits::ToPrimitive as _;
+
+        for faucet in [
+            FaucetInfo::MainnetFIL,
+            FaucetInfo::CalibnetFIL,
+            FaucetInfo::CalibnetUSDFC,
+        ] {
+            let max = faucet.max_gas_fee_cap().atto().to_u64().unwrap();
+            assert_eq!(clamp_gas_price(max - 1, faucet), max - 1);
+            assert_eq!(clamp_gas_price(max, faucet), max);
+            assert_eq!(clamp_gas_price(u64::MAX, faucet), max);
         }
     }
 }
