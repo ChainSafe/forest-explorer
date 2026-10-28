@@ -95,16 +95,12 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         let dripped = self
             .storage
             .get::<DripAmount>("dripped")
-            .await
-            .ok()
-            .flatten()
+            .await?
             .unwrap_or(DripAmount::zero(faucet_info.token_type()));
         let claimed = self
             .storage
             .get::<DripAmount>(&format!("claimed_{id}"))
-            .await
-            .ok()
-            .flatten()
+            .await?
             .unwrap_or(DripAmount::zero(faucet_info.token_type()));
         if dripped >= faucet_info.drip_cap() {
             let retry_after = self
@@ -137,9 +133,7 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         let block_until = self
             .storage
             .get::<i64>("block_until")
-            .await
-            .ok()
-            .flatten()
+            .await?
             .and_then(|secs| DateTime::<Utc>::from_timestamp(secs, 0))
             .unwrap_or(now);
         if block_until > now {
@@ -443,6 +437,31 @@ mod tests {
         let core = RateLimiterCore::new(mock_storage);
         let result = core.handle_request(path, now).await.unwrap();
         assert!(result.is_none());
+    }
+
+    /// Checks that a storage read failure denies the request instead of treating the key as unset.
+    #[tokio::test]
+    async fn test_rate_limiter_storage_read_error_denies_request() {
+        fn read<T>(key: &str, failing_key: &str) -> Result<Option<T>> {
+            if key == failing_key {
+                Err(Error::RustError("storage unavailable".to_string()))
+            } else {
+                Ok(None)
+            }
+        }
+        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
+        for failing_key in ["dripped", "claimed_test_wallet", "block_until"] {
+            let mut mock_storage = MockRateLimiterStorage::new();
+            mock_storage
+                .expect_get::<DripAmount>()
+                .returning(move |key| read(key, failing_key));
+            mock_storage
+                .expect_get::<i64>()
+                .returning(move |key| read(key, failing_key));
+            let core = RateLimiterCore::new(mock_storage);
+            let result = core.handle_request(path, Utc::now()).await;
+            assert!(result.is_err(), "read error on {failing_key} was ignored");
+        }
     }
 
     /// Checks path parsing with a valid path.
