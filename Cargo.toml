@@ -50,9 +50,9 @@ tower-service = "0.3"
 url = { version = "2" }
 uuid = { version = "1", features = ["v4", "js"] }
 wasm-bindgen = "0.2"
-# Newer versions use wasm-streams 0.6, which clashes with wasm-streams 0.5 from leptos 0.8 (duplicate wasm-bindgen exports).
+# Newer versions use wasm-streams 0.6+, which clashes with wasm-streams 0.5 from leptos 0.8 (duplicate wasm-bindgen exports). worker-macros must match.
 worker = { version = "=0.8.3", features = ['http', 'axum'], optional = true }
-worker-macros = { version = "0.8", features = ['http'], optional = true }
+worker-macros = { version = "=0.8.3", features = ['http'], optional = true }
 
 [dev-dependencies]
 mockall = "0.15"
