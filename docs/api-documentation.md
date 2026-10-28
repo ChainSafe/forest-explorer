@@ -299,7 +299,7 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?address=0xAe9C4b
 | Faucet Type     | Cooldown Period | Drip Amount | Wallet Cap | Global Cap   |
 | --------------- | --------------- | ----------- | ---------- | ------------ |
 | `CalibnetFIL`   | 60 seconds      | 1 tFIL      | 2 tFIL     | 200 tFIL     |
-| `CalibnetUSDFC` | 60 seconds      | 5 tUSDFC    | 10 tUSDFC  | 1,000 tUSDFC |
+| `CalibnetUSDFC` | 60 seconds      | 15 tUSDFC   | 30 tUSDFC  | 3,000 tUSDFC |
 
 **Note:** All limits reset every 24 hours. Abuse, farming, or automated requests
 are prohibited and may result in stricter limits or bans.

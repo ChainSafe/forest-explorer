@@ -28,7 +28,7 @@ static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| {
     TokenAmount::from_nano(
         option_env!("CALIBNET_USDFC_DRIP_AMOUNT")
             .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(5_000_000_000),
+            .unwrap_or(15_000_000_000),
     )
 });
 

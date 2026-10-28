@@ -31,7 +31,16 @@ pub fn Footer() -> impl IntoView {
                                 Calibration Network Documentation
                             </a>
                         </li>
-
+                        <li>
+                            <a
+                                href="https://github.com/ChainSafe/forest-explorer/blob/main/docs/api-documentation.md"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="link-text"
+                            >
+                                API Documentation
+                            </a>
+                        </li>
                     </ul>
                 </div>
 
