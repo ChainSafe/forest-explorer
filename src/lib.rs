@@ -6,6 +6,10 @@ mod utils;
 use app::App;
 mod faucet;
 
+// Linked only to enable the wasm backends of each `getrandom` major used by dependencies.
+#[cfg(target_family = "wasm")]
+use {getrandom0_2 as _, getrandom0_3 as _, getrandom0_4 as _};
+
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
