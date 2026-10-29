@@ -7,11 +7,11 @@ cargo-binstall = "1.19.0"
 
 [tasks."lint:install-tools"]
 description = "Install lint tools via cargo-binstall"
-run = "cargo binstall --no-confirm cargo-spellcheck@0.15.7 taplo-cli@0.10.0 leptosfmt@0.1.33 cargo-deny@0.19.0"
+run = "cargo binstall --no-confirm cargo-spellcheck@0.15.7 taplo-cli@0.10.0 leptosfmt@0.1.33 cargo-deny@0.19.0 cargo-machete@0.9.2"
 
 [tasks.lint]
 description = "Run all lints"
-depends = ["lint:deny", "lint:spellcheck", "lint:fmt", "lint:clippy"]
+depends = ["lint:deny", "lint:spellcheck", "lint:fmt", "lint:clippy", "lint:machete"]
 
 [tasks."lint:fmt"]
 description = "Check all formatting"
@@ -50,6 +50,10 @@ run = 'cargo deny check || (echo "See deny.toml"; false)'
 [tasks."lint:spellcheck"]
 description = "Run cargo spellcheck"
 run = 'cargo spellcheck --code 1 || (echo "See .config/spellcheck.toml"; false)'
+
+[tasks."lint:machete"]
+description = "Check for unused dependencies"
+run = "cargo machete"
 
 # Format
 
