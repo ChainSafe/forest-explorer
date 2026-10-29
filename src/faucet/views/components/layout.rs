@@ -5,6 +5,9 @@ use leptos::{IntoView, component, view};
 pub fn Header() -> impl IntoView {
     view! {
         <header class="space-y-6 flex flex-col items-center">
+            <a class="filecoin-logo-link" href="https://filecoin.io" target="_blank" rel="noopener noreferrer">
+                <img class="filecoin-logo" src="/filecoin-logo.svg" alt="Filecoin" />
+            </a>
             <h1 class="header-large">Filecoin Forest Explorer Faucet</h1>
             <p class="max-w-2xl text-center">
                 The Filecoin Forest Explorer Faucet provides developers and users with free calibnet(tFil) and mainnet(FIL) to support their exploration, testing and development on the Filecoin network.
