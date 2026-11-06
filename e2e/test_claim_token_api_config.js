@@ -152,6 +152,16 @@ export const TEST_SCENARIOS = {
       address: TEST_ADDRESSES.T0_ADDRESS,
       expectedStatus: STATUS_CODES.BAD_REQUEST,
       expectedErrorContains: 'invalid address'
+    },
+
+    // Client IP header used for the per-IP cap; rejected before any rate limiter state changes
+    {
+      name: 'CalibnetFIL (t1) - invalid CF-Connecting-IP header',
+      faucet_info: FaucetTypes.CalibnetFIL,
+      address: TEST_ADDRESSES.T1_FORMAT_ADDRESS,
+      headers: { 'CF-Connecting-IP': 'not-an-ip' },
+      expectedStatus: STATUS_CODES.INTERNAL_SERVER_ERROR,
+      expectedErrorContains: 'cf-connecting-ip'
     }
   ],
 
