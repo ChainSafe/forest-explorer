@@ -36,6 +36,11 @@ static CALIBNET_USDFC_DRIP_AMOUNT: LazyLock<TokenAmount> = LazyLock::new(|| {
 const MAINNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 1;
 const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;
 
+/// Multiplier to determine the maximum amount of tokens that can be dripped per client IP every [`FaucetInfo::reset_limiter_seconds`].
+const MAINNET_PER_IP_DRIP_MULTIPLIER: i64 = 1;
+// Room for users sharing one public IPv4 (CGNAT, office, campus).
+const CALIBNET_PER_IP_DRIP_MULTIPLIER: i64 = 5 * CALIBNET_PER_WALLET_DRIP_MULTIPLIER;
+
 /// Multiplier used to determine the maximum amount of tokens that can be dripped globally every [`FaucetInfo::reset_limiter_seconds`].
 const MAINNET_GLOBAL_DRIP_MULTIPLIER: i64 = 2;
 const CALIBNET_GLOBAL_DRIP_MULTIPLIER: i64 = 200;
@@ -112,6 +117,18 @@ impl FaucetInfo {
             FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_PER_WALLET_DRIP_MULTIPLIER,
             FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => {
                 self.drip_amount() * CALIBNET_PER_WALLET_DRIP_MULTIPLIER
+            }
+        }
+    }
+
+    /// Returns the maximum amount of tokens that can be claimed from a single client IP (IPv4
+    /// address or IPv6 /64 prefix) per [`FaucetInfo::reset_limiter_seconds`]. Since fresh wallets
+    /// are free, this is what bounds a single actor's share of the global drip cap.
+    pub fn ip_cap(&self) -> DripAmount {
+        match self {
+            FaucetInfo::MainnetFIL => self.drip_amount() * MAINNET_PER_IP_DRIP_MULTIPLIER,
+            FaucetInfo::CalibnetFIL | FaucetInfo::CalibnetUSDFC => {
+                self.drip_amount() * CALIBNET_PER_IP_DRIP_MULTIPLIER
             }
         }
     }
@@ -250,6 +267,10 @@ mod tests {
             DripAmount::Token(MAINNET_PER_WALLET_DRIP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT)
         );
         assert_eq!(
+            mainnet_faucet.ip_cap(),
+            DripAmount::Token(MAINNET_PER_IP_DRIP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT)
+        );
+        assert_eq!(
             mainnet_faucet.drip_cap(),
             DripAmount::Token(MAINNET_GLOBAL_DRIP_MULTIPLIER * &*MAINNET_DRIP_AMOUNT)
         );
@@ -278,6 +299,10 @@ mod tests {
         assert_eq!(
             calibnet_fil_faucet.wallet_cap(),
             DripAmount::Token(CALIBNET_PER_WALLET_DRIP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT)
+        );
+        assert_eq!(
+            calibnet_fil_faucet.ip_cap(),
+            DripAmount::Token(CALIBNET_PER_IP_DRIP_MULTIPLIER * &*CALIBNET_DRIP_AMOUNT)
         );
         assert_eq!(
             calibnet_fil_faucet.drip_cap(),
@@ -320,6 +345,10 @@ mod tests {
         assert_eq!(
             calibnet_usdfc_faucet.wallet_cap(),
             DripAmount::Token(CALIBNET_PER_WALLET_DRIP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT)
+        );
+        assert_eq!(
+            calibnet_usdfc_faucet.ip_cap(),
+            DripAmount::Token(CALIBNET_PER_IP_DRIP_MULTIPLIER * &*CALIBNET_USDFC_DRIP_AMOUNT)
         );
         assert_eq!(
             calibnet_usdfc_faucet.drip_cap(),

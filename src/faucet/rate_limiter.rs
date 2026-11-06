@@ -1,4 +1,5 @@
 #![cfg(feature = "ssr")]
+use std::net::{AddrParseError, IpAddr, Ipv6Addr};
 use std::str::FromStr as _;
 
 use crate::faucet::constants::FaucetInfo;
@@ -73,36 +74,116 @@ struct RateLimiterCore<S: RateLimiterStorage> {
     storage: S,
 }
 
+/// Amounts dripped so far in the current reset window.
+#[derive(Debug)]
+struct Claims {
+    faucet: DripAmount,
+    wallet: DripAmount,
+    ip: DripAmount,
+}
+
+/// A client IP normalized into its rate limiter key. IPv6 is keyed by its /64 prefix, since a
+/// single client typically controls a whole /64 and could otherwise rotate addresses freely.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
+pub(super) struct IpKey(IpAddr);
+
+impl std::str::FromStr for IpKey {
+    type Err = AddrParseError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let ip = s.trim().parse::<IpAddr>()?;
+        Ok(Self(match ip {
+            IpAddr::V4(_) => ip,
+            IpAddr::V6(v6) => match v6.to_ipv4_mapped() {
+                Some(v4) => IpAddr::V4(v4),
+                None => IpAddr::V6(Ipv6Addr::from(u128::from(v6) & (u128::MAX << 64))),
+            },
+        }))
+    }
+}
+
+/// A rate limiter query, parsed from `.../{faucet_info}/{wallet_id}/{ip_key}`.
+#[derive(Debug)]
+struct RateLimitRequest {
+    faucet_info: FaucetInfo,
+    wallet_id: String,
+    ip_key: IpKey,
+}
+
+impl RateLimitRequest {
+    fn parse(path: &str) -> Result<Self> {
+        let mut path_info = path.split('/');
+        let ip_key = path_info.next_back().unwrap_or_default();
+        let wallet_id = path_info.next_back().unwrap_or_default().to_string();
+        let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
+            .map_err(|e| Error::RustError(e.to_string()))?;
+        if wallet_id.is_empty() {
+            return Err(Error::RustError(format!(
+                "Missing wallet in rate limiter path: {path}"
+            )));
+        }
+        let ip_key = ip_key.parse().map_err(|e| {
+            Error::RustError(format!("Invalid IP in rate limiter path {path}: {e}"))
+        })?;
+        Ok(Self {
+            faucet_info,
+            wallet_id,
+            ip_key,
+        })
+    }
+
+    fn wallet_storage_key(&self) -> String {
+        format!("claimed_{}", self.wallet_id)
+    }
+
+    fn ip_storage_key(&self) -> String {
+        format!("claimed_ip_{}", self.ip_key)
+    }
+}
+
 impl<S: RateLimiterStorage> RateLimiterCore<S> {
     fn new(storage: S) -> Self {
         Self { storage }
     }
 
-    fn parse_request_path(path: &str) -> Result<(FaucetInfo, String)> {
-        let mut path_info = path.split('/');
-        let id = path_info.next_back().unwrap_or_default().to_string();
-        let faucet_info = FaucetInfo::from_str(path_info.next_back().unwrap_or_default())
-            .map_err(|e| Error::RustError(e.to_string()))?;
-        Ok((faucet_info, id))
+    async fn read_claimed(&self, key: &str, faucet_info: &FaucetInfo) -> Result<DripAmount> {
+        Ok(self
+            .storage
+            .get::<DripAmount>(key)
+            .await?
+            .unwrap_or_else(|| DripAmount::zero(faucet_info.token_type())))
     }
 
+    /// Returns the retry-after in seconds if the request is rate limited, along with the current claims.
     async fn get_rate_limit(
         &self,
-        faucet_info: &FaucetInfo,
-        id: &str,
+        req: &RateLimitRequest,
         now: DateTime<Utc>,
-    ) -> Result<(bool, Option<i64>, DripAmount, DripAmount)> {
-        let dripped = self
-            .storage
-            .get::<DripAmount>("dripped")
-            .await?
-            .unwrap_or(DripAmount::zero(faucet_info.token_type()));
-        let claimed = self
-            .storage
-            .get::<DripAmount>(&format!("claimed_{id}"))
-            .await?
-            .unwrap_or(DripAmount::zero(faucet_info.token_type()));
-        if dripped >= faucet_info.drip_cap() {
+    ) -> Result<(Option<i64>, Claims)> {
+        let RateLimitRequest {
+            faucet_info,
+            wallet_id,
+            ..
+        } = req;
+        let claims = Claims {
+            faucet: self.read_claimed("dripped", faucet_info).await?,
+            wallet: self
+                .read_claimed(&req.wallet_storage_key(), faucet_info)
+                .await?,
+            ip: self
+                .read_claimed(&req.ip_storage_key(), faucet_info)
+                .await?,
+        };
+        let cap = if claims.faucet >= faucet_info.drip_cap() {
+            Some("Drip")
+        } else if claims.wallet >= faucet_info.wallet_cap() {
+            Some("Wallet")
+        } else if claims.ip >= faucet_info.ip_cap() {
+            Some("IP")
+        } else {
+            None
+        };
+        if let Some(cap) = cap {
             let retry_after = self
                 .storage
                 .get_alarm()
@@ -112,23 +193,9 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
                 .map(|alarm| Duration::milliseconds(alarm - now.timestamp_millis()).num_seconds())
                 .unwrap_or(0);
             log::info!(
-                "{faucet_info} Rate limiter for {id} invoked: Drip capped now={now:?}, dripped={dripped:?}, retry_after={retry_after:?}"
+                "{faucet_info} Rate limiter for {wallet_id} invoked: {cap} capped now={now:?}, claims={claims:?}, retry_after={retry_after:?}"
             );
-            return Ok((false, Some(retry_after), claimed, dripped));
-        }
-        if claimed >= faucet_info.wallet_cap() {
-            let retry_after = self
-                .storage
-                .get_alarm()
-                .await
-                .ok()
-                .flatten()
-                .map(|alarm| Duration::milliseconds(alarm - now.timestamp_millis()).num_seconds())
-                .unwrap_or(0);
-            log::info!(
-                "{faucet_info} Rate limiter for {id} invoked: Wallet capped now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}"
-            );
-            return Ok((false, Some(retry_after), claimed, dripped));
+            return Ok((Some(retry_after), claims));
         }
         let block_until = self
             .storage
@@ -139,28 +206,37 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
         if block_until > now {
             let retry_after = block_until.signed_duration_since(now).num_seconds();
             log::info!(
-                "{faucet_info} Rate limiter for {id} invoked: now={now:?}, claimed={claimed:?}, retry_after={retry_after:?}"
+                "{faucet_info} Rate limiter for {wallet_id} invoked: now={now:?}, claims={claims:?}, retry_after={retry_after:?}"
             );
-            return Ok((false, Some(retry_after), claimed, dripped));
+            return Ok((Some(retry_after), claims));
         }
-        Ok((true, None, claimed, dripped))
+        Ok((None, claims))
     }
 
     async fn update_rate_limit(
         &self,
-        faucet_info: &FaucetInfo,
-        id: &str,
+        req: &RateLimitRequest,
         now: DateTime<Utc>,
-        claimed: &DripAmount,
-        dripped: &DripAmount,
+        claims: &Claims,
     ) -> Result<()> {
+        let RateLimitRequest {
+            faucet_info,
+            wallet_id,
+            ..
+        } = req;
         let drip_amount = faucet_info.drip_amount();
-        let update_dripped = dripped + &drip_amount;
-        let updated_claimed = claimed + &drip_amount;
+        let updated = Claims {
+            faucet: &claims.faucet + &drip_amount,
+            wallet: &claims.wallet + &drip_amount,
+            ip: &claims.ip + &drip_amount,
+        };
         let next_block = now + Duration::seconds(faucet_info.rate_limit_seconds());
-        self.storage.put("dripped", update_dripped.clone()).await?;
+        self.storage.put("dripped", updated.faucet.clone()).await?;
         self.storage
-            .put(&format!("claimed_{id}"), updated_claimed.clone())
+            .put(&req.wallet_storage_key(), updated.wallet.clone())
+            .await?;
+        self.storage
+            .put(&req.ip_storage_key(), updated.ip.clone())
             .await?;
         self.storage
             .put("block_until", next_block.timestamp())
@@ -173,19 +249,16 @@ impl<S: RateLimiterStorage> RateLimiterCore<S> {
                 .await?;
         }
         log::info!(
-            "{faucet_info} Rate limiter for {id} set: now={now:?}, block_until={next_block:?}, claimed={updated_claimed:?}, dripped={update_dripped:?}"
+            "{faucet_info} Rate limiter for {wallet_id} set: now={now:?}, block_until={next_block:?}, claims={updated:?}"
         );
         Ok(())
     }
 
-    #[allow(dead_code)]
     async fn handle_request(&self, path: &str, now: DateTime<Utc>) -> Result<Option<i64>> {
-        let (faucet_info, id) = Self::parse_request_path(path)?;
-        let (is_allowed, retry_after, claimed, dripped) =
-            self.get_rate_limit(&faucet_info, &id, now).await?;
-        if is_allowed {
-            self.update_rate_limit(&faucet_info, &id, now, &claimed, &dripped)
-                .await?;
+        let req = RateLimitRequest::parse(path)?;
+        let (retry_after, claims) = self.get_rate_limit(&req, now).await?;
+        if retry_after.is_none() {
+            self.update_rate_limit(&req, now, &claims).await?;
         }
         Ok(retry_after)
     }
@@ -205,53 +278,15 @@ pub struct RateLimiter {
 }
 
 #[cfg(not(test))]
-impl RateLimiter {
-    fn parse_request_path(path: &str) -> Result<(FaucetInfo, String)> {
-        RateLimiterCore::<DurableObjectStorage>::parse_request_path(path)
-    }
-    fn create_core(&self) -> RateLimiterCore<DurableObjectStorage<'_>> {
-        RateLimiterCore::new(DurableObjectStorage::new(&self.state))
-    }
-    async fn get_rate_limit(
-        &self,
-        faucet_info: &FaucetInfo,
-        id: &str,
-        now: DateTime<Utc>,
-    ) -> Result<(bool, Option<i64>, DripAmount, DripAmount)> {
-        self.create_core()
-            .get_rate_limit(faucet_info, id, now)
-            .await
-    }
-    async fn update_rate_limit(
-        &self,
-        faucet_info: &FaucetInfo,
-        id: &str,
-        now: DateTime<Utc>,
-        claimed: &DripAmount,
-        dripped: &DripAmount,
-    ) -> Result<()> {
-        self.create_core()
-            .update_rate_limit(faucet_info, id, now, claimed, dripped)
-            .await
-    }
-}
-
-#[cfg(not(test))]
 impl DurableObject for RateLimiter {
     fn new(state: State, _env: Env) -> Self {
         Self { state }
     }
 
     async fn fetch(&self, req: Request) -> Result<Response> {
-        let now = Utc::now();
-        let (faucet_info, id) = Self::parse_request_path(&req.path())?;
-        let (is_allowed, retry_after, claimed, dripped) =
-            self.get_rate_limit(&faucet_info, &id, now).await?;
-
-        if is_allowed {
-            self.update_rate_limit(&faucet_info, &id, now, &claimed, &dripped)
-                .await?;
-        }
+        let retry_after = RateLimiterCore::new(DurableObjectStorage::new(&self.state))
+            .handle_request(&req.path(), Utc::now())
+            .await?;
         Response::from_json(&retry_after)
     }
 
@@ -269,12 +304,14 @@ mod tests {
     use fvm_shared::econ::TokenAmount;
 
     const CALIBNET_PER_WALLET_DRIP_MULTIPLIER: i64 = 2;
+    const TEST_IP: &str = "203.0.113.7";
 
     /// Configuration for mock storage used in rate limiter tests.
     /// This struct allows tests to specify the initial state and expected behavior of the mock storage backend implementing [`RateLimiterStorage`].
     struct MockStorageConfig<'a> {
         dripped: Option<DripAmount>,
         claimed: Option<DripAmount>,
+        claimed_ip: Option<DripAmount>,
         block_until: Option<i64>,
         alarm: Option<i64>,
         wallet_id: &'a str,
@@ -295,6 +332,10 @@ mod tests {
                 config.wallet_id
             )))
             .returning(move |_| Ok(config.claimed.clone()));
+        mock_storage
+            .expect_get::<DripAmount>()
+            .with(mockall::predicate::eq(format!("claimed_ip_{TEST_IP}")))
+            .returning(move |_| Ok(config.claimed_ip.clone()));
         mock_storage
             .expect_get::<i64>()
             .with(mockall::predicate::eq("block_until"))
@@ -318,6 +359,13 @@ mod tests {
                 )
                 .returning(|_, _| Ok(()));
             mock_storage
+                .expect_put::<DripAmount>()
+                .with(
+                    mockall::predicate::eq(format!("claimed_ip_{TEST_IP}")),
+                    mockall::predicate::always(),
+                )
+                .returning(|_, _| Ok(()));
+            mock_storage
                 .expect_put::<i64>()
                 .with(
                     mockall::predicate::eq("block_until"),
@@ -336,6 +384,7 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: None,
             block_until: None,
             alarm: None,
             wallet_id,
@@ -343,7 +392,7 @@ mod tests {
         });
         let core = RateLimiterCore::new(mock_storage);
         let now = Utc::now();
-        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
+        let path = &format!("http://do/rate_limiter/CalibnetFIL/test_wallet/{TEST_IP}");
         let result = core.handle_request(path, now).await.unwrap();
         assert!(result.is_none());
     }
@@ -357,13 +406,14 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: None,
             block_until: Some(future_time.timestamp()),
             alarm: None,
             wallet_id,
             expect_puts: false,
         });
         let core = RateLimiterCore::new(mock_storage);
-        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
+        let path = &format!("http://do/rate_limiter/CalibnetFIL/test_wallet/{TEST_IP}");
         let result = core.handle_request(path, now).await.unwrap();
         assert!(result.is_some());
         let retry_after = result.unwrap();
@@ -375,7 +425,7 @@ mod tests {
     #[tokio::test]
     async fn test_rate_limiter_wallet_cap_exceeded() {
         let now = Utc::now();
-        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
+        let path = &format!("http://do/rate_limiter/CalibnetFIL/test_wallet/{TEST_IP}");
         let faucet_info = FaucetInfo::CalibnetFIL;
         let exceeded_amount =
             &faucet_info.wallet_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
@@ -383,6 +433,7 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: Some(exceeded_amount),
+            claimed_ip: None,
             block_until: None,
             alarm: Some(alarm_time),
             wallet_id: "test_wallet",
@@ -400,7 +451,7 @@ mod tests {
     #[tokio::test]
     async fn test_rate_limiter_drip_cap_exceeded() {
         let now = Utc::now();
-        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
+        let path = &format!("http://do/rate_limiter/CalibnetFIL/test_wallet/{TEST_IP}");
         let faucet_info = FaucetInfo::CalibnetFIL;
         let exceeded_amount =
             &faucet_info.drip_cap() + &DripAmount::Token(TokenAmount::from_whole(1));
@@ -408,6 +459,7 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: Some(exceeded_amount),
             claimed: None,
+            claimed_ip: None,
             block_until: None,
             alarm: Some(alarm_time),
             wallet_id: "test_wallet",
@@ -421,21 +473,106 @@ mod tests {
         assert!(retry_after <= 7200);
     }
 
-    /// Checks that a successful request updates storage as expected.
+    /// Simulates a single IP claiming to a fresh wallet each time, ensuring the per-IP cap stops it.
     #[tokio::test]
-    async fn test_rate_limiter_successful_request_updates_storage() {
-        let now = Utc::now();
-        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
+    async fn test_single_ip_journey_to_ip_cap_with_fresh_wallets() {
+        let faucet_info = FaucetInfo::CalibnetFIL;
+        let drip_amount = faucet_info.drip_amount();
+        let mut claimed_ip = DripAmount::zero(faucet_info.token_type());
+        let mut i = 0;
+        while claimed_ip < faucet_info.ip_cap() {
+            i += 1;
+            let wallet_id = format!("fresh_wallet_{i}");
+            let mock_storage = new_mock_storage(MockStorageConfig {
+                dripped: None,
+                claimed: None,
+                claimed_ip: Some(claimed_ip.clone()),
+                block_until: None,
+                alarm: None,
+                wallet_id: &wallet_id,
+                expect_puts: true,
+            });
+            let core = RateLimiterCore::new(mock_storage);
+            let path = format!("http://do/rate_limiter/{faucet_info}/{wallet_id}/{TEST_IP}");
+            let result = core.handle_request(&path, Utc::now()).await.unwrap();
+            assert!(result.is_none(), "claim {i} should be allowed");
+            claimed_ip += &drip_amount;
+        }
+        assert_eq!(claimed_ip, faucet_info.ip_cap());
+        assert!(i > 1, "IP cap should allow more than one wallet's claim");
+
+        let alarm_time = Utc::now().timestamp_millis() + faucet_info.reset_limiter_seconds() * 1000;
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: Some(claimed_ip),
+            block_until: None,
+            alarm: Some(alarm_time),
+            wallet_id: "another_fresh_wallet",
+            expect_puts: false,
+        });
+        let core = RateLimiterCore::new(mock_storage);
+        let path = format!("http://do/rate_limiter/{faucet_info}/another_fresh_wallet/{TEST_IP}");
+        let retry_after = core
+            .handle_request(&path, Utc::now())
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(retry_after > 0 && retry_after <= faucet_info.reset_limiter_seconds());
+    }
+
+    /// Checks that a successful request writes the faucet, wallet and IP counters incremented by one drip.
+    #[tokio::test]
+    async fn test_rate_limiter_successful_request_updates_storage() {
+        let faucet_info = FaucetInfo::CalibnetFIL;
+        let drip_amount = faucet_info.drip_amount();
+        let claimed = drip_amount.clone();
+        let claimed_ip = &drip_amount + &drip_amount;
+        let mut mock_storage = new_mock_storage(MockStorageConfig {
+            dripped: None,
+            claimed: Some(claimed.clone()),
+            claimed_ip: Some(claimed_ip.clone()),
             block_until: None,
             alarm: None,
             wallet_id: "test_wallet",
-            expect_puts: true,
+            expect_puts: false,
         });
+        mock_storage
+            .expect_put::<DripAmount>()
+            .with(
+                mockall::predicate::eq("dripped"),
+                mockall::predicate::eq(drip_amount.clone()),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_storage
+            .expect_put::<DripAmount>()
+            .with(
+                mockall::predicate::eq("claimed_test_wallet"),
+                mockall::predicate::eq(&claimed + &drip_amount),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_storage
+            .expect_put::<DripAmount>()
+            .with(
+                mockall::predicate::eq(format!("claimed_ip_{TEST_IP}")),
+                mockall::predicate::eq(&claimed_ip + &drip_amount),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_storage
+            .expect_put::<i64>()
+            .with(
+                mockall::predicate::eq("block_until"),
+                mockall::predicate::always(),
+            )
+            .times(1)
+            .returning(|_, _| Ok(()));
+        mock_storage.expect_set_alarm().returning(|_| Ok(()));
         let core = RateLimiterCore::new(mock_storage);
-        let result = core.handle_request(path, now).await.unwrap();
+        let path = format!("http://do/rate_limiter/{faucet_info}/test_wallet/{TEST_IP}");
+        let result = core.handle_request(&path, Utc::now()).await.unwrap();
         assert!(result.is_none());
     }
 
@@ -449,8 +586,13 @@ mod tests {
                 Ok(None)
             }
         }
-        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet";
-        for failing_key in ["dripped", "claimed_test_wallet", "block_until"] {
+        let path = &format!("http://do/rate_limiter/CalibnetFIL/test_wallet/{TEST_IP}");
+        for failing_key in [
+            "dripped",
+            "claimed_test_wallet",
+            "claimed_ip_203.0.113.7",
+            "block_until",
+        ] {
             let mut mock_storage = MockRateLimiterStorage::new();
             mock_storage
                 .expect_get::<DripAmount>()
@@ -464,21 +606,62 @@ mod tests {
         }
     }
 
-    /// Checks path parsing with a valid path.
+    #[test]
+    fn test_ip_key() {
+        let cases = [
+            ("203.0.113.7", "203.0.113.7"),
+            (" 203.0.113.7 ", "203.0.113.7"),
+            ("2001:db8:1:2::1", "2001:db8:1:2::"),
+            ("2001:db8:1:2:ffff:eeee:dddd:cccc", "2001:db8:1:2::"),
+            ("2001:db8:1:3::1", "2001:db8:1:3::"),
+            ("::ffff:203.0.113.7", "203.0.113.7"),
+        ];
+        for (raw, expected) in cases {
+            assert_eq!(raw.parse::<IpKey>().unwrap().to_string(), expected, "{raw}");
+        }
+    }
+
+    #[test]
+    fn test_ip_key_invalid() {
+        for raw in [
+            "",
+            "not-an-ip",
+            "203.0.113",
+            "2001:db8::/64",
+            "203.0.113.7, 10.0.0.1",
+        ] {
+            assert!(raw.parse::<IpKey>().is_err(), "{raw}");
+        }
+    }
+
+    /// Checks path parsing with a valid path, re-normalizing the IP segment.
     #[tokio::test]
     async fn test_parse_request_path() {
-        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet_123";
-        let (faucet_info, id) =
-            RateLimiterCore::<MockRateLimiterStorage>::parse_request_path(path).unwrap();
-        assert_eq!(faucet_info, FaucetInfo::CalibnetFIL);
-        assert_eq!(id, "test_wallet_123");
+        let path = "http://do/rate_limiter/CalibnetFIL/test_wallet_123/2001:db8:1:2::1";
+        let req = RateLimitRequest::parse(path).unwrap();
+        assert_eq!(req.faucet_info, FaucetInfo::CalibnetFIL);
+        assert_eq!(req.wallet_id, "test_wallet_123");
+        assert_eq!(req.ip_storage_key(), "claimed_ip_2001:db8:1:2::");
+    }
+
+    /// Checks path parsing rejects a path without the wallet or a valid IP segment.
+    #[tokio::test]
+    async fn test_parse_request_path_missing_segment() {
+        for path in [
+            "http://do/rate_limiter/CalibnetFIL/test_wallet/",
+            "http://do/rate_limiter/CalibnetFIL/test_wallet/not-an-ip",
+            "http://do/rate_limiter/CalibnetFIL//203.0.113.7",
+        ] {
+            let result = RateLimitRequest::parse(path);
+            assert!(result.is_err(), "{path}");
+        }
     }
 
     /// Checks path parsing with an invalid path.
     #[tokio::test]
     async fn test_parse_request_path_invalid_faucet() {
-        let path = "http://do/rate_limiter/InvalidFaucet/test_wallet";
-        let result = RateLimiterCore::<MockRateLimiterStorage>::parse_request_path(path);
+        let path = "http://do/rate_limiter/InvalidFaucet/test_wallet/203.0.113.7";
+        let result = RateLimitRequest::parse(path);
         assert!(result.is_err());
     }
 
@@ -496,7 +679,7 @@ mod tests {
     async fn test_user_journey_to_wallet_cap() {
         let faucet_info = FaucetInfo::CalibnetFIL;
         let wallet_id = "test_wallet_123";
-        let path = format!("http://do/rate_limiter/{faucet_info}/{wallet_id}");
+        let path = format!("http://do/rate_limiter/{faucet_info}/{wallet_id}/{TEST_IP}");
         let drip_amount = faucet_info.drip_amount();
         let mut claimed = DripAmount::zero(faucet_info.token_type());
         let mut dripped = DripAmount::zero(faucet_info.token_type());
@@ -506,6 +689,7 @@ mod tests {
             let mock_storage = new_mock_storage(MockStorageConfig {
                 dripped: None,
                 claimed: None,
+                claimed_ip: None,
                 block_until: None,
                 alarm: None,
                 wallet_id,
@@ -531,6 +715,10 @@ mod tests {
             .expect_get::<DripAmount>()
             .with(mockall::predicate::eq(format!("claimed_{}", wallet_id)))
             .returning(move |_| Ok(Some(claimed_clone.clone())));
+        mock_storage
+            .expect_get::<DripAmount>()
+            .with(mockall::predicate::eq(format!("claimed_ip_{TEST_IP}")))
+            .returning(|_| Ok(None));
         let alarm_time =
             chrono::Utc::now().timestamp_millis() + faucet_info.reset_limiter_seconds() * 1000;
         mock_storage
@@ -563,6 +751,7 @@ mod tests {
             let mock_storage = new_mock_storage(MockStorageConfig {
                 dripped: None,
                 claimed: None,
+                claimed_ip: None,
                 block_until: None,
                 alarm: None,
                 wallet_id: wallet_1,
@@ -572,7 +761,7 @@ mod tests {
             let now = chrono::Utc::now();
             let result = core
                 .handle_request(
-                    &format!("http://do/rate_limiter/{faucet_info}/{wallet_1}"),
+                    &format!("http://do/rate_limiter/{faucet_info}/{wallet_1}/{TEST_IP}"),
                     now,
                 )
                 .await
@@ -589,6 +778,7 @@ mod tests {
             let mock_storage = new_mock_storage(MockStorageConfig {
                 dripped: None,
                 claimed: None,
+                claimed_ip: None,
                 block_until: None,
                 alarm: None,
                 wallet_id: wallet_2,
@@ -598,7 +788,7 @@ mod tests {
             let now = chrono::Utc::now();
             let result = core
                 .handle_request(
-                    &format!("http://do/rate_limiter/{faucet_info}/{wallet_2}"),
+                    &format!("http://do/rate_limiter/{faucet_info}/{wallet_2}/{TEST_IP}"),
                     now,
                 )
                 .await
@@ -612,6 +802,7 @@ mod tests {
             let mock_storage = new_mock_storage(MockStorageConfig {
                 dripped: None,
                 claimed: None,
+                claimed_ip: None,
                 block_until: None,
                 alarm: None,
                 wallet_id: wallet_3,
@@ -621,7 +812,7 @@ mod tests {
             let now = chrono::Utc::now();
             let result = core
                 .handle_request(
-                    &format!("http://do/rate_limiter/{faucet_info}/{wallet_3}"),
+                    &format!("http://do/rate_limiter/{faucet_info}/{wallet_3}/{TEST_IP}"),
                     now,
                 )
                 .await
@@ -647,6 +838,10 @@ mod tests {
                 .expect_get::<DripAmount>()
                 .with(mockall::predicate::eq(format!("claimed_{}", wallet)))
                 .returning(move |_| Ok(Some(claimed_clone.clone())));
+            mock_storage
+                .expect_get::<DripAmount>()
+                .with(mockall::predicate::eq(format!("claimed_ip_{TEST_IP}")))
+                .returning(|_| Ok(None));
             let alarm_time =
                 chrono::Utc::now().timestamp_millis() + faucet_info.reset_limiter_seconds() * 1000;
             mock_storage
@@ -656,7 +851,7 @@ mod tests {
             let now = chrono::Utc::now();
             let result = core
                 .handle_request(
-                    &format!("http://do/rate_limiter/{faucet_info}/{wallet}"),
+                    &format!("http://do/rate_limiter/{faucet_info}/{wallet}/{TEST_IP}"),
                     now,
                 )
                 .await
@@ -686,6 +881,7 @@ mod tests {
                 let mock_storage = new_mock_storage(MockStorageConfig {
                     dripped: None,
                     claimed: None,
+                    claimed_ip: None,
                     block_until: None,
                     alarm: None,
                     wallet_id: wallet,
@@ -695,7 +891,7 @@ mod tests {
                 let now = chrono::Utc::now();
                 let result = core
                     .handle_request(
-                        &format!("http://do/rate_limiter/{faucet_info}/{}", wallet),
+                        &format!("http://do/rate_limiter/{faucet_info}/{}/{TEST_IP}", wallet),
                         now,
                     )
                     .await
@@ -718,6 +914,10 @@ mod tests {
             .expect_get::<DripAmount>()
             .with(mockall::predicate::eq(format!("claimed_{}", "wallet_1")))
             .returning(move |_| Ok(Some(claimed_clone.clone())));
+        mock_storage
+            .expect_get::<DripAmount>()
+            .with(mockall::predicate::eq(format!("claimed_ip_{TEST_IP}")))
+            .returning(|_| Ok(None));
         let alarm_time =
             chrono::Utc::now().timestamp_millis() + faucet_info.reset_limiter_seconds() * 1000;
         mock_storage
@@ -727,7 +927,7 @@ mod tests {
         let now = chrono::Utc::now();
         let result = core
             .handle_request(
-                &format!("http://do/rate_limiter/{faucet_info}/wallet_1"),
+                &format!("http://do/rate_limiter/{faucet_info}/wallet_1/{TEST_IP}"),
                 now,
             )
             .await
@@ -742,6 +942,7 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: None,
             block_until: None,
             alarm: None,
             wallet_id: "wallet_1",
@@ -751,7 +952,7 @@ mod tests {
         let now = chrono::Utc::now();
         let result = core
             .handle_request(
-                &format!("http://do/rate_limiter/{faucet_info}/wallet_1"),
+                &format!("http://do/rate_limiter/{faucet_info}/wallet_1/{TEST_IP}"),
                 now,
             )
             .await
@@ -764,12 +965,13 @@ mod tests {
     async fn test_cooldown_period_progression() {
         let faucet_info = FaucetInfo::CalibnetFIL;
         let wallet_id = "cooldown_test_wallet";
-        let path = format!("http://do/rate_limiter/{faucet_info}/{wallet_id}");
+        let path = format!("http://do/rate_limiter/{faucet_info}/{wallet_id}/{TEST_IP}");
         let now = chrono::Utc::now();
         // Step 1: First request (should succeed)
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: None,
             block_until: None,
             alarm: None,
             wallet_id,
@@ -783,6 +985,7 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: None,
             block_until: Some(block_until.timestamp()),
             alarm: None,
             wallet_id,
@@ -798,6 +1001,7 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: None,
             block_until: Some(partial_block_until.timestamp()),
             alarm: None,
             wallet_id,
@@ -813,6 +1017,7 @@ mod tests {
         let mock_storage = new_mock_storage(MockStorageConfig {
             dripped: None,
             claimed: None,
+            claimed_ip: None,
             block_until: Some(past_block_until.timestamp()),
             alarm: None,
             wallet_id,
