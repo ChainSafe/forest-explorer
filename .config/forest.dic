@@ -1,4 +1,4 @@
-145
+160
 +
 Algorand/M
 API/M
@@ -156,3 +156,6 @@ WebAssembly
 WebSocket
 WPoStProvingPeriodDeadlines
 zstd
+Cloudflare
+IPv4
+IPv6

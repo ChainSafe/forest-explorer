@@ -68,7 +68,7 @@ function runTestScenarios(scenarios, options = {}) {
   });
 }
 
-function makeClaimRequest(faucetInfo, address) {
+function makeClaimRequest(faucetInfo, address, headers = {}) {
   let url = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINT}`;
   const params = [];
 
@@ -84,6 +84,7 @@ function makeClaimRequest(faucetInfo, address) {
   }
 
   const response = http.get(url, {
+    headers,
     timeout: API_CONFIG.REQUEST_TIMEOUT,
     tags: { faucet_type: faucetInfo || 'unknown' }
   });
@@ -120,7 +121,7 @@ function testInputValidation() {
 
   // Test all other invalid request scenarios (missing parameters, mainnet blocking, etc.)
   TEST_SCENARIOS.INVALID_REQUESTS.forEach((testCase) => {
-    const response = makeClaimRequest(testCase.faucet_info, testCase.address);
+    const response = makeClaimRequest(testCase.faucet_info, testCase.address, testCase.headers);
 
     check(response, {
       [`${testCase.name}: Expected status ${testCase.expectedStatus}`]: (r) =>

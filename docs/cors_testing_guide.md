@@ -254,5 +254,5 @@ fetch("https://faucet.chainsafe.io/api/claim_token?...");
 // ✅ Success: Response includes "Access-Control-Allow-Origin: *"
 ```
 
-**Security**: Protected by rate limiting (60s cooldown, 2-drip wallet cap), not
-CORS restrictions.
+**Security**: Protected by rate limiting (60s cooldown, 2-drip wallet cap,
+10-drip per-IP cap), not CORS restrictions.

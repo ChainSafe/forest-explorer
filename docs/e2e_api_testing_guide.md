@@ -37,6 +37,10 @@ Testing the token claim API for different Filecoin networks:
 - **Per-faucet cooldown**: A 60-second minimum between requests to the same
   faucet type.
 - **Per-wallet limits**: A maximum of two successful claims per wallet address.
+- **Per-IP limits**: Covered by unit tests in `src/faucet/rate_limiter.rs`,
+  since reaching the cap of ten claims per client IP would need ten real
+  transactions. The API tests only check that an invalid `CF-Connecting-IP`
+  header is rejected.
 - **Independent faucets**: CalibnetFIL and CalibnetUSDFC have separate rate
   limits.
 
@@ -76,6 +80,7 @@ This section tests invalid parameters and malformed addresses using the
 
 - Missing parameters (`faucet_info: null`, `address: null`).
 - Invalid faucet types (`InvalidFaucet`).
+- An invalid `CF-Connecting-IP` client IP header.
 - Malformed addresses (see the comprehensive edge cases in
   `TEST_ADDRESSES.INVALID` within the configuration file).
 
@@ -129,8 +134,10 @@ with wallet cap validation.
 
 ### 5. Common Helper Functions
 
-**`makeClaimRequest(faucetInfo, address)`**: A centralized API call that handles
-null parameters gracefully and provides consistent timeouts and headers.
+**`makeClaimRequest(faucetInfo, address, headers = {})`**: A centralized API
+call that handles null parameters gracefully and provides consistent timeouts.
+`headers` carries per-case request headers, such as the invalid
+`CF-Connecting-IP` case in `INVALID_REQUESTS`.
 
 **`validateTransactionHash(txHash)`**: Validates that successful responses
 return a proper Ethereum-formatted transaction hash (0x + 64 hex chars).
