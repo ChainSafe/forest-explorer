@@ -1,6 +1,7 @@
 #![cfg(feature = "ssr")]
 
 use super::constants::FaucetInfo;
+use super::rate_limiter::IpKey;
 use crate::utils::address::AnyAddress;
 use crate::utils::key::KeyInfo;
 use crate::utils::key::{Key, sign};
@@ -89,13 +90,28 @@ pub async fn sign_with_eth_secret_key(
     .await
 }
 
-/// Queries the rate limiter for a specific faucet and wallet address.
+/// Set by Cloudflare and not client-overridable in production, unlike `X-Forwarded-For` or `X-Real-IP`.
+const CLIENT_IP_HEADER: &str = "CF-Connecting-IP";
+
+async fn client_ip_rate_limit_key() -> Result<IpKey, ServerFnError> {
+    let headers: axum::http::HeaderMap = extract().await?;
+    headers
+        .get(CLIENT_IP_HEADER)
+        .ok_or_else(|| ServerFnError::new(format!("Missing {CLIENT_IP_HEADER} header")))?
+        .to_str()
+        .map_err(anyhow::Error::from)
+        .and_then(|raw| Ok(raw.parse::<IpKey>()?))
+        .map_err(|e| ServerFnError::new(format!("Invalid {CLIENT_IP_HEADER} header: {e}")))
+}
+
+/// Queries the rate limiter for a specific faucet, wallet address and client IP key.
 /// Returns:
 /// - `None` if no rate limit is set.
 /// - `Some(i32)` containing the remaining cool-down time in seconds.
 async fn query_rate_limiter(
     faucet_info: FaucetInfo,
     wallet_addr: AnyAddress,
+    ip_key: IpKey,
 ) -> Result<Option<i32>, ServerFnError> {
     SendWrapper::new(async move {
         let Extension(env): Extension<Arc<Env>> = extract().await?;
@@ -105,7 +121,7 @@ async fn query_rate_limiter(
             .get_stub()?;
         rate_limiter
             .fetch_with_request(Request::new(
-                &format!("http://do/rate_limiter/{faucet_info}/{wallet_addr}"),
+                &format!("http://do/rate_limiter/{faucet_info}/{wallet_addr}/{ip_key}"),
                 Method::Get,
             )?)
             .await?
@@ -129,7 +145,8 @@ pub async fn check_rate_limit(
         .map(|v| v.to_string().to_lowercase() == "true")
         .unwrap_or(false);
     if !rate_limiter_disabled {
-        rate_limit = query_rate_limiter(faucet_info, wallet_addr).await?;
+        let ip_key = client_ip_rate_limit_key().await?;
+        rate_limit = query_rate_limiter(faucet_info, wallet_addr, ip_key).await?;
     }
     Ok(rate_limit)
 }

@@ -296,10 +296,15 @@ curl "https://forest-explorer.chainsafe.dev/api/claim_token_all?address=0xAe9C4b
 
 ## Rate Limits
 
-| Faucet Type     | Cooldown Period | Drip Amount | Wallet Cap | Global Cap   |
-| --------------- | --------------- | ----------- | ---------- | ------------ |
-| `CalibnetFIL`   | 60 seconds      | 1 tFIL      | 2 tFIL     | 200 tFIL     |
-| `CalibnetUSDFC` | 60 seconds      | 15 tUSDFC   | 30 tUSDFC  | 3,000 tUSDFC |
+| Faucet Type     | Cooldown Period | Drip Amount | Wallet Cap | IP Cap     | Global Cap   |
+| --------------- | --------------- | ----------- | ---------- | ---------- | ------------ |
+| `CalibnetFIL`   | 60 seconds      | 5 tFIL      | 10 tFIL    | 50 tFIL    | 1,000 tFIL   |
+| `CalibnetUSDFC` | 60 seconds      | 15 tUSDFC   | 30 tUSDFC  | 150 tUSDFC | 3,000 tUSDFC |
+
+The IP cap applies per client IP address (per /64 prefix for IPv6), regardless
+of how many wallets it claims for. Requests sent from a Cloudflare Worker in
+another Cloudflare zone arrive with one Cloudflare-assigned client IP, so such
+integrations share one IP cap.
 
 **Note:** All limits reset every 24 hours. Abuse, farming, or automated requests
 are prohibited and may result in stricter limits or bans.
