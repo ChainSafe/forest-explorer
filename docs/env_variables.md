@@ -10,6 +10,6 @@ URL endpoints and token drip amounts.
 | FAUCET_TX_URL_CALIBNET          | Base URL for Calibnet transactions                      | https://beryx.io/fil/calibration/                            |
 | FAUCET_TX_URL_MAINNET           | Base URL for Mainnet transactions                       | https://beryx.io/fil/mainnet/                                |
 | MAINNET_DRIP_AMOUNT             | Amount of tokens to drip on Mainnet in nanoFIL          | 10000000 (0.01 FIL)                                          |
-| CALIBNET_DRIP_AMOUNT            | Amount of tokens to drip on Calibnet in nanoFIL         | 5000000000 (5 tFIL)                                          |
+| CALIBNET_DRIP_AMOUNT            | Amount of tokens to drip on Calibnet in nanoFIL         | 100000000000 (100 tFIL)                                      |
 | CALIBNET_USDFC_DRIP_AMOUNT      | Amount of USDFC tokens to drip on Calibnet in nanoUSDFC | 15000000000 (15 tUSDFC)                                      |
 | CALIBNET_USDFC_CONTRACT_ADDRESS | Contract address for Calibnet USDFC                     | 0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0                   |
