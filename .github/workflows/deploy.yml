@@ -40,6 +40,8 @@ jobs:
       - uses: jdx/mise-action@v5
 
       - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: v0.15.1
 
       - uses: sigoden/install-binary@v1
         with:
