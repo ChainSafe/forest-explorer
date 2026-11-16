@@ -80,7 +80,7 @@ jobs:
           name: wasm-opt
 
       - name: Install worker-build
-        run: cargo install --locked --force worker-build
+        run: cargo install --locked --force worker-build@0.9.0
 
       - name: Set up k6
         uses: grafana/setup-k6-action@v1
