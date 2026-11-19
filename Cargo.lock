@@ -2378,7 +2378,7 @@ dependencies = [
  "jiff",
  "k256",
  "leptos",
- "leptos-use",
+ "leptos-use-interval-fn",
  "leptos_axum",
  "leptos_meta",
  "leptos_router",
@@ -3344,12 +3344,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4933f3f57a8e9d9da04db23fb153356ecaf00cbd14aee46279c33dc80925c37"
 
 [[package]]
-name = "lazy_static"
-version = "1.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
-
-[[package]]
 name = "leptos"
 version = "0.8.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3392,21 +3386,41 @@ dependencies = [
 ]
 
 [[package]]
-name = "leptos-use"
-version = "0.19.3"
+name = "leptos-use-filters"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f46f177638302858755e7f10b36f440ab4f49101fdf0c53d37e79582ca090840"
+checksum = "f2fb5470c66f998fa192193cc113e785ea15e2883b7402cddd2f1548cc77beb4"
 dependencies = [
  "cfg-if",
  "default-struct-builder",
- "js-sys",
- "lazy_static",
  "leptos",
- "paste",
+ "leptos-use-now",
  "send_wrapper",
- "thiserror 2.0.21",
- "wasm-bindgen",
- "wasm-bindgen-futures",
+ "sendwrap-fn",
+]
+
+[[package]]
+name = "leptos-use-interval-fn"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30da49a18b6db3eeb2ad3a7c0861599696d0a671a5b3d93e8f06a47a9f3e3e3e"
+dependencies = [
+ "default-struct-builder",
+ "leptos",
+ "leptos-use-filters",
+ "send_wrapper",
+ "sendwrap-fn",
+]
+
+[[package]]
+name = "leptos-use-now"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62000a58720fa5b434a0927673f1fc3611393fc0c5ccec220b62a9d52bb3c2bb"
+dependencies = [
+ "cfg-if",
+ "js-sys",
+ "leptos",
 ]
 
 [[package]]
@@ -5085,6 +5099,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 dependencies = [
  "futures-core",
+]
+
+[[package]]
+name = "sendwrap-fn"
+version = "0.20.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e0e45ec8b11fc952166efb888fd52b3ab69647667d436f3af91984f53431910"
+dependencies = [
+ "send_wrapper",
 ]
 
 [[package]]

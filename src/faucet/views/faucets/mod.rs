@@ -83,8 +83,7 @@ fn FaucetInput(faucet: RwSignal<FaucetController>) -> impl IntoView {
 
 #[cfg(feature = "hydrate")]
 fn use_faucet_polling(faucet: RwSignal<FaucetController>) {
-    use leptos_use::use_interval_fn;
-    use leptos_use::utils::Pausable;
+    use leptos_use_interval_fn::{Pausable, use_interval_fn};
 
     let Pausable {
         pause: pause_rate_limiter,
