@@ -1,6 +1,6 @@
 use crate::faucet::constants::FaucetInfo;
 use crate::utils::format::format_balance;
-use chrono::Duration;
+use jiff::SignedDuration;
 use leptos::prelude::*;
 use leptos::{IntoView, component, view};
 
@@ -13,7 +13,8 @@ pub fn FaucetDescription(faucet_info: FaucetInfo) -> impl IntoView {
     let ip_cap = faucet_info.ip_cap();
     let drip_cap = faucet_info.drip_cap();
     let rate_limit_seconds = faucet_info.rate_limit_seconds();
-    let reset_limiter_hours = Duration::seconds(faucet_info.reset_limiter_seconds()).num_hours();
+    let reset_limiter_hours =
+        SignedDuration::from_secs(faucet_info.reset_limiter_seconds()).as_hours();
     view! {
         <div class="description">
             <p>
