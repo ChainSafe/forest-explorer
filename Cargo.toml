@@ -18,7 +18,6 @@ axum = { version = "0.8", default-features = false, optional = true }
 base64 = "0.23"
 blake2b_simd = "1"
 bls-signatures = "0.15"
-chrono = "0.4"
 cid = "0.11"
 console_error_panic_hook = { version = "0.1" }
 console_log = "1"
@@ -26,9 +25,11 @@ derive_more = { version = "2", features = ["from", "into", "display"] }
 fvm_ipld_encoding = "0.5"
 fvm_shared = { version = "~4.8" }
 hex = "0.4"
+# `js` provides the system clock on `wasm32-unknown-unknown`.
+jiff = { version = "0.2", default-features = false, features = ["std", "js"] }
 k256 = "0.13"
 leptos = "0.8"
-leptos-use = "0.19"
+leptos-use = { version = "0.19", default-features = false, features = ["use_interval_fn"] }
 leptos_axum = { version = "0.8", default-features = false, optional = true }
 leptos_meta = "0.8"
 leptos_router = "0.8"
