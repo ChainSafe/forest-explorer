@@ -27,7 +27,7 @@ fvm_shared = { version = "~4.8" }
 hex = "0.4"
 # `js` provides the system clock on `wasm32-unknown-unknown`.
 jiff = { version = "0.2", default-features = false, features = ["std", "js"] }
-k256 = "0.13"
+k256 = "0.14"
 leptos = "0.8"
 leptos-use-interval-fn = { version = "0.20.1" }
 leptos_axum = { version = "0.8", default-features = false, optional = true }

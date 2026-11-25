@@ -12,7 +12,7 @@ pub fn to_public(sig_type: SignatureType, private_key: &[u8]) -> Result<Vec<u8>>
         SignatureType::Secp256k1 => {
             let private_key = k256::ecdsa::SigningKey::from_slice(private_key)?;
             let public_key = private_key.verifying_key();
-            Ok(public_key.to_encoded_point(false).as_bytes().to_vec())
+            Ok(public_key.to_sec1_point(false).as_bytes().to_vec())
         }
     }
 }
@@ -123,7 +123,7 @@ pub fn sign(
         SignatureType::Secp256k1 => {
             let priv_key = k256::ecdsa::SigningKey::from_slice(private_key)?;
             let msg_hash = blake2b_256(msg);
-            let (sig, recovery_id) = priv_key.sign_prehash_recoverable(&msg_hash)?;
+            let (sig, recovery_id) = priv_key.sign_prehash_recoverable(&msg_hash);
             let mut new_bytes = [0; 65];
             new_bytes[..64].copy_from_slice(&sig.to_bytes());
             new_bytes[64] = recovery_id.to_byte();
