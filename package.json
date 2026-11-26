@@ -6,9 +6,9 @@
     "pnpm": ">=11"
   },
   "devDependencies": {
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "tailwindcss": "^3.4.19",
-    "wrangler": "^4.160.1"
+    "wrangler": "^4.165.0"
   },
   "scripts": {}
 }
